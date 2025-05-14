@@ -1,0 +1,221 @@
+{
+  "bo6-ghost-chair": {
+    "slug": "bo6-ghost-chair",
+    "title": "BO6 Ghost External Chair",
+    "subtitle": "Unlock your full potential in BO6 with the Ghost Chair. Designed for top-tier gameplay and stealth.",
+    "image_url": "https://i.postimg.cc/PqKhL2tj/public.png",
+    "plans": [
+      { "plan": "day", "price": 6.99, "label": "DAY KEY" },
+      { "plan": "week", "price": 19.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 29.99, "label": "MONTH KEY" },
+      { "plan": "lifetime", "price": 89.99, "label": "LIFETIME KEY" }
+    ],
+"description": [
+  {
+    "title": "🖥️ Compatibility & Platform Support",
+    "text": "Works on Windows 10/11 (23H2/24H2), fully compatible with Steam, Battle.net & Gamepass. Supports AMD/Intel CPUs and full controller input."
+  },
+  {
+    "title": "🎥 100% External & Stream-Proof",
+    "text": "Fully external chair with zero capture on Discord, OBS, TikTok Live, and Twitch. Stay undetected on and off stream."
+  },
+  {
+    "title": "🎯 Aimbot Features",
+    "text": "Enable targeting with FOV circles, prediction, controller support, recoil handling, smart priority, and advanced ignore settings."
+  },
+  {
+    "title": "👁️ Visual ESP",
+    "text": "Track enemies with customizable ESP overlays: boxes, bones, health, weapons, team ID, lines, distance, and more."
+  },
+  {
+    "title": "📡 Smart Radar System",
+    "text": "Built-in radar includes adjustable size, alpha, AI visibility, rotation, and shared radar support (upcoming)."
+  },
+  {
+    "title": "🧩 Config Management",
+    "text": "Save and load up to 3 custom configs on the fly for different loadouts or playstyles."
+  },
+  {
+    "title": "🎨 Color Customization",
+    "text": "Adjust visuals by player state (visible, downed, AI) and even toggle Anti-Record safety colors for extra protection."
+  }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": true
+  },
+  "bo6-fecurity-chair": {
+    "slug": "bo6-fecurity-chair",
+    "title": "BO6 Fecurity Chair",
+    "subtitle": "Next-gen External/ Internal hybrid.",
+    "image_url": "https://i.postimg.cc/fL98V56m/IMG-4269.jpg",
+    "plans": [
+      { "plan": "day", "price": 8.99, "label": "DAY KEY" },
+      { "plan": "week", "price": 20.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 35.99, "label": "MONTH KEY" }
+    ],
+"description": [
+  {
+    "title": "🎯 Precision Aimbot",
+    "text": "Toggle aim assist with options for shooting, scoping, visibility checks, gamepad support, and unique hitbox logic. Dial in your targeting with precision and speed."
+  },
+  {
+    "title": "⚙️ Easy & Pro Aimbot Modes",
+    "text": "Choose between EASY mode with simple FOV & degree limits, or PRO mode with advanced graph-based scaling for distance and time. Customize like a true pro."
+  },
+  {
+    "title": "👁️‍🗨️ Visual ESP + UAV Radar",
+    "text": "Track players with full ESP—boxes, health, shields, names, ranks, and even ping. Radar mode offers range-based detection, OOF indicators, and clean visuals."
+  },
+  {
+    "title": "💡 Advanced Glow Options",
+    "text": "Enable glow effects with fill, thickness, and type (default, thermal, noisy). Includes visibility checks for smarter rendering."
+  },
+  {
+    "title": "💼 Loot ESP",
+    "text": "Enable loot detection with categories like weapons, armor, cash, perks & more. Customize how loot appears—icons, names, distances, and full color control."
+  },
+  {
+    "title": "🛠️ Misc Features",
+    "text": "Includes a custom clantag system, no-recoil toggle, and selectable distance units (feet, yards, meters) for your personal preference."
+  }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": false
+  },
+  "fortnite-external-chair": {
+    "slug": "fortnite-external-chair",
+    "title": "Fortnite External Chair",
+    "subtitle": "Visuals, Radar, Aimbot, Item ESP and More — Fully External, Safe & Smooth.",
+    "image_url": "https://i.postimg.cc/zD4LXXtk/public-1.png",
+    "plans": [
+      { "plan": "day", "price": 9.99, "label": "DAY KEY" },
+      { "plan": "week", "price": 24.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 39.99, "label": "MONTH KEY" },
+      { "plan": "lifetime", "price": 65.99, "label": "LIFETIME KEY" }
+    ],
+"description": [
+  {
+    "title": "🧱 Visual ESP & Radar",
+    "text": "Get full visual control with boxes, skeletons, kill counters, weapon info, and customizable colors. Built-in radar supports team tracking, distance scaling, and multiple visual tweaks."
+  },
+  {
+    "title": "🎯 Aimbot & Triggerbot",
+    "text": "Smart aimbot with hitbox selection, prediction, FOV, smoothing, and bindable keys. Includes triggerbot with hitbox control and delay settings. Fully customizable per weapon."
+  },
+  {
+    "title": "🛠️ Item ESP",
+    "text": "Display items by rarity and type with full distance filtering, coloring, and visibility control. Designed to highlight key loot efficiently."
+  },
+  {
+    "title": "💻 Performance & Misc",
+    "text": "Supports controller input, battlemode toggle, vsync, and quick config loading. Smooth, low-latency experience with maximum usability."
+  }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": false
+  },
+  "temp-spoofer": {
+    "slug": "temp-spoofer",
+    "title": "Temp Spoofer",
+    "subtitle": "Protect your real HWID temporarily with full support for external cheats, no traces, and safe on game restarts.",
+    "image_url": "https://i.postimg.cc/0N5jH6j9/public-2.png",
+    "plans": [
+      { "plan": "day", "price": 5.99, "label": "DAY KEY" },
+      { "plan": "week", "price": 12.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 22.99, "label": "MONTH KEY" }
+    ],
+    "description": [
+      {
+        "title": "Description",
+        "text": "🔒 Temporary spoof to protect real HWID while gaming, ✅ Perfect for COD externals, seamless compatibility & 🔄 HWID reverts to normal after a restart"
+      },
+      {
+        "title": "🎮 Works with major games like:",
+        "text": "COD, Fortnite, Rust, R6, more"
+      }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": false
+  },
+
+"reseller-exclusive-key": {
+  "slug": "reseller-exclusive-key",
+  "title": "Reseller Exclusive Key",
+  "subtitle": "⚠️ FOR APPROVED RESELLERS ONLY — Unauthorized purchases will result in NO delivery and NO refund.",
+  "image_url": "https://i.postimg.cc/L6zbDYps/construction.jpg",
+  "plans": [
+  { "plan": "ghost day *single*", "price": 3.50, "label": "ghost day *single*" },
+  { "plan": "ghost day bulk (10)", "price": 30.00, "label": "ghost day bulk (10)" },
+
+  { "plan": "ghost week *single*", "price": 8.00, "label": "ghost week *single*" },
+  { "plan": "ghost week bulk (10)", "price": 75.00, "label": "ghost week bulk (10)" },
+
+  { "plan": "ghost month *single*", "price": 14.00, "label": "ghost month *single*" },
+  { "plan": "ghost month bulk (10)", "price": 120.00, "label": "ghost month bulk (10)" }
+  ],
+  "description": [
+    {
+      "title": "⚠️ Reseller-Only Access",
+      "text": "This product is strictly for officially approved resellers appointed by the moealturej Solutions Owner. If you are not an approved reseller and you purchase this product, **you will NOT receive any product or support**."
+    },
+    {
+      "title": "🚫 No Exceptions, No Refunds",
+      "text": "Unauthorized buyers will be **automatically blacklisted** and no refund will be provided under any circumstances. Ensure you are verified before purchasing."
+    },
+    {
+      "title": "📦 Bulk License Packs",
+      "text": "Each purchase includes the number of keys specified. Ideal for distribution by resellers to their own clients."
+    },
+    {
+      "title": "✅ What You Get (If Verified)",
+      "text": "Bulk key packs delivered within 24hrs directly to you. Use them freely to distribute to customers."
+    }
+  ],
+  "refund_policy": {
+    "title": "Zero Tolerance Refund Policy",
+    "text": "This product is **non-refundable**. Any unauthorized purchase will be treated as a **forfeit** and the buyer will receive nothing."
+  },
+  "popular": false
+},
+  "perm-spoofer": {
+    "slug": "perm-spoofer",
+    "title": "Perm Spoofer",
+    "subtitle": "Bypass hardware bans with a one-time or lifetime key. Supports major motherboards and top games.",
+    "image_url": "https://i.postimg.cc/W49zR2qg/public-3.png",
+    "plans": [
+      { "plan": "month", "price": 25.00, "label": "MONTH KEY - $25.00" },
+      { "plan": "lifetime", "price": 100.00, "label": "LIFETIME KEY - $100.00" }
+    ],
+    "description": [
+      {
+        "title": "🖥️ Compatibility",
+        "text": "Supports Acer, Asrock, Gigabyte, Lenovo, MSI motherboards"
+      },
+      {
+        "title": "⚠️ Asus Supported EXCEPT:",
+        "text": "Crosshair X870E Hero, Strix X870E-E, TUF Gaming X870, Prime X870, ProArt X870"
+      },
+      {
+        "title": "🎯 Games tested:",
+        "text": "Fortnite (Tournaments), Valorant, Apex, Rust, Siege, Overwatch 2, MW"
+      }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": false
+  }
+}

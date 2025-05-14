@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Meta & SEO -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>No Refund Policy | moealturej</title>
+
+  <!-- Favicon & Fonts -->
+  <link rel="icon" href="https://i.postimg.cc/63hbBb6B/New-logo.jpg" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-start: #12002b;
+      --bg-end: #000a1a;
+      --card-bg: rgba(20,10,30,0.85);
+      --accent: #bb00ff;
+      --accent2: #e600ff;
+      --text-main: #f0f0f0;
+      --text-secondary: #ccc;
+      --transition: 0.3s ease;
+      --anim-time: 0.4s ease-out;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    body, html {
+      height: 100%; overflow: hidden;
+      background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+      font-family: 'Roboto', sans-serif;
+      color: var(--text-main);
+      position: relative;
+    }
+    #particles-js { position:fixed; inset:0; z-index:0; }
+    .bg-shape {
+      position: absolute;
+      width: 200px; height: 200px;
+      background: var(--accent2);
+      opacity: 0.1;
+      border-radius: 50%;
+      animation: fadeIn 1.2s var(--anim-time) both;
+    }
+    .shape1 { top: -60px; left: -60px; }
+    .shape2 { bottom: -60px; right: -60px; }
+    @keyframes fadeIn {
+      from { opacity:0; transform: scale(0.8);}
+      to   { opacity:0.6; transform: scale(1);}
+    }
+
+    /* ——— Refund Card ——— */
+    .refund-card {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%; max-width: 600px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+      z-index: 1;
+      overflow-y: auto;
+      max-height: 85vh;
+      animation: slideUp var(--anim-time) both;
+    }
+    @keyframes slideUp {
+      from { opacity:0; transform: translate(-50%, -45%); }
+      to   { opacity:1; transform: translate(-50%, -50%); }
+    }
+
+    .refund-card h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.25rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .refund-card p.intro {
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      font-size: 1rem;
+    }
+    .refund-card section {
+      margin-bottom: 1.5rem;
+    }
+    .refund-card h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3rem;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .refund-card p,
+    .refund-card ul,
+    .refund-card li {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+    .refund-card ul {
+      list-style: disc inside;
+      padding-left: 1rem;
+    }
+    .refund-card a {
+      color: var(--accent2);
+      text-decoration: underline;
+      transition: color var(--transition);
+    }
+    .refund-card a:hover {
+      color: var(--accent);
+    }
+
+    footer {
+      position: absolute;
+      bottom: 1rem;
+      width: 100%;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="particles-js"></div>
+  <div class="bg-shape shape1"></div>
+  <div class="bg-shape shape2"></div>
+
+  <div class="refund-card">
+    <h1><i class="fas fa-ban"></i> No Refund Policy</h1>
+    <p class="intro">
+      By completing a purchase, you acknowledge that all sales are final.
+    </p>
+
+    <section>
+      <h2>1. All Sales Are Final</h2>
+      <p>
+        Due to the digital nature of our products and services, we do not offer refunds, exchanges, or credits under any circumstances.
+      </p>
+    </section>
+
+    <section>
+      <h2>2. Contact Support</h2>
+      <p>
+        Email our team at
+        <a href="/contact">Support</a>. We aim to respond within 48 hours.
+      </p>
+    </section>
+
+    <section>
+      <h2>3. Chargeback Policy</h2>
+      <p>
+        Unauthorized chargebacks breach this policy. We reserve the right to suspend or terminate accounts for chargeback abuse.
+      </p>
+    </section>
+  </div>
+
+  <footer>&copy; 2025 moealturej | All rights reserved.</footer>
+
+  <!-- Particles.js -->
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: '#fff' },
+        shape: { type: 'circle' },
+        opacity: { value: 0.1, random: true },
+        size: { value: 2, random: true },
+        move: { enable: true, speed: 1, out_mode: 'out' }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: {
+          onhover: { enable: true, mode: 'grab' },
+          onclick: { enable: true, mode: 'push' }
+        },
+        modes: {
+          grab: { distance: 120, line_linked: { opacity: 0.2 } },
+          push: { particles_nb: 3 }
+        }
+      },
+      retina_detect: true
+    });
+  </script>
+</body>
+</html>

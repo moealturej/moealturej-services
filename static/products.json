@@ -1,0 +1,43 @@
+[
+  {
+    "id": "bo6-ghost-chair",
+    "name": "BO6 Ghost External Chair",
+    "price": "6.99 - 89.99",
+    "image": "https://i.postimg.cc/PqKhL2tj/public.png",
+    "badge": "Best Seller",
+    "popular": true,
+    "checkoutParam": "bo6-ghost-chair"
+  },
+  {
+    "id": "bo6-fecurity-chair",
+    "name": "BO6 Fecurity Chair",
+    "price": "8.99 - 35.99",
+    "image": "https://i.postimg.cc/fL98V56m/IMG-4269.jpg",
+    "popular": false,
+    "checkoutParam": "bo6-fecurity-chair"
+  },
+  {
+    "id": "fortnite-external-chair",
+    "name": "Fortnite External Chair",
+    "price": "9.99 - 65.99",
+    "image": "https://i.postimg.cc/zD4LXXtk/public-1.png",
+    "popular": false,
+    "checkoutParam": "fortnite-external-chair"
+  },
+  {
+    "id": "temp-spoofer",
+    "name": "Temporary HWID Spoofer",
+    "price": "5.99 - 22.99",
+    "image": "https://i.postimg.cc/0N5jH6j9/public-2.png",
+    "popular": false,
+    "checkoutParam": "temp-spoofer"
+  },
+  {
+    "id": "perm-spoofer",
+    "name": "Permanent HWID Spoofer",
+    "price": "25.00 - 100.00",
+    "image": "https://i.postimg.cc/W49zR2qg/public-3.png",
+    "popular": false,
+    "checkoutParam": "perm-spoofer"
+  }
+]

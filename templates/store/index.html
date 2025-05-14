@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}Store | moealturej Products{% endblock %}
+
+{% block extra_head %}
+<meta name="description" content="Unlock powerful enhancements with moealturej Products. Trusted tools, instant delivery, and full support.">
+<meta name="keywords" content="BO6 cheats, Black Ops 6 hacks, game enhancer, unlock tools, COD cheats, aimbot, wallhack, ESP, premium hacks">
+<meta name="author" content="moealturej">
+<meta property="og:title" content="Store | moealturej Products">
+<meta property="og:description" content="Get access to the best tools for BO6">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:site_name" content="moealturej Store">
+<meta name="twitter:title" content="Store | moealturej Products">
+<meta name="twitter:description" content="Unlock features and dominate in BO6 with our exclusive tools.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg-dark: #0d0f18;
+    --bg-darker: #090a12;
+    --accent: #ff33cc;
+    --text-light: #e0e0e0;
+    --text-faint: #999;
+    --border: #2c2c2c;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-dark);
+    color: var(--text-light);
+    font-family: 'Roboto', sans-serif;
+  }
+
+  #particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .hero {
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    background: transparent;
+  }
+
+  .hero h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .hero p {
+    font-size: 1.2rem;
+    color: var(--text-light);
+    margin-bottom: 2rem;
+  }
+
+  .cta-btn {
+    background: var(--accent);
+    color: var(--bg-darker);
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  .cta-btn:hover {
+    background: #ff55dd;
+    box-shadow: 0 0 15px var(--accent);
+  }
+
+  .section-title {
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    margin: 4rem 0 2rem;
+    color: var(--accent);
+  }
+
+  .section-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .product-card {
+    background: #11131f;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 0 16px var(--accent);
+  }
+
+  .badge {
+    background: var(--accent);
+    color: var(--bg-darker);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    border-radius: 0.5rem;
+    z-index: 2;
+  }
+
+  .product-image img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    display: block;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-content {
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    flex-grow: 1;
+  }
+
+  .card-content h2 {
+    font-size: 1.3rem;
+    color: var(--accent);
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .card-content p {
+    font-size: 0.95rem;
+    color: var(--text-light);
+  }
+
+  .card-content .price {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #fff;
+  }
+
+  .card-content button {
+    margin-top: auto;
+    background: var(--accent);
+    border: none;
+    color: var(--bg-darker);
+    padding: 0.7rem;
+    font-size: 0.95rem;
+    font-weight: bold;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .card-content button:hover {
+    background: #ff55dd;
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 {
+      font-size: 2.2rem;
+    }
+
+    .section-title {
+      font-size: 1.6rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="particles-js"></div>
+
+<section class="hero">
+  <h1>Explore Our Premium Game Tools</h1>
+  <p>Unlock powerful tools and elevate your gameplay with our curated products.</p>
+  <button class="cta-btn" onclick="document.querySelector('.best-sellers').scrollIntoView({ behavior: 'smooth' })">
+    See Top Sellers
+  </button>
+</section>
+
+<section class="best-sellers">
+  <h2 class="section-title">All Products</h2>
+  <div class="section-wrapper">
+    <div class="products-grid"></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+<script>
+  particlesJS("particles-js", {
+    particles: {
+      number: { value: 60, density: { enable: true, value_area: 800 } },
+      color: { value: "#ff33cc" },
+      shape: { type: "circle" },
+      opacity: { value: 0.6, random: true },
+      size: { value: 4, random: true },
+      line_linked: { enable: true, distance: 150, color: "#ff33cc", opacity: 0.6, width: 1.5 },
+      move: { enable: true, speed: 2.5, direction: "none", out_mode: "out" }
+    },
+    interactivity: {
+      detect_on: "canvas",
+      events: {
+        onhover: { enable: true, mode: "grab" },
+        onclick: { enable: true, mode: "push" }
+      },
+      modes: {
+        grab: { distance: 140, line_linked: { opacity: 0.8 } },
+        push: { particles_nb: 5 }
+      }
+    },
+    retina_detect: true
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fetch('/static/products.json')
+      .then(res => res.json())
+      .then(data => {
+        const allGrid  = document.querySelector('.products-grid');
+
+        function createCard(prod) {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+
+          if (prod.badge) {
+            const badge = document.createElement('div');
+            badge.className = 'badge';
+            badge.textContent = prod.badge;
+            card.appendChild(badge);
+          }
+
+          const imgDiv = document.createElement('div');
+          imgDiv.className = 'product-image';
+          const img = document.createElement('img');
+          img.src = prod.image;
+          img.alt = prod.name;
+          imgDiv.appendChild(img);
+          card.appendChild(imgDiv);
+
+          const content = document.createElement('div');
+          content.className = 'card-content';
+          content.innerHTML = `
+            <h2>${prod.name}</h2>
+            ${prod.description ? `<p>${prod.description}</p>` : ''}
+            <p class="price">$${prod.price}</p>
+            <button onclick="location.href='/store/${encodeURIComponent(prod.checkoutParam)}'">
+              <i class="fa-solid fa-cart-shopping"></i> Buy Now
+            </button>
+          `;
+          card.appendChild(content);
+
+          return card;
+        }
+
+        data.forEach(prod => {
+          allGrid.appendChild(createCard(prod));
+        });
+      })
+      .catch(err => console.error('Failed to load products:', err));
+  });
+</script>
+{% endblock %}
