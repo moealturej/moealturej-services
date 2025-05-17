@@ -412,6 +412,7 @@ def create_checkout_session():
 def success():
     raw_id = request.args.get('session_id', '')
     session_id = raw_id.strip('{}')
+    app.logger.info(f">>> session_id after strip = {session_id!r}")
     if not session_id:
         return render_template('404.html', message='No session ID provided.'), 400
 
