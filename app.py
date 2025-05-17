@@ -424,25 +424,25 @@ def success():
         invoice_id    = sess.metadata.get('invoice_id', 'N/A')
         total_dollars = f"${(sess.amount_total or 0) / 100:.2f}"
 
-        # 4) Pull your exact HTML list out of metadata (must be set at creation time)
-        html_items = sess.metadata.get('html_items')
-        product_summary = []
+       # 4) Build HTML list & summary from the cart_items metadata
+        raw_cart = sess.metadata.get('cart_items', '[]')
+        entries  = json.loads(raw_cart)   # e.g. ["slug1:basic:2", "slug2:pro:1"]
 
-        if html_items:
-            # Build a summary string from the raw cart_items metadata
-            raw_cart = sess.metadata.get('cart_items', '[]')
-            for entry in json.loads(raw_cart):
-                slug, plan, qty = entry.split(':')
-                qty = int(qty)
-                prod = find_product(slug) or {}
-                title = prod.get('title', slug).strip()
-                product_summary.append(f"{title} – {plan.title()} × {qty}")
-        else:
-            # If you never saved html_items, just do a very basic stub:
-            product_summary.append("Order details unavailable")
+        html_items = ""
+        product_summary = []
+        for entry in entries:
+            slug, plan, qty = entry.split(':')
+            qty = int(qty)
+
+            # lookup the product title from your loaded JSON
+            prod = find_product(slug)
+            title = prod['title'] if prod else slug
+
+            # build both representations
+            html_items += f"<li>{title} – {plan.title()} × {qty}</li>"
+            product_summary.append(f"{title} – {plan.title()} × {qty}")
 
         product_str = ', '.join(product_summary)
-
         # 5) Send the confirmation email
         email_html = f"""
 <!DOCTYPE html>
