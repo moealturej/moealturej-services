@@ -410,7 +410,8 @@ def create_checkout_session():
 
 @app.route('/success')
 def success():
-    session_id = request.args.get('session_id')
+    raw_id = request.args.get('session_id', '')
+    session_id = raw_id.strip('{}')
     if not session_id:
         return render_template('404.html', message='No session ID provided.'), 400
 
@@ -455,7 +456,7 @@ def success():
             except Exception:
                 continue
 
-        total_dollars = f"${total_amount / 100:.2f}"
+        total_dollars = f"${total_cents / 100:.2f}"
         product_str = ', '.join(product_summary)
 
         html = f"""
@@ -496,7 +497,7 @@ def success():
                                email=customer,
                                invoice_id=invoice,
                                product=product_str,
-                               total=total)
+                               total=total_dollars)
 
     except Exception as e:
         logging.exception('Error in success')
