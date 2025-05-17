@@ -420,7 +420,7 @@ def success():
         # Grab the session, expand line_items
         sess = stripe.checkout.Session.retrieve(
             session_id,
-            expand=['line_items.data.price.product_data']
+            expand=['line_items']
         )
 
         # 1) Customer + invoice
@@ -435,9 +435,10 @@ def success():
         html_items = ""
         product_summary = []
         for li in sess['line_items']['data']:
-            name     = li.price.product_data.name
-            qty      = li.quantity
-            subtotal = li.amount_subtotal  # already price × qty, in cents
+            name     = li['price']['product_data']['name']
+            qty      = li['quantity']
+            subtotal = li['amount_subtotal']  # in cents
+
             html_items += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
             product_summary.append(f"{name} × {qty}")
 
