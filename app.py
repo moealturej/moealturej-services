@@ -356,6 +356,7 @@ def create_checkout_session():
             metadata={
                 'invoice_id': invoice_id,
                 'cart_items': json.dumps(metadata_items),
+                'html_items': html_items,
                 'ip_address': request.remote_addr,
                 'timestamp': datetime.now(timezone.utc).isoformat(),
             }
@@ -405,58 +406,100 @@ def create_checkout_session():
 # -----------------------------------------------------------------------------
 @app.route('/success')
 def success():
-    session_id = request.args.get('session_id', '').strip('{}')
+    # 1) Normalize & sanitize the session_id
+    raw_id     = request.args.get('session_id', '')
+    session_id = raw_id.strip('{}')
     if not session_id:
         return render_template('404.html', message='No session ID provided.'), 400
 
     try:
+        # 2) Retrieve the Checkout Session with line_items
         sess = stripe.checkout.Session.retrieve(
             session_id,
             expand=['line_items']
         )
 
-        customer_email = sess.customer_email or sess.customer_details.email
-        invoice_id = sess.metadata.get('invoice_id', 'N/A')
-        total_paid = f"${(sess.amount_total or 0)/100:.2f}"
+        # 3) Basic order info
+        customer      = sess.customer_email or sess.customer_details.email
+        invoice_id    = sess.metadata.get('invoice_id', 'N/A')
+        total_dollars = f"${(sess.amount_total or 0) / 100:.2f}"
 
-        # Build items list
-        items_html = ''
-        summary_list = []
-        for li in sess['line_items']['data']:
-            name = li.price.product_data.name
-            qty = li.quantity
-            subtotal = li.amount_subtotal
-            items_html += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
-            summary_list.append(f"{name} × {qty}")
-        product_str = ', '.join(summary_list)
+        # 4) Try to pull your prebuilt HTML list from metadata
+        html_items = sess.metadata.get('html_items')
+        product_summary = []
 
-        # Send "Payment Confirmed" email
-        email_content = f"""
+        if html_items:
+            # If you stored raw <li>… strings
+            # Build product_summary from your cart_items metadata
+            raw_cart = sess.metadata.get('cart_items', '[]')
+            for entry in json.loads(raw_cart):
+                slug, plan, qty = entry.split(':')
+                qty = int(qty)
+                # find readable title
+                prod = find_product(slug)
+                title = prod['title'] if prod else slug
+                product_summary.append(f"{title} – {plan.title()} × {qty}")
+        else:
+            # Fallback: rebuild from Stripe line_items
+            html_items = ""
+            for li in sess['line_items']['data']:
+                name     = li.price.product_data.name
+                qty      = li.quantity
+                subtotal = li.amount_subtotal
+                html_items += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
+                product_summary.append(f"{name} × {qty}")
+        
+        product_str = ', '.join(product_summary)
+
+        # 5) Send confirmation email
+        email_html = f"""
 <!DOCTYPE html>
-<html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Payment Confirmed</title></head>
-<body style=\"margin:0;padding:0;background:#121212;color:#ECECEC;font-family:Arial,sans-serif;\">
-  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:40px auto;\">
-    <tr><td style=\"background:#1A1A1A;padding:30px;border-bottom:1px solid #333;\">
-      <h2 style=\"color:#FFF;\">Payment Confirmed</h2>
-      <p>Thank you for your purchase, {customer_email}!</p>
-      <h3>Invoice ID: {invoice_id}</h3>
-      <ul>{items_html}</ul>
-      <p><strong>Total Paid:</strong> {total_paid}</p>
-      <p style=\"text-align:center;\"><a href=\"{request.url_root}\" style=\"padding:12px 24px;background:#2979FF;color:#FFF;text-decoration:none;border-radius:4px;\">Return to Site</a></p>
-      <p style=\"font-size:12px;color:#777;\">A copy of this receipt has been sent to your email.</p>
-    </td></tr>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Payment Confirmed</title></head>
+<body style="margin:0;padding:0;background:#121212;color:#ECECEC;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:40px auto;">
+    <tr>
+      <td style="background:#1A1A1A;padding:30px;border-bottom:1px solid #333;">
+        <h2 style="margin:0 0 20px;font-weight:400;color:#FFF;">Payment Confirmed</h2>
+        <p>Thank you for your purchase, {customer}!</p>
+        <h3>Invoice ID: {invoice_id}</h3>
+        <ul style="margin:12px 0;padding-left:20px;">
+          {html_items}
+        </ul>
+        <p><strong>Total Paid:</strong> {total_dollars}</p>
+        <p style="text-align:center;margin:32px 0;">
+          <a href="{request.url_root}"
+             style="padding:12px 24px;background:#2979FF;color:#FFF;
+                    text-decoration:none;border-radius:4px;display:inline-block;">
+            Return to Site
+          </a>
+        </p>
+        <p style="font-size:12px;color:#777;margin:0;">
+          A copy of this receipt has been sent to your email.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#1F1F1F;padding:16px;text-align:center;font-size:12px;color:#777;">
+        © 2025 Your Company. All rights reserved.
+      </td>
+    </tr>
   </table>
-</body></html>
+</body>
+</html>
 """
-        send_email(customer_email, 'Payment Confirmed', email_content)
+        send_email(customer, 'Payment Confirmed', email_html)
 
-        return render_template('success.html',
-                               email=customer_email,
-                               invoice_id=invoice_id,
-                               product=product_str,
-                               total=total_paid)
+        # 6) Render your success page
+        return render_template(
+            'success.html',
+            email=customer,
+            invoice_id=invoice_id,
+            product=product_str,
+            total=total_dollars
+        )
 
-    except Exception as e:
+    except Exception:
         logging.exception('Error in success route')
         return render_template('404.html', message='Error verifying payment.'), 500
                                
