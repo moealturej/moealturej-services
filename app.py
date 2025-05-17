@@ -410,37 +410,39 @@ def create_checkout_session():
 
 @app.route('/success')
 def success():
-    raw_id    = request.args.get('session_id', '')
+    # 1) Normalize the incoming session_id (strip only braces)
+    raw_id = request.args.get('session_id', '')
     session_id = raw_id.strip('{}')
     if not session_id:
-        return render_template('404.html', message='No session ID'), 400
+        return render_template('404.html', message='No session ID provided.'), 400
 
-    sess = stripe.checkout.Session.retrieve(
-        session_id,
-        expand=[
-          'line_items',
-          'line_items.data.price.product'     # << expand the product object
-        ]
-    )
+    try:
+        # 2) Retrieve the session, expanding only line_items
+        sess = stripe.checkout.Session.retrieve(
+            session_id,
+            expand=['line_items']
+        )
 
-    customer      = sess.customer_email or sess.customer_details.email
-    invoice       = sess.metadata.get('invoice_id', 'N/A')
-    total_dollars = f"${(sess.amount_total or 0)/100:.2f}"
+        # 3) Pull out customer info, invoice, and total
+        customer = sess.customer_email or sess.customer_details.email
+        invoice = sess.metadata.get('invoice_id', 'N/A')
+        total_dollars = f"${(sess.amount_total or 0) / 100:.2f}"
 
-    # Build the list from the expanded product
-    html_items = ""
-    product_summary = []
-    for li in sess['line_items']['data']:
-        name     = li.price.product.name
-        qty      = li.quantity
-        subtotal = li.amount_subtotal
-        html_items += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
-        product_summary.append(f"{name} × {qty}")
+        # 4) Build HTML list and summary string from Stripe's line_items
+        html_items = ""
+        product_summary = []
+        for li in sess['line_items']['data']:
+            name = li.price.product_data.name
+            qty = li.quantity
+            subtotal = li.amount_subtotal  # in cents
+
+            html_items += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
+            product_summary.append(f"{name} × {qty}")
 
         product_str = ', '.join(product_summary)
 
-        # 4) Send your “Payment Confirmed” email
-        html = f"""
+        # 5) Send the "Payment Confirmed" email
+        email_html = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Payment Confirmed</title></head>
@@ -448,25 +450,18 @@ def success():
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:40px auto;">
     <tr>
       <td style="background:#1A1A1A;padding:30px;border-bottom:1px solid #333;">
-        <h2 style="margin:0 0 20px;font-weight:400;color:#FFF;">
-          Payment Confirmed
-        </h2>
+        <h2 style="margin:0 0 20px;font-weight:400;color:#FFF;">Payment Confirmed</h2>
         <p>Thank you for your purchase, {customer}!</p>
-
         <h3>Invoice ID: {invoice}</h3>
-        <ul style="margin:12px 0;padding-left:20px;">
-          {html_items}
-        </ul>
+        <ul style="margin:12px 0;padding-left:20px;">{html_items}</ul>
         <p><strong>Total Paid:</strong> {total_dollars}</p>
-
         <p style="text-align:center;margin:32px 0;">
-          <a href="{request.url_root}" 
+          <a href="{request.url_root}"
              style="padding:12px 24px;background:#2979FF;color:#FFF;
                     text-decoration:none;border-radius:4px;display:inline-block;">
             Return to Site
           </a>
         </p>
-
         <p style="font-size:12px;color:#777;margin:0;">
           A copy of this receipt has been sent to your email.
         </p>
@@ -481,19 +476,20 @@ def success():
 </body>
 </html>
 """
-        send_email(customer, 'Payment Confirmed', html)
+        send_email(customer, 'Payment Confirmed', email_html)
 
-        # 5) Render your pretty success page
-        return render_template('success.html',
-                               email=customer,
-                               invoice_id=invoice,
-                               product=product_str,
-                               total=total_dollars)
+        # 6) Finally render your styled success page
+        return render_template(
+            'success.html',
+            email=customer,
+            invoice_id=invoice,
+            product=product_str,
+            total=total_dollars
+        )
 
     except Exception as e:
         logging.exception('Error in success')
-        return render_template('404.html',
-                               message='Error verifying payment.'), 500
+        return render_template('404.html', message='Error verifying payment.'), 500
                                
 @app.route('/cancel')
 def cancel():
