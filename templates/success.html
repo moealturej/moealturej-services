@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
+    /* Reuse Checkout Theme Variables & Animations */
     :root {
       --bg-gradient-1: #12002b;
       --bg-gradient-2: #000a1a;
@@ -43,6 +44,7 @@
       border:1px solid rgba(255,255,255,0.15);
       border-radius:16px;
       padding:2.5rem;
+      overflow:hidden;
       backdrop-filter:blur(10px);
       box-shadow:0 12px 40px rgba(0,0,0,0.6);
       animation:cardFadeIn var(--keyframe-time) ease-out both;
@@ -59,6 +61,7 @@
       font-size:4rem;
       color: var(--success-green);
       text-align:center;
+      display:block;
       margin-bottom:1rem;
       animation:slideIn var(--keyframe-time) ease-out both .3s;
     }
@@ -66,6 +69,7 @@
       font-family:'Orbitron',sans-serif;
       font-size:2.5rem;
       text-align:center;
+      text-transform:uppercase;
       background:linear-gradient(90deg,var(--accent),var(--accent-hover));
       -webkit-background-clip:text; color:transparent;
       margin-bottom:0.5rem;
@@ -92,7 +96,9 @@
     }
     .order-summary ul { list-style:none; color:var(--text-primary); line-height:1.6; }
     .order-summary li { margin-bottom:0.5rem; }
-    .product-details { animation:slideIn var(--keyframe-time) ease-out both .7s; }
+    .product-details {
+      animation:slideIn var(--keyframe-time) ease-out both .7s;
+    }
     .product-details h3 {
       font-size:1.2rem;
       color:var(--accent-hover);
@@ -136,39 +142,25 @@
   <div class="success-card">
     <div class="bg-shape shape1"></div>
     <div class="bg-shape shape2"></div>
-
     <i class="fa-solid fa-check-circle icon"></i>
     <h1>Payment Successful</h1>
     <p class="subtitle">Thank you for your purchase!</p>
 
     <div class="order-summary">
       <h2>Invoice ID</h2>
-      <ul>
-        <li><strong>{{ invoice_id }}</strong></li>
-      </ul>
-
-      <h2>Order Details</h2>
-      <ul>
-        {%- for line in product.split(',') %}
-        <li>{{ line.strip() }}</li>
-        {%- endfor %}
-      </ul>
-
-      <h2>Total Paid</h2>
-      <ul>
-        <li><strong>{{ total }}</strong></li>
-      </ul>
+      <ul><li><strong>{{ invoice_id }}</strong></li></ul>
     </div>
 
     <div class="product-details">
+      <h3>Product: {{ product.replace('_',' ').capitalize() }} ({{ plan }} key)</h3>
       <p>Email: <strong>{{ email }}</strong></p>
-      <p><strong>Note:</strong> Your key will arrive within 24 hours via email.</p>
-      <p><strong>While you wait, visit the <a href="/downloads" style="color:var(--accent-hover);">Downloads</a> page.</strong></p>
-      <p><strong>Need setup help? See our <a href="/guide" style="color:var(--accent-hover);">Setup Guide</a>.</strong></p>
+      <p><strong>Note:</strong> Your key will arrive within 24h via email.</p>
+      <p><strong>While you wait, visit the <a href="/downloads" style="color:var(--accent-hover);">downloads page</a>.</strong></p>
+      <p><strong>Don't forget the <a href="/guide" style="color:var(--accent-hover);">setup guide</a>.</strong></p>
     </div>
 
     <button class="button" onclick="location.href='/'">Go Back Home</button>
-    <p class="footer-note">Need further assistance? <a href="/contact">Contact Support</a></p>
+    <p class="footer-note">Need help? <a href="/contact">Contact Support</a></p>
   </div>
 
   <!-- Dependencies -->
@@ -181,11 +173,7 @@
         opacity:{value:0.1,random:true},size:{value:2,random:true},
         move:{enable:true,speed:1,direction:'none',out_mode:'out'}
       },
-      interactivity:{
-        detect_on:'canvas',
-        events:{onhover:{enable:true,mode:'grab'},onclick:{enable:true,mode:'push'}},
-        modes:{grab:{distance:120,line_linked:{opacity:0.2}},push:{particles_nb:3}}
-      },
+      interactivity:{detect_on:'canvas',events:{onhover:{enable:true,mode:'grab'},onclick:{enable:true,mode:'push'}},modes:{grab:{distance:120,line_linked:{opacity:0.2}},push:{particles_nb:3}}},
       retina_detect:true
     });
   </script>
