@@ -473,7 +473,7 @@ def success():
         <h3 style="margin:24px 0 8px;font-size:16px;color:#CCC;">Order Details</h3>
         <p><strong>Invoice ID:</strong> {invoice}</p>
         <ul style="margin:12px 0 24px;padding-left:20px;">{html_items}</ul>
-        <p><strong>Total Paid:</strong> {total}</p>
+        <p><strong>Total Paid:</strong> {total_dollars}</p>
 
         <p style="text-align:center;margin:32px 0;">
           <a href="{request.url_root}" style="padding:12px 24px;background:#2979FF;color:#FFF;text-decoration:none;border-radius:4px;display:inline-block;">Return to Site</a>
