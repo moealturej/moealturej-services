@@ -473,7 +473,7 @@ def success():
     </tr>
     <tr>
       <td style="background:#1F1F1F;padding:16px;text-align:center;font-size:12px;color:#777;">
-        © 2025 Your Company. All rights reserved.
+        © 2025 moealturej | All rights reserved.
       </td>
     </tr>
   </table>
