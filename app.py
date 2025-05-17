@@ -406,52 +406,44 @@ def create_checkout_session():
 # -----------------------------------------------------------------------------
 @app.route('/success')
 def success():
-    # 1) Normalize & sanitize the session_id
+    # 1) Normalize & sanitize session_id
     raw_id     = request.args.get('session_id', '')
     session_id = raw_id.strip('{}')
     if not session_id:
         return render_template('404.html', message='No session ID provided.'), 400
 
     try:
-        # 2) Retrieve the Checkout Session with line_items
+        # 2) Fetch the session (we expand only line_items so we get amount_total)
         sess = stripe.checkout.Session.retrieve(
             session_id,
             expand=['line_items']
         )
 
-        # 3) Basic order info
+        # 3) Core data
         customer      = sess.customer_email or sess.customer_details.email
         invoice_id    = sess.metadata.get('invoice_id', 'N/A')
         total_dollars = f"${(sess.amount_total or 0) / 100:.2f}"
 
-        # 4) Try to pull your prebuilt HTML list from metadata
+        # 4) Pull your exact HTML list out of metadata (must be set at creation time)
         html_items = sess.metadata.get('html_items')
         product_summary = []
 
         if html_items:
-            # If you stored raw <li>… strings
-            # Build product_summary from your cart_items metadata
+            # Build a summary string from the raw cart_items metadata
             raw_cart = sess.metadata.get('cart_items', '[]')
             for entry in json.loads(raw_cart):
                 slug, plan, qty = entry.split(':')
                 qty = int(qty)
-                # find readable title
-                prod = find_product(slug)
-                title = prod['title'] if prod else slug
+                prod = find_product(slug) or {}
+                title = prod.get('title', slug).strip()
                 product_summary.append(f"{title} – {plan.title()} × {qty}")
         else:
-            # Fallback: rebuild from Stripe line_items
-            html_items = ""
-            for li in sess['line_items']['data']:
-                name     = li.price.product_data.name
-                qty      = li.quantity
-                subtotal = li.amount_subtotal
-                html_items += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
-                product_summary.append(f"{name} × {qty}")
-        
+            # If you never saved html_items, just do a very basic stub:
+            product_summary.append("Order details unavailable")
+
         product_str = ', '.join(product_summary)
 
-        # 5) Send confirmation email
+        # 5) Send the confirmation email
         email_html = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -464,7 +456,7 @@ def success():
         <p>Thank you for your purchase, {customer}!</p>
         <h3>Invoice ID: {invoice_id}</h3>
         <ul style="margin:12px 0;padding-left:20px;">
-          {html_items}
+          {html_items or '<li>No details available</li>'}
         </ul>
         <p><strong>Total Paid:</strong> {total_dollars}</p>
         <p style="text-align:center;margin:32px 0;">
@@ -490,7 +482,7 @@ def success():
 """
         send_email(customer, 'Payment Confirmed', email_html)
 
-        # 6) Render your success page
+        # 6) Render your pretty success page
         return render_template(
             'success.html',
             email=customer,
