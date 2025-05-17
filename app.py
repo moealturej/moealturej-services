@@ -410,37 +410,32 @@ def create_checkout_session():
 
 @app.route('/success')
 def success():
-    raw_id = request.args.get('session_id', '')
+    raw_id    = request.args.get('session_id', '')
     session_id = raw_id.strip('{}')
-    app.logger.info(f">>> session_id after strip = {session_id!r}")
     if not session_id:
-        return render_template('404.html', message='No session ID provided.'), 400
+        return render_template('404.html', message='No session ID'), 400
 
-    try:
-        # Grab the session, expand line_items
-        sess = stripe.checkout.Session.retrieve(
-            session_id,
-            expand=['line_items']
-        )
+    sess = stripe.checkout.Session.retrieve(
+        session_id,
+        expand=[
+          'line_items',
+          'line_items.data.price.product'     # << expand the product object
+        ]
+    )
 
-        # 1) Customer + invoice
-        customer = sess.get('customer_email') or sess.get('customer_details', {}).get('email')
-        invoice   = sess.metadata.get('invoice_id', 'N/A')
+    customer      = sess.customer_email or sess.customer_details.email
+    invoice       = sess.metadata.get('invoice_id', 'N/A')
+    total_dollars = f"${(sess.amount_total or 0)/100:.2f}"
 
-        # 2) Total paid (in cents → dollars)
-        total_cents  = sess.amount_total or 0
-        total_dollars = f"${total_cents / 100:.2f}"
-
-        # 3) Build an HTML list of items directly from Stripe
-        html_items = ""
-        product_summary = []
-        for li in sess['line_items']['data']:
-            name     = li['price']['product_data']['name']
-            qty      = li['quantity']
-            subtotal = li['amount_subtotal']  # in cents
-
-            html_items += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
-            product_summary.append(f"{name} × {qty}")
+    # Build the list from the expanded product
+    html_items = ""
+    product_summary = []
+    for li in sess['line_items']['data']:
+        name     = li.price.product.name
+        qty      = li.quantity
+        subtotal = li.amount_subtotal
+        html_items += f"<li>{name} × {qty} – ${subtotal/100:.2f}</li>"
+        product_summary.append(f"{name} × {qty}")
 
         product_str = ', '.join(product_summary)
 
