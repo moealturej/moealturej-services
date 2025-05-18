@@ -356,7 +356,6 @@ def create_checkout_session():
             metadata={
                 'invoice_id': invoice_id,
                 'cart_items': json.dumps(metadata_items),
-                'html_items': html_items,
                 'ip_address': request.remote_addr,
                 'timestamp': datetime.now(timezone.utc).isoformat(),
             }
