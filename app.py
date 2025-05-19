@@ -423,7 +423,7 @@ def success():
         invoice_id    = sess.metadata.get('invoice_id', 'N/A')
         total_dollars = f"${(sess.amount_total or 0) / 100:.2f}"
 
-       # 4) Build HTML list & summary from the cart_items metadata
+        # 4) Build HTML list & summary from the cart_items metadata
         raw_cart = sess.metadata.get('cart_items', '[]')
         entries  = json.loads(raw_cart)   # e.g. ["slug1:basic:2", "slug2:pro:1"]
 
@@ -442,8 +442,11 @@ def success():
             product_summary.append(f"{title} – {plan.title()} × {qty}")
 
         product_str = ', '.join(product_summary)
-        # 5) Send the confirmation email
-        email_html = f"""
+
+        # 5) Send the confirmation email ONLY ONCE per session_id
+        sent_flag_key = f"email_sent_for_{session_id}"
+        if not session.get(sent_flag_key):
+            email_html = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Payment Confirmed</title></head>
@@ -479,7 +482,10 @@ def success():
 </body>
 </html>
 """
-        send_email(customer, 'Payment Confirmed', email_html)
+            send_email(customer, 'Payment Confirmed', email_html)
+            session[sent_flag_key] = True
+            session.modified = True
+        # If session[sent_flag_key] is already True, skip sending again
 
         # 6) Render your pretty success page
         return render_template(
