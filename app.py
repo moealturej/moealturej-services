@@ -363,7 +363,7 @@ def create_checkout_session():
 
         # Send "Order Created" email
         total_str = f"${total_amount/100:.2f}"
-        items_html = ''.join([f"<li>{item['title']} – {item['plan'].title()} × {item.get('quantity',1)} – ${int(item['price']*item.get('quantity',1)):.2f}</li>" for item in cart])
+        html_items += f"<li>{title} – {plan.title()} × {qty}</li>"
         pay_link = session_obj.url
 
         html = f"""
