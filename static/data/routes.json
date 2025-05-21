@@ -8,6 +8,10 @@
         "template": "/store/index.html"
     },
     {
+        "url": "/showcase",
+        "template": "/showcase/index.html"
+    },
+    {
         "url": "/privacy-policy",
         "template": "/privacy-policy/index.html"
     },
