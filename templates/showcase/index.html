@@ -1,0 +1,389 @@
+{# product.html #}
+{% extends "base.html" %}
+
+{% block title %}
+  moealturej Solutions
+{% endblock %}
+
+{% block extra_head %}
+  <style>
+    :root {
+      --primary-color: #b800ff;
+      --background-color: #0a0a0a;
+      --card-bg: #111;
+      --text-primary: #e0e0e0;
+      --text-secondary: #ccc;
+      --transition-time: 0.3s;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--background-color);
+      color: var(--text-primary);
+      font-family: 'Roboto', sans-serif;
+      overflow-x: hidden;
+    }
+
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    header {
+      text-align: center;
+      padding: 6rem 1rem 3rem;
+    }
+
+    header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: var(--primary-color);
+      text-shadow: 0 0 12px var(--primary-color);
+    }
+
+    header p {
+      max-width: 700px;
+      margin: 1rem auto 0;
+      color: var(--text-secondary);
+    }
+
+    .info-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 0 12px rgba(184, 0, 255, 0.3);
+      transition: transform var(--transition-time), box-shadow var(--transition-time);
+    }
+
+    .info-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 0 20px rgba(184, 0, 255, 0.5);
+    }
+
+    .info-card h3 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary-color);
+      margin-bottom: 0.75rem;
+    }
+
+    .info-card h3 i {
+      margin-right: 0.5rem;
+    }
+
+    .controls {
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+
+    .controls input {
+      max-width: 500px;
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid #333;
+      background: var(--card-bg);
+      border-radius: 8px;
+      font-size: 1rem;
+      color: var(--text-primary);
+      transition: border-color var(--transition-time), box-shadow var(--transition-time);
+    }
+
+    .controls input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 10px var(--primary-color);
+      outline: none;
+    }
+
+    .album-title {
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem;
+      color: var(--primary-color);
+      margin: 2rem 0 1rem;
+    }
+
+    .album-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      padding: 0 2rem 3rem;
+      max-width: 1400px;
+      margin: auto;
+    }
+
+    .card {
+      position: relative;
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      cursor: pointer;
+      transition: transform var(--transition-time), box-shadow var(--transition-time);
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 0 16px rgba(184, 0, 255, 0.4);
+    }
+
+    .card-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 0.3rem 0.6rem;
+      font-size: 0.85rem;
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      border-radius: 4px;
+    }
+
+    .lightbox {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--transition-time), visibility var(--transition-time);
+      z-index: 1000;
+    }
+
+    .lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      max-width: 90%;
+      max-height: 90%;
+      position: relative;
+    }
+
+    .lightbox-media {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: 8px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      font-size: 2.5rem;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div id="particles-js"></div>
+
+  <header>
+    <h1>moealturej Solutions Showcase</h1>
+    <p>Explore our curated portfolio of visuals and demos. Hover to preview, click to view full-size.</p>
+  </header>
+
+  <section class="info-section">
+    <article class="info-card">
+      <h3><i class="fas fa-crosshairs"></i> About moealturej</h3>
+      <p>www.moealturej.com is your go-to source for advanced game cheats that blend power, stealth, and design. We focus on undetected, smooth-performing tools built for the competitive edge.</p>
+    </article>
+    <article class="info-card">
+      <h3><i class="fas fa-code"></i> What We Offer</h3>
+      <p>We deliver advanced aimbots & ESPs. Real-time updates are standard for secure use.</p>
+    </article>
+    <article class="info-card">
+      <h3><i class="fas fa-headset"></i> Support & Contact</h3>
+      <p>Need help or want to request a feature? <a href="/contact">Contact us</a>. Fast, friendly support — always updated, always private.</p>
+    </article>
+  </section>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Search items..." />
+  </div>
+
+  <main id="showcaseContainer"></main>
+
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-content">
+    <span class="lightbox-close" id="lightboxClose">&times;</span>
+  </div>
+</div>
+
+  <footer>
+    <p>&copy; 2025 moealturej Solutions | All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+<script>
+  const items = [
+    { album: 'BO6 Ghost External Chair', type: 'image', src: 'https://i.postimg.cc/dVhXmXcc/aimbot-section-Ghsot.jpg', title: 'Aimbot' },
+    { album: 'BO6 Ghost External Chair', type: 'image', src: 'https://i.postimg.cc/43C8vx1p/visuals-section-Ghost.jpg', title: 'Visuals' },
+    { album: 'BO6 Ghost External Chair', type: 'image', src: 'https://i.postimg.cc/0jHnzkQM/misc-section-Ghost.jpg', title: 'Misc' },
+    { album: 'BO6 Ghost External Chair', type: 'image', src: 'https://i.postimg.cc/qvKw7ddq/config-section-Ghost.jpg', title: 'Configs' },
+    { album: 'BO6 Ghost External Chair', type: 'image', src: 'https://i.postimg.cc/ZRwFQb67/colors-section-Ghsot.jpg', title: 'Colors' }
+  ];
+
+  const container = document.getElementById('showcaseContainer');
+  const searchInput = document.getElementById('searchInput');
+  const lightbox = document.getElementById('lightbox');
+  const lightboxMedia = document.getElementById('lightboxMedia');
+  const lightboxClose = document.getElementById('lightboxClose');
+
+  const lightboxContent = document.querySelector('.lightbox-content');
+
+  const groupByAlbum = items =>
+    items.reduce((acc, item) => {
+      (acc[item.album] = acc[item.album] || []).push(item);
+      return acc;
+    }, {});
+
+  function renderGallery(filteredItems) {
+    container.innerHTML = '';
+    const grouped = groupByAlbum(filteredItems);
+
+    for (const [album, items] of Object.entries(grouped)) {
+      const section = document.createElement('section');
+      section.innerHTML = `
+        <h2 class="album-title">${album}</h2>
+        <div class="album-grid">
+          ${items.map(item => `
+            <article class="card" data-type="${item.type}" data-src="${item.src}">
+              <img class="card-media" src="${item.type === 'video' ? 'https://img.youtube.com/vi/' + getYouTubeID(item.src) + '/0.jpg' : item.src}" alt="${item.title}">
+              <div class="label">${item.title}</div>
+            </article>
+          `).join('')}
+        </div>
+      `;
+      container.appendChild(section);
+    }
+
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', () => {
+        const type = card.dataset.type;
+        const src = card.dataset.src;
+
+        // Clear previous content
+        lightboxContent.querySelectorAll('img, iframe').forEach(el => el.remove());
+
+        if (type === 'video') {
+          const iframe = document.createElement('iframe');
+          iframe.className = 'lightbox-media';
+          iframe.src = 'https://www.youtube.com/embed/' + getYouTubeID(src) + '?autoplay=1';
+          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+          iframe.allowFullscreen = true;
+          lightboxContent.appendChild(iframe);
+        } else {
+          const img = document.createElement('img');
+          img.className = 'lightbox-media';
+          img.src = src;
+          lightboxContent.appendChild(img);
+        }
+
+        lightbox.classList.add('active');
+      });
+    });
+  }
+
+  function getYouTubeID(url) {
+    const match = url.match(/(?:youtu\.be\/|v=)([^&?/]+)/);
+    return match ? match[1] : '';
+  }
+
+  searchInput.addEventListener('input', () => {
+    const search = searchInput.value.toLowerCase();
+    const filtered = items.filter(item =>
+      item.title.toLowerCase().includes(search) || item.album.toLowerCase().includes(search)
+    );
+    renderGallery(filtered);
+  });
+
+  lightboxClose.addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+  lightbox.addEventListener('click', e => {
+    if (e.target === lightbox) closeLightbox();
+  });
+
+  function closeLightbox() {
+    lightbox.classList.remove('active');
+    lightboxContent.querySelectorAll('img, iframe').forEach(el => el.remove());
+  }
+
+  particlesJS('particles-js', {
+    particles: {
+      number: { value: 70, density: { enable: true, value_area: 800 } },
+      color: { value: '#b800ff' },
+      shape: { type: 'circle' },
+      opacity: { value: 0.5, random: true },
+      size: { value: 3, random: true },
+      line_linked: {
+        enable: true,
+        distance: 100,
+        color: '#b800ff',
+        opacity: 0.4,
+        width: 1
+      },
+      move: {
+        enable: true,
+        speed: 3,
+        direction: 'none',
+        random: true,
+        straight: false,
+        out_mode: 'out'
+      }
+    },
+    interactivity: {
+      detect_on: 'canvas',
+      events: {
+        onhover: { enable: true, mode: 'repulse' },
+        onclick: { enable: true, mode: 'push' },
+        resize: true
+      }
+    },
+    retina_detect: true
+  });
+
+  renderGallery(items);
+</script>
+{% endblock %}
