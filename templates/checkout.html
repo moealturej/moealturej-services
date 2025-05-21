@@ -1,729 +1,598 @@
-import os
-import json
-import uuid
-import logging
-import threading
-import time
-from urllib.parse import urlencode
-from datetime import datetime, timezone
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Secure Checkout</title>
+  <link
+    rel="icon"
+    href="https://i.postimg.cc/63hbBb6B/New-logo.jpg"
+    type="image/x-icon"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Roboto:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
 
-import stripe
-import requests
-from flask import (
-    Flask, request, jsonify, render_template,
-    abort, session, redirect, flash, url_for
-)
-from dotenv import load_dotenv
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import smtplib
-
-# -----------------------------------------------------------------------------
-# Configuration & Initialization
-# -----------------------------------------------------------------------------
-load_dotenv()
-
-app = Flask(__name__, template_folder="templates", static_folder="static")
-app.secret_key = os.getenv('SECRET_KEY', '')
-
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
-WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SIGNING_SECRET', '')
-STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', '')
-DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL', '')
-
-logging.basicConfig(level=logging.INFO)
-
-# Paths to JSON data
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PRODUCTS_PATH = os.path.join(BASE_DIR, 'products.json')
-ROUTES_PATH = os.path.join(BASE_DIR, 'static', 'data', 'routes.json')
-
-# -----------------------------------------------------------------------------
-# In-Memory Orders Store (for demo purposes)
-# -----------------------------------------------------------------------------
-# Structure: 
-# orders = {
-#    "invoice_id_abc": {
-#         "email": "...",
-#         "cart": [...],
-#         "total": 123.45,
-#         "method": "Stripe" or "PayPal",
-#         "status": "pending" or "paid",
-#         "created_at": datetime,
-#         "paid_at": datetime or None
-#     },
-# }
-orders = {}
-
-# -----------------------------------------------------------------------------
-# Data Loading
-# -----------------------------------------------------------------------------
-def load_json(path):
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-app.products = load_json(PRODUCTS_PATH)
-
-def find_product(slug):
-    return app.products.get(slug)
-
-# -----------------------------------------------------------------------------
-# Utilities
-# -----------------------------------------------------------------------------
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template("404.html"), 404
-
-def send_email(to_email: str, subject: str, body_html: str):
-    """
-    Sends an HTML email via Gmail SMTP.
-    Expects MAIL_USERNAME and MAIL_PASSWORD in environment.
-    """
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['From'] = os.getenv('MAIL_USERNAME', '')
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.set_charset('utf-8')
-
-        # Plain-text fallback
-        msg.attach(MIMEText('This email requires an HTML-capable client.', 'plain', 'utf-8'))
-        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
-
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(os.getenv('MAIL_USERNAME', ''), os.getenv('MAIL_PASSWORD', ''))
-            server.sendmail(msg['From'], msg['To'], msg.as_string().encode('utf-8'))
-
-        logging.info(f'📧 Email sent to {to_email} ─ {subject}')
-    except Exception as e:
-        logging.error(f'❌ Email error: {e}')
-
-def send_notification_to_webhook(session_data):
-    """
-    Sends a Discord webhook notification for new Stripe payments.
-    """
-    if hasattr(session_data, 'to_dict_recursive'):
-        session_info = session_data.to_dict_recursive()
-    else:
-        session_info = dict(session_data)
-
-    meta = session_info.get('metadata', {})
-    amount_paid = session_info.get('amount_total', 0) / 100
-    customer_email = session_info.get('customer_email', 'Unknown')
-
-    discord_payload = {
-        'content': 'New Sale Notification',
-        'username': 'Store Bot',
-        'embeds': [{
-            'fields': [
-                {'name': 'Invoice ID', 'value': meta.get('invoice_id', 'N/A'), 'inline': False},
-                {'name': 'Total',      'value': f"${amount_paid:.2f}", 'inline': False},
-                {'name': 'Customer',   'value': customer_email, 'inline': False},
-                {'name': 'Items',      'value': ', '.join(meta.get('product_summary', [])) or 'N/A', 'inline': False},
-            ],
-            'footer': {
-                'text': f"{datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}"
-            }
-        }]
+  <!-- =====================
+       INLINED CSS (UNCHANGED, plus a little tweak for .btn-icons)
+       ===================== -->
+  <style>
+    :root {
+      --bg-gradient-1: #12002b;
+      --bg-gradient-2: #000a1a;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --accent: #bb00ff;
+      --accent-hover: #e600ff;
+      --text-primary: #f0f0f0;
+      --text-secondary: #bbb;
+      --error-red: #ff4f4f;
+      --transition: 0.25s ease-out;
+      --keyframe-time: 0.4s;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(
+        135deg,
+        var(--bg-gradient-1),
+        var(--bg-gradient-2)
+      );
+      font-family: "Roboto", sans-serif;
+      color: var(--text-primary);
+      padding: 1rem;
+      overflow: hidden;
+    }
+    #particles-js {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
     }
 
-    try:
-        res = requests.post(DISCORD_WEBHOOK_URL, json=discord_payload)
-        if res.status_code == 429:
-            retry_after = int(res.headers.get('Retry-After', 1))
-            logging.warning(f"⌛ Discord rate limit, retrying in {retry_after}s…")
-            time.sleep(retry_after)
-            res = requests.post(DISCORD_WEBHOOK_URL, json=discord_payload)
-        res.raise_for_status()
-        logging.info('✅ Discord webhook sent.')
-    except Exception as e:
-        logging.error(f'❌ Discord webhook error: {e}')
+    .checkout-card {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      animation: cardFadeIn var(--keyframe-time) ease-out both;
+      position: relative;
+    }
 
-def handle_successful_payment(session_data):
-    """
-    Fires off Discord webhook in a background thread to avoid blocking.
-    """
-    threading.Thread(
-        target=send_notification_to_webhook,
-        args=(session_data,),
-        daemon=True
-    ).start()
+    @keyframes cardFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
 
-# -----------------------------------------------------------------------------
-# Dynamic Routes Loader (optional)
-# -----------------------------------------------------------------------------
-def load_routes():
-    if not os.path.exists(ROUTES_PATH):
-        return []
-    return load_json(ROUTES_PATH)
+    .bg-shape {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent), transparent 70%);
+      filter: blur(60px);
+      opacity: 0.7;
+      animation: fadeIn var(--keyframe-time) ease-out both;
+    }
+    .shape1 {
+      top: -50px;
+      left: -50px;
+      animation-delay: 0.2s;
+    }
+    .shape2 {
+      bottom: -50px;
+      right: -50px;
+      animation-delay: 0.4s;
+    }
 
-for route in load_routes():
-    tpl = route.get('template')
-    url = route.get('url')
-    if tpl and url:
-        app.add_url_rule(url, endpoint=url, view_func=lambda tpl=tpl: render_template(tpl))
+    h1 {
+      font-family: "Orbitron", sans-serif;
+      font-size: 2.5rem;
+      text-align: center;
+      background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 0.2rem;
+      animation: slideIn var(--keyframe-time) ease-out both;
+      animation-delay: 0.3s;
+    }
 
-# -----------------------------------------------------------------------------
-# Store, Cart & Checkout
-# -----------------------------------------------------------------------------
-@app.route('/store/<slug>')
-def product_page(slug):
-    product = find_product(slug)
-    if not product:
-        abort(404)
-    return render_template('product.html', product=product)
+    .subtitle {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      animation: slideIn var(--keyframe-time) ease-out both;
+      animation-delay: 0.4s;
+    }
 
-@app.context_processor
-def inject_cart_count():
-    cart = session.get('cart', [])
-    count = sum(item.get('quantity', 1) for item in cart)
-    return dict(cart_count=count)
+    .order-summary {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      animation: slideIn var(--keyframe-time) ease-out both;
+      animation-delay: 0.5s;
+    }
 
-@app.route('/add-to-cart', methods=['POST'])
-def add_to_cart():
-    try:
-        title = request.form['title']
-        slug = request.form['slug']
-        price = float(request.form['price'])
-        plan = request.form['plan']
-        quantity = int(request.form.get('quantity', 1))
+    .order-summary h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
 
-        product = find_product(slug)
-        if not product:
-            return jsonify(success=False, error="Product not found"), 404
+    .order-summary ul {
+      list-style: none;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
 
-        item = {
-            'id': f"{slug}-{plan}",
-            'title': title,
-            'slug': slug,
-            'price': price,
-            'plan': plan,
-            'image_url': product['image_url'],
-            'subtitle': product['subtitle'],
-            'quantity': quantity
+    .order-summary li {
+      margin-bottom: 0.5rem;
+      animation: fadeIn var(--keyframe-time) ease-out both;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      animation: slideIn var(--keyframe-time) ease-out both;
+      animation-delay: 0.9s;
+    }
+
+    label[for="email"] {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+      font-size: 1rem;
+      outline: none;
+      transition: box-shadow var(--transition);
+      animation: slideIn var(--keyframe-time) ease-out both;
+      animation-delay: 1s;
+    }
+
+    input[type="email"]:focus {
+      box-shadow: 0 0 12px var(--accent-hover);
+    }
+
+    .agree-wrapper {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+      position: relative;
+      animation: slideIn var(--keyframe-time) ease-out both;
+      animation-delay: 1.1s;
+    }
+
+    .agree-wrapper input[type="checkbox"] {
+      opacity: 0;
+      position: absolute;
+      width: 0;
+      height: 0;
+    }
+
+    .agree-wrapper label {
+      padding-left: 28px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      user-select: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .agree-wrapper label::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--accent);
+      border-radius: 4px;
+    }
+
+    .agree-wrapper input[type="checkbox"]:checked + label::before {
+      background: var(--accent);
+    }
+
+    .agree-wrapper label i {
+      position: absolute;
+      left: 3px;
+      font-size: 12px;
+      color: #fff;
+      display: none;
+    }
+
+    .agree-wrapper input[type="checkbox"]:checked + label i {
+      display: block;
+    }
+
+    .payment-methods {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      animation: slideIn var(--keyframe-time) ease-out both;
+      animation-delay: 1.2s;
+    }
+
+    .pay-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;       /* stack text over icons */
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      border: none;
+      border-radius: 8px;
+      font-family: "Orbitron", sans-serif;
+      font-size: 1rem;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      gap: 0.5rem; /* space between text and icons */
+    }
+
+    .btn-icons {              /* new container for the icon row */
+      display: flex;
+      gap: 0.5rem;
+      font-size: 1.25rem;
+    }
+
+    .pay-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    .stripe-btn {
+      background: #6772e5;
+    }
+    .stripe-btn:hover {
+      background: #5469d4;
+    }
+
+    .paypal-btn {
+      background: #003087;
+    }
+    .paypal-btn:hover {
+      background: #002369;
+    }
+
+    .pay-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .loading,
+    .error-message {
+      text-align: center;
+      font-size: 0.95rem;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .loading {
+      color: var(--accent);
+    }
+    .error-message {
+      color: var(--error-red);
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 1rem;
+      animation: fadeIn var(--keyframe-time) ease-out both;
+      animation-delay: 1.3s;
+    }
+
+    .trust-badge i {
+      color: var(--accent);
+    }
+
+    @media (max-width: 640px) {
+      .checkout-card {
+        padding: 2rem;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .order-summary h2 {
+        font-size: 1.3rem;
+      }
+      .payment-methods {
+        flex-direction: column;
+      }
+      .pay-btn {
+        width: 100%;
+      }
+      .btn-icons {
+        font-size: 1.5rem; /* slightly larger on mobile if desired */
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="particles-js"></div>
+  <div class="checkout-card">
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <h1>Secure Checkout</h1>
+    <p class="subtitle">Complete your purchase safely</p>
+
+    <!-- ================================
+         ORDER SUMMARY
+         ================================ -->
+    <div class="order-summary">
+      <h2>Order Summary</h2>
+      <ul>
+        {% for item in cart_items %}
+          <li>
+            <strong>{{ item.title }}</strong>
+            {% if item.plan %} – <span>{{ item.plan }}</span>{% endif %}
+            (×{{ item.quantity }}) – $
+            {{ "%.2f"|format(item.price * item.quantity) }} USD
+          </li>
+        {% endfor %}
+        <li>
+          <strong>Order Total: ${{ "%.2f"|format(total) }} USD</strong>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ================================
+         EMAIL & AGREEMENT
+         ================================ -->
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <input
+        type="email"
+        id="email"
+        placeholder="you@example.com"
+        required
+      />
+    </div>
+
+    <div class="agree-wrapper">
+      <input type="checkbox" id="agree-terms" />
+      <label for="agree-terms">
+        <i class="fa-solid fa-check"></i>
+        <span>I agree to the</span>
+        <a href="/terms" target="_blank">Terms & Conditions</a>
+      </label>
+    </div>
+
+    <!-- ================================
+         PAYMENT BUTTONS (with icons underneath text)
+         ================================ -->
+    <div class="payment-methods">
+      {% if stripe_public_key %}
+        <button class="pay-btn stripe-btn" id="stripe-button" disabled>
+          <!-- Text on top -->
+          Pay with Stripe
+          <!-- Icons below -->
+          <div class="btn-icons">
+            <i class="fa-solid fa-credit-card"></i>
+            <i class="fa-brands fa-google-pay"></i>
+            <i class="fa-brands fa-apple-pay"></i>
+          </div>
+        </button>
+      {% endif %}
+      <button class="pay-btn paypal-btn" id="paypal-button" disabled>
+        <!-- Text on top -->
+        Pay with PayPal
+        <!-- Icons below -->
+        <div class="btn-icons">
+          <i class="fa-brands fa-paypal"></i>
+          <i class="fa-solid fa-credit-card"></i>
+        </div>
+      </button>
+    </div>
+
+    <div class="loading" id="loading">
+      <i class="fa-solid fa-spinner fa-spin"></i> Processing...
+    </div>
+    <div class="error-message" id="error-message"></div>
+
+    <div class="trust-badge">
+      <i class="fa-solid fa-lock"></i> Secure payment powered by Stripe &amp; PayPal
+    </div>
+  </div>
+
+  <!-- ================================
+       HIDDEN PAYPAL FORM
+       ================================ -->
+  <form id="paypal-form"
+        method="POST"
+        action="{{ url_for('create_paypal_payment') }}"
+        style="display: none;">
+    <input type="hidden" name="email" id="paypal-email-input" />
+  </form>
+
+  <!-- ================================
+       SCRIPTS (AFTER DOM CONTENT)
+       ================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    // Initialize Particles.js background
+    particlesJS("particles-js", {
+      particles: {
+        number: { value: 60, density: { enable: true, value_area: 800 } },
+        color: { value: "#ffffff" },
+        shape: { type: "circle" },
+        opacity: { value: 0.2, random: true },
+        size: { value: 2, random: true },
+        move: { enable: true, speed: 1.2 },
+      },
+      interactivity: {
+        events: {
+          onhover: { enable: true, mode: "grab" },
+          onclick: { enable: true, mode: "push" },
+        },
+        modes: {
+          grab: { distance: 140, line_linked: { opacity: 0.3 } },
+          push: { particles_nb: 4 },
+        },
+      },
+      retina_detect: true,
+    });
+
+    // Grab elements
+    const emailInput = document.getElementById("email");
+    const agreeBox = document.getElementById("agree-terms");
+    const paypalBtn = document.getElementById("paypal-button");
+    const loadingEl = document.getElementById("loading");
+    const errorEl = document.getElementById("error-message");
+    const paypalForm = document.getElementById("paypal-form");
+    const paypalEmailInput = document.getElementById("paypal-email-input");
+
+    {% if stripe_public_key %}
+    // If Stripe is enabled, grab that button too
+    const stripeBtn = document.getElementById("stripe-button");
+    // Initialize Stripe.js with the publishable key from Flask
+    const stripe = Stripe("{{ stripe_public_key }}");
+    {% endif %}
+
+    // Validate email & checkbox
+    function validateFields() {
+      const email = emailInput.value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) return false;
+      if (!agreeBox.checked) return false;
+      return true;
+    }
+
+    // Enable/disable buttons
+    function toggleButtons() {
+      const valid = validateFields();
+      {% if stripe_public_key %}
+      stripeBtn.disabled = !valid;
+      {% endif %}
+      paypalBtn.disabled = !valid;
+    }
+
+    emailInput.addEventListener("input", toggleButtons);
+    agreeBox.addEventListener("change", toggleButtons);
+
+    {% if stripe_public_key %}
+    // Stripe payment click handler
+    stripeBtn.addEventListener("click", async () => {
+      console.log("Stripe button clicked");
+      errorEl.style.display = "none";
+
+      if (!validateFields()) {
+        errorEl.textContent = "⚠️ Please enter a valid email and agree to terms.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      loadingEl.style.display = "block";
+      stripeBtn.disabled = true;
+      paypalBtn.disabled = true;
+
+      try {
+        console.log("Calling /create-checkout-session …");
+        const res = await fetch("/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailInput.value.trim() })
+        });
+        const data = await res.json();
+        console.log("Stripe session response:", data);
+
+        if (!res.ok || !data.id) {
+          throw new Error(data.error || "Stripe session failed");
         }
 
-        cart = session.get('cart', [])
-        for existing in cart:
-            if existing['id'] == item['id']:
-                existing['quantity'] += quantity
-                break
-        else:
-            cart.append(item)
-
-        session['cart'] = cart
-        session.modified = True
-
-        total_qty = sum(i['quantity'] for i in cart)
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify(success=True, cart_count=total_qty)
-
-        flash('Item added to cart!', 'success')
-        return redirect(request.referrer or '/store')
-
-    except Exception as e:
-        logging.error(f"Error in add_to_cart: {e}")
-        return jsonify(success=False, error=str(e)), 400
-
-@app.route('/cart')
-def cart():
-    items = session.get('cart', [])
-    subtotal = sum(i['price'] * i['quantity'] for i in items)
-    TAX_RATE = 0.0
-    tax = round(subtotal * TAX_RATE, 2)
-    total = round(subtotal + tax, 2)
-
-    return render_template(
-        'cart.html',
-        cart_items=items,
-        cart_subtotal=subtotal,
-        cart_tax=tax,
-        cart_total=total
-    )
-
-@app.route('/update-quantity', methods=['POST'])
-def update_quantity():
-    try:
-        item_id = request.form['item_id']
-        quantity = max(int(request.form.get('quantity', 1)), 1)
-        cart = session.get('cart', [])
-        for it in cart:
-            if it['id'] == item_id:
-                it['quantity'] = quantity
-                break
-        session['cart'] = cart
-        session.modified = True
-        return redirect(url_for('cart'))
-    except Exception as e:
-        logging.error(e)
-        return "Bad Request", 400
-
-@app.route('/remove-from-cart', methods=['POST'])
-def remove_from_cart():
-    try:
-        item_id = request.form['item_id']
-        cart = [i for i in session.get('cart', []) if i['id'] != item_id]
-        session['cart'] = cart
-        session.modified = True
-        return redirect(url_for('cart'))
-    except Exception as e:
-        logging.error(e)
-        return "Bad Request", 400
-
-@app.route('/clear-cart')
-def clear_cart():
-    session.pop('cart', None)
-    session.pop('_flashes', None)
-    session.pop('order_id', None)
-    flash('Cart cleared.', 'info')
-    return redirect(request.referrer or url_for('cart'))
-
-@app.route('/checkout')
-def checkout():
-    cart = session.get('cart', [])
-    if not cart:
-        flash('Your cart is empty.', 'warning')
-        return redirect(url_for('cart'))
-
-    # Generate a one-off order_id if missing
-    if 'order_id' not in session:
-        session['order_id'] = str(uuid.uuid4())
-
-    total = sum(i['price'] * i['quantity'] for i in cart)
-    return render_template(
-        'checkout.html',
-        cart_items=cart,
-        total=total,
-        stripe_public_key=STRIPE_PUBLIC_KEY,
-        order_id=session['order_id']
-    )
-
-# -----------------------------------------------------------------------------
-# PayPal Checkout Session – Cart Upload (no shipping, reuse order_id)
-# -----------------------------------------------------------------------------
-@app.route("/create-paypal-payment", methods=["POST"])
-def create_paypal_payment():
-    try:
-        customer_email = request.form.get("email", "").strip()
-        if not customer_email:
-            flash("You must provide an email address.", "warning")
-            return redirect(url_for("checkout"))
-
-        cart = session.get("cart", [])
-        if not cart:
-            flash("Your cart is empty.", "warning")
-            return redirect(url_for("cart"))
-
-        total = sum(i["price"] * i["quantity"] for i in cart)
-        paypal_business = os.getenv("PAYPAL_EMAIL")
-        if not paypal_business:
-            logging.error("PAYPAL_EMAIL environment variable not set.")
-            flash("Payment configuration error.", "danger")
-            return redirect(url_for("checkout"))
-
-        # Reuse existing order_id or generate new
-        invoice_id = session.get("order_id") or str(uuid.uuid4())
-        session["order_id"] = invoice_id
-
-        # 1) Create order entry in memory (pending)
-        orders[invoice_id] = {
-            "email": customer_email,
-            "cart": cart.copy(),
-            "total": total,
-            "method": "PayPal",
-            "status": "pending",
-            "created_at": datetime.now(timezone.utc),
-            "paid_at": None
-        }
-
-        # Send “Order Created” email (pending payment via PayPal)
-        html_items = "".join(
-            f"<li>{item['title']} – {item['plan'].title()} × {item['quantity']} – "
-            f"${item['price'] * item['quantity']:.2f}</li>"
-            for item in cart
-        )
-        send_email(
-            customer_email,
-            "Order Created – Pending PayPal Payment",
-            f"""
-<p>Thank you for your order. Your order is pending PayPal payment.</p>
-<p><strong>Payment Method:</strong> PayPal</p>
-<p><strong>Invoice ID:</strong> {invoice_id}</p>
-<ul>{html_items}</ul>
-<p><strong>Total:</strong> ${total:.2f}</p>
-"""
-        )
-
-        # Build PayPal “cart upload” parameters
-        paypal_params = {
-            "cmd":           "_cart",
-            "upload":        "1",
-            "business":      paypal_business,
-            "invoice":       invoice_id,
-            "currency_code": "USD",
-            "no_shipping":   "1",
-            "return":        url_for("paypal_success", _external=True),
-            "cancel_return": url_for("paypal_cancel", _external=True),
-            "notify_url":    url_for("paypal_ipn", _external=True),
-            "custom":        customer_email,
-        }
-        for idx, item in enumerate(cart, start=1):
-            title = item.get("title", "Unknown Product")
-            price = float(item.get("price", 0.0))
-            qty = int(item.get("quantity", 1))
-            paypal_params[f"item_name_{idx}"] = f"{title} – {item['plan'].title()}"
-            paypal_params[f"amount_{idx}"] = f"{price:.2f}"
-            paypal_params[f"quantity_{idx}"] = str(qty)
-
-        # Save pending payment data for confirmation
-        session["pending_payment"] = {
-            "invoice_id":     invoice_id,
-            "total":          total,
-            "customer_email": customer_email,
-            "cart":           cart.copy()
-        }
-        session.modified = True
-
-        return redirect("https://www.paypal.com/cgi-bin/webscr?" + urlencode(paypal_params))
-
-    except Exception as e:
-        logging.error(f"PayPal redirect error: {e}", exc_info=True)
-        flash("Payment processing error.", "danger")
-        return redirect(url_for("checkout"))
-
-@app.route("/paypal-success")
-def paypal_success():
-    """
-    PayPal redirects here on successful payment.
-    We clear session data and send a confirmation email.
-    """
-    pending = session.pop("pending_payment", None)
-    session.pop("cart", None)
-    session.pop("order_id", None)
-
-    if not pending:
-        flash("Invalid session or no pending payment found.", "error")
-        return redirect(url_for("cart"))
-
-    invoice_id = pending["invoice_id"]
-    # Mark as paid if still pending
-    order = orders.get(invoice_id)
-    if order and order["status"] == "pending":
-        order["status"] = "paid"
-        order["paid_at"] = datetime.now(timezone.utc)
-
-    send_email(
-        pending["customer_email"],
-        "PayPal Payment Confirmed",
-        f"""
-<p>Thank you for your PayPal payment of ${pending['total']:.2f}.</p>
-<p><strong>Payment Method:</strong> PayPal</p>
-<p><strong>Invoice ID:</strong> {invoice_id}</p>
-"""
-    )
-
-    return render_template(
-        "success.html",
-        email=pending["customer_email"],
-        invoice_id=invoice_id,
-        total=f"${pending['total']:.2f}"
-    )
-
-@app.route("/paypal-cancel")
-def paypal_cancel():
-    """
-    If the user cancels on PayPal’s side, they land here.
-    We drop pending_payment and order_id so they can start fresh.
-    """
-    session.pop("pending_payment", None)
-    session.pop("order_id", None)
-    flash("PayPal payment was canceled.", "info")
-    return render_template("cancel.html")
-
-@app.route("/ipn", methods=["POST"])
-def paypal_ipn():
-    """
-    PayPal IPN listener: validates incoming notification and marks orders as paid.
-    """
-    try:
-        ipn_data = request.form.to_dict()
-        verify_payload = {"cmd": "_notify-validate", **ipn_data}
-
-        response = requests.post(
-            "https://www.paypal.com/cgi-bin/webscr",
-            data=verify_payload,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            timeout=10
-        )
-        response.raise_for_status()
-
-        if response.text == "VERIFIED":
-            payment_status = ipn_data.get("payment_status")
-            invoice = ipn_data.get("invoice")
-            payer_email = ipn_data.get("payer_email")
-            mc_gross = ipn_data.get("mc_gross")
-            mc_currency = ipn_data.get("mc_currency")
-
-            if payment_status == "Completed" and invoice in orders:
-                order = orders[invoice]
-                if order["status"] != "paid":
-                    order["status"] = "paid"
-                    order["paid_at"] = datetime.now(timezone.utc)
-                    logging.info(f"IPN VERIFIED: invoice={invoice}, txn={ipn_data.get('txn_id')}, amount={mc_gross} {mc_currency}, payer={payer_email}")
-
-                    # Send “Payment Confirmed” email (in case user returns via IPN rather than redirect)
-                    send_email(
-                        order["email"],
-                        "PayPal Payment Confirmed",
-                        f"""
-<p>Your PayPal payment of ${order['total']:.2f} has been confirmed via IPN.</p>
-<p><strong>Payment Method:</strong> PayPal</p>
-<p><strong>Invoice ID:</strong> {invoice}</p>
-"""
-                    )
-            else:
-                logging.warning(f"IPN not Completed or invoice not found: status={payment_status}, invoice={invoice}")
-        else:
-            logging.error("IPN Verification FAILED.")
-
-    except Exception as e:
-        logging.error(f"Exception in IPN handler: {e}", exc_info=True)
-
-    return ("", 200)
-
-# -----------------------------------------------------------------------------
-# Stripe Checkout Session (uses same order_id)
-# -----------------------------------------------------------------------------
-@app.route('/create-checkout-session', methods=['POST'])
-def create_checkout_session():
-    data = request.get_json(force=True)
-    customer_email = data.get('email', '').strip()
-    cart = session.get('cart', [])
-    order_id = session.get('order_id')
-
-    if not cart or not customer_email or not order_id:
-        return jsonify({'error': 'Missing cart, email, or order_id'}), 400
-
-    line_items = []
-    metadata_items = []
-    html_items = ""
-    total_amount_cents = 0
-    product_summary = []
-
-    for item in cart:
-        qty = item.get('quantity', 1)
-        raw_name = f"{item['title']} – {item['plan'].title()}"
-        name = raw_name[:127]
-        unit_price_cents = int(item['price'] * 100)
-        total_item_cents = unit_price_cents * qty
-        total_amount_cents += total_item_cents
-
-        line_items.append({
-            'price_data': {
-                'currency': 'usd',
-                'unit_amount': unit_price_cents,
-                'product_data': {'name': name},
-            },
-            'quantity': qty,
-        })
-
-        metadata_items.append(f"{item['slug']}:{item['plan']}:{qty}")
-        html_items += f"<li>{name} × {qty} – ${total_item_cents / 100:.2f}</li>"
-        product_summary.append(f"{name} × {qty}")
-
-    try:
-        # 1) Create Stripe Checkout Session
-        session_obj = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            customer_email=customer_email,
-            success_url=f"{request.host_url}stripe-success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{request.host_url}stripe-cancel",
-            metadata={
-                'invoice_id': order_id,
-                'cart_items': json.dumps(metadata_items),
-                'product_summary': json.dumps(product_summary),
-                'ip_address': request.remote_addr,
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }
-        )
-
-        # 2) Create order entry in memory (pending)
-        total_dollars = total_amount_cents / 100
-        orders[order_id] = {
-            "email": customer_email,
-            "cart": cart.copy(),
-            "total": total_dollars,
-            "method": "Stripe",
-            "status": "pending",
-            "created_at": datetime.now(timezone.utc),
-            "paid_at": None
-        }
-
-        # 3) Send “Order Created” email (pending payment via Stripe)
-        send_email(
-            customer_email,
-            "Order Created – Pending Stripe Payment",
-            f"""
-<p>Thank you for your order. Your transaction is pending payment via Stripe.</p>
-<p><strong>Payment Method:</strong> Stripe</p>
-<p><strong>Invoice ID:</strong> {order_id}</p>
-<ul>{html_items}</ul>
-<p><strong>Total:</strong> ${total_dollars:.2f}</p>
-<p><a href="{session_obj.url}">Click here to pay now</a></p>
-"""
-        )
-
-        # 4) Clear cart so they cannot resubmit same items
-        session.pop('cart', None)
-        return jsonify({'id': session_obj.id})
-
-    except Exception as e:
-        logging.exception("Stripe checkout error")
-        return jsonify(error=str(e)), 500
-
-@app.route('/stripe-success')
-def stripe_success():
-    """
-    Called by Stripe after payment is completed (via success_url).
-    We verify the session, send confirmation, and clear order_id.
-    """
-    raw_session_id = request.args.get('session_id', '').strip('{}')
-    if not raw_session_id:
-        return render_template('404.html', message='No session ID provided.'), 400
-
-    try:
-        sess = stripe.checkout.Session.retrieve(
-            raw_session_id,
-            expand=['line_items']
-        )
-
-        meta = sess.get('metadata', {})
-        customer_email = sess.get('customer_email') or sess.get('customer_details', {}).get('email')
-        invoice_id = meta.get('invoice_id', '')
-        raw_items = meta.get('cart_items', '[]')
-
-        try:
-            cart_items = json.loads(raw_items)
-        except Exception:
-            cart_items = []
-
-        html_items = ""
-        product_summary = []
-        total_cents = 0
-
-        for entry in cart_items:
-            try:
-                slug, plan, quantity = entry.split(":")
-                quantity = int(quantity)
-                name = f"{slug} – {plan.title()}"
-                unit_price_cents = 0
-
-                for li in sess['line_items']['data']:
-                    if li['price']['product_data']['name'] == name:
-                        unit_price_cents = li['amount_subtotal'] // li['quantity']
-                        break
-
-                subtotal_cents = unit_price_cents * quantity
-                total_cents += subtotal_cents
-                html_items += f"<li>{name} × {quantity} – ${subtotal_cents / 100:.2f}</li>"
-                product_summary.append(f"{name} × {quantity}")
-            except Exception:
-                continue
-
-        total_dollars = f"{total_cents / 100:.2f}"
-
-        # 1) Mark order as paid if still pending
-        order = orders.get(invoice_id)
-        if order and order["status"] == "pending":
-            order["status"] = "paid"
-            order["paid_at"] = datetime.now(timezone.utc)
-
-        # 2) Send “Payment Confirmed” email
-        send_email(
-            customer_email,
-            "Stripe Payment Confirmed",
-            f"""
-<p>Thank you for your payment. Your payment was successful.</p>
-<p><strong>Payment Method:</strong> Stripe</p>
-<p><strong>Invoice ID:</strong> {invoice_id}</p>
-<ul>{html_items}</ul>
-<p><strong>Total Paid:</strong> ${total_dollars}</p>
-"""
-        )
-
-        # 3) Send Discord notification in background
-        handle_successful_payment(sess)
-
-        # 4) Clear order_id so next checkout gets a fresh one
-        session.pop('order_id', None)
-
-        return render_template(
-            'success.html',
-            email=customer_email,
-            invoice_id=invoice_id,
-            product=", ".join(product_summary),
-            total=f"${total_dollars}"
-        )
-
-    except Exception as e:
-        logging.exception('Error in stripe_success')
-        return render_template('404.html', message='Error verifying payment.'), 500
-
-@app.route('/stripe-cancel')
-def stripe_cancel():
-    """
-    If the user cancels on Stripe’s side, they land here.
-    We clear order_id so a new one is generated next time.
-    """
-    session.pop('order_id', None)
-    flash('Stripe payment was canceled.', 'info')
-    return render_template('cancel.html')
-
-@app.route('/webhook', methods=['POST'])
-def stripe_webhook():
-    """
-    Stripe Webhook endpoint. Listens for checkout.session.completed events.
-    """
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature')
-
-    if not sig_header:
-        logging.warning("⚠️ Missing Stripe-Signature header")
-        return 'Missing signature', 400
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, WEBHOOK_SECRET
-        )
-        logging.info("✅ Stripe event verified successfully.")
-    except ValueError as e:
-        logging.warning(f"⚠️ Invalid payload: {e}")
-        return 'Invalid payload', 400
-    except stripe.error.SignatureVerificationError as e:
-        logging.warning(f"⚠️ Invalid signature: {e}")
-        return 'Invalid signature', 400
-
-    if event['type'] == 'checkout.session.completed':
-        session_obj = event['data']['object']
-        invoice_id = session_obj.get('metadata', {}).get('invoice_id')
-        # Mark as paid (in case IPN or redirect missed it)
-        order = orders.get(invoice_id)
-        if order and order["status"] == "pending":
-            order["status"] = "paid"
-            order["paid_at"] = datetime.now(timezone.utc)
-        logging.info("💳 Stripe checkout.session.completed received.")
-        handle_successful_payment(session_obj)
-
-    return 'OK', 200
-
-# -----------------------------------------------------------------------------
-# Run the Flask App
-# -----------------------------------------------------------------------------
-if __name__ == '__main__':
-    app.run(
-        host='0.0.0.0',
-        port=int(os.getenv('PORT', 10000)),
-        debug=False
-    )
+        const { error } = await stripe.redirectToCheckout({ sessionId: data.id });
+        if (error) throw new Error(error.message);
+      } catch (err) {
+        console.error(err);
+        loadingEl.style.display = "none";
+        stripeBtn.disabled = false;
+        paypalBtn.disabled = false;
+        errorEl.textContent = `❌ ${err.message}`;
+        errorEl.style.display = "block";
+      }
+    });
+    {% endif %}
+
+    // PayPal payment click handler
+    paypalBtn.addEventListener("click", () => {
+      console.log("PayPal button clicked");
+      errorEl.style.display = "none";
+
+      if (!validateFields()) {
+        errorEl.textContent = "⚠️ Please enter a valid email and agree to terms.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      loadingEl.style.display = "block";
+      {% if stripe_public_key %}
+      stripeBtn.disabled = true;
+      {% endif %}
+      paypalBtn.disabled = true;
+
+      paypalEmailInput.value = emailInput.value.trim();
+      paypalForm.submit();
+    });
+  </script>
+</body>
+</html>
