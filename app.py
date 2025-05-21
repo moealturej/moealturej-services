@@ -2,8 +2,9 @@ import os
 import json
 import uuid
 import logging
-import time
 import threading
+import time
+from urllib.parse import urlencode
 from datetime import datetime, timezone
 
 import stripe
@@ -23,27 +24,36 @@ import smtplib
 load_dotenv()
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
+app.secret_key = os.getenv('SECRET_KEY', '')
 
-# Secret & API Keys
-app.secret_key = os.getenv('SECRET_KEY')
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SIGNING_SECRET')  # <-- make sure this is your whsec_… value
-STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
-DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
+WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SIGNING_SECRET', '')
+STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', '')
+DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL', '')
 
-# Fail-fast if keys missing
-if not stripe.api_key:
-    raise RuntimeError("Missing STRIPE_SECRET_KEY environment variable")
-if not WEBHOOK_SECRET:
-    raise RuntimeError("Missing STRIPE_WEBHOOK_SIGNING_SECRET environment variable")
-
-# Logging
 logging.basicConfig(level=logging.INFO)
 
-# Paths
+# Paths to JSON data
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRODUCTS_PATH = os.path.join(BASE_DIR, 'products.json')
 ROUTES_PATH = os.path.join(BASE_DIR, 'static', 'data', 'routes.json')
+
+# -----------------------------------------------------------------------------
+# In-Memory Orders Store (for demo purposes)
+# -----------------------------------------------------------------------------
+# Structure: 
+# orders = {
+#    "invoice_id_abc": {
+#         "email": "...",
+#         "cart": [...],
+#         "total": 123.45,
+#         "method": "Stripe" or "PayPal",
+#         "status": "pending" or "paid",
+#         "created_at": datetime,
+#         "paid_at": datetime or None
+#     },
+# }
+orders = {}
 
 # -----------------------------------------------------------------------------
 # Data Loading
@@ -64,33 +74,37 @@ def find_product(slug):
 def page_not_found(e):
     return render_template("404.html"), 404
 
-def send_email(to_email, subject, body_html):
+def send_email(to_email: str, subject: str, body_html: str):
+    """
+    Sends an HTML email via Gmail SMTP.
+    Expects MAIL_USERNAME and MAIL_PASSWORD in environment.
+    """
     try:
         msg = MIMEMultipart('alternative')
-        msg['From'] = os.getenv('MAIL_USERNAME')
+        msg['From'] = os.getenv('MAIL_USERNAME', '')
         msg['To'] = to_email
         msg['Subject'] = subject
         msg.set_charset('utf-8')
 
         # Plain-text fallback
-        msg.attach(MIMEText('This email requires an HTML-capable client.', 'plain', _charset='utf-8'))
-        msg.attach(MIMEText(body_html, 'html', _charset='utf-8'))
+        msg.attach(MIMEText('This email requires an HTML-capable client.', 'plain', 'utf-8'))
+        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
+            server.login(os.getenv('MAIL_USERNAME', ''), os.getenv('MAIL_PASSWORD', ''))
             server.sendmail(msg['From'], msg['To'], msg.as_string().encode('utf-8'))
 
-        logging.info(f'📧 Email sent to {to_email}')
+        logging.info(f'📧 Email sent to {to_email} ─ {subject}')
     except Exception as e:
         logging.error(f'❌ Email error: {e}')
 
-
 def send_notification_to_webhook(session_data):
-    # 1) Convert StripeObject → plain dict without deprecation warnings
+    """
+    Sends a Discord webhook notification for new Stripe payments.
+    """
     if hasattr(session_data, 'to_dict_recursive'):
         session_info = session_data.to_dict_recursive()
     else:
-        # StripeObject subclasses dict, so this will also work
         session_info = dict(session_data)
 
     meta = session_info.get('metadata', {})
@@ -103,9 +117,9 @@ def send_notification_to_webhook(session_data):
         'embeds': [{
             'fields': [
                 {'name': 'Invoice ID', 'value': meta.get('invoice_id', 'N/A'), 'inline': False},
-                {'name': 'Total',      'value': f"${amount_paid:.2f}",    'inline': False},
-                {'name': 'Customer',   'value': customer_email,           'inline': False},
-                {'name': 'Item',       'value': f"{meta.get('product_id')} – {meta.get('plan').title()}", 'inline': False},
+                {'name': 'Total',      'value': f"${amount_paid:.2f}", 'inline': False},
+                {'name': 'Customer',   'value': customer_email, 'inline': False},
+                {'name': 'Items',      'value': ', '.join(meta.get('product_summary', [])) or 'N/A', 'inline': False},
             ],
             'footer': {
                 'text': f"{datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}"
@@ -115,27 +129,28 @@ def send_notification_to_webhook(session_data):
 
     try:
         res = requests.post(DISCORD_WEBHOOK_URL, json=discord_payload)
-
-        # 2) Handle rate‑limits (429) by waiting and retrying once
         if res.status_code == 429:
             retry_after = int(res.headers.get('Retry-After', 1))
             logging.warning(f"⌛ Discord rate limit, retrying in {retry_after}s…")
             time.sleep(retry_after)
             res = requests.post(DISCORD_WEBHOOK_URL, json=discord_payload)
-
         res.raise_for_status()
         logging.info('✅ Discord webhook sent.')
-    except requests.HTTPError as http_err:
-        logging.error(f'❌ Discord webhook HTTP error: {http_err} (status {res.status_code})')
     except Exception as e:
         logging.error(f'❌ Discord webhook error: {e}')
 
-
 def handle_successful_payment(session_data):
-    threading.Thread(target=send_notification_to_webhook, args=(session_data,)).start()
+    """
+    Fires off Discord webhook in a background thread to avoid blocking.
+    """
+    threading.Thread(
+        target=send_notification_to_webhook,
+        args=(session_data,),
+        daemon=True
+    ).start()
 
 # -----------------------------------------------------------------------------
-# Dynamic Routes
+# Dynamic Routes Loader (optional)
 # -----------------------------------------------------------------------------
 def load_routes():
     if not os.path.exists(ROUTES_PATH):
@@ -143,27 +158,26 @@ def load_routes():
     return load_json(ROUTES_PATH)
 
 for route in load_routes():
-    tpl, url = route.get('template'), route.get('url')
+    tpl = route.get('template')
+    url = route.get('url')
     if tpl and url:
         app.add_url_rule(url, endpoint=url, view_func=lambda tpl=tpl: render_template(tpl))
 
 # -----------------------------------------------------------------------------
-# Routes: Store, Cart & Checkout
+# Store, Cart & Checkout
 # -----------------------------------------------------------------------------
-
 @app.route('/store/<slug>')
 def product_page(slug):
-    p = app.products.get(slug)
-    if not p:
+    product = find_product(slug)
+    if not product:
         abort(404)
-    return render_template('product.html', product=p)
+    return render_template('product.html', product=product)
 
 @app.context_processor
 def inject_cart_count():
     cart = session.get('cart', [])
     count = sum(item.get('quantity', 1) for item in cart)
     return dict(cart_count=count)
-
 
 @app.route('/add-to-cart', methods=['POST'])
 def add_to_cart():
@@ -176,10 +190,7 @@ def add_to_cart():
 
         product = find_product(slug)
         if not product:
-            logging.error(f"Product not found for slug: {slug}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({"success": False, "error": "Product not found"}), 404
-            return "Product not found", 404
+            return jsonify(success=False, error="Product not found"), 404
 
         item = {
             'id': f"{slug}-{plan}",
@@ -193,9 +204,8 @@ def add_to_cart():
         }
 
         cart = session.get('cart', [])
-
         for existing in cart:
-            if existing.get('id') == item['id']:
+            if existing['id'] == item['id']:
                 existing['quantity'] += quantity
                 break
         else:
@@ -204,90 +214,69 @@ def add_to_cart():
         session['cart'] = cart
         session.modified = True
 
-        # Compute total quantity
-        total_quantity = sum(i.get('quantity', 1) for i in cart)
-
-        # AJAX request?
+        total_qty = sum(i['quantity'] for i in cart)
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({"success": True, "cart_count": total_quantity})
+            return jsonify(success=True, cart_count=total_qty)
 
         flash('Item added to cart!', 'success')
         return redirect(request.referrer or '/store')
 
     except Exception as e:
         logging.error(f"Error in add_to_cart: {e}")
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({"success": False, "error": str(e)}), 400
-        return "Bad Request", 400
+        return jsonify(success=False, error=str(e)), 400
 
-@app.route("/cart")
+@app.route('/cart')
 def cart():
-    cart_items = session.get("cart", [])
-
-    # 1) Calculate subtotal
-    cart_subtotal = sum(item['price'] * item['quantity'] for item in cart_items)
-
-    # 2) (Optional) Calculate tax
+    items = session.get('cart', [])
+    subtotal = sum(i['price'] * i['quantity'] for i in items)
     TAX_RATE = 0.0
-    cart_tax = round(cart_subtotal * TAX_RATE, 2)
+    tax = round(subtotal * TAX_RATE, 2)
+    total = round(subtotal + tax, 2)
 
-    # 3) Calculate total (subtotal + tax)
-    cart_total = round(cart_subtotal + cart_tax, 2)
-
-    # 4) Pass all three into the template
     return render_template(
-        "cart.html",
-        cart_items=cart_items,
-        cart_subtotal=cart_subtotal,
-        cart_tax=cart_tax,
-        cart_total=cart_total
+        'cart.html',
+        cart_items=items,
+        cart_subtotal=subtotal,
+        cart_tax=tax,
+        cart_total=total
     )
-
 
 @app.route('/update-quantity', methods=['POST'])
 def update_quantity():
     try:
-        item_id = request.form.get('item_id')
-        quantity = int(request.form.get('quantity', 1))
-
+        item_id = request.form['item_id']
+        quantity = max(int(request.form.get('quantity', 1)), 1)
         cart = session.get('cart', [])
-
-        for item in cart:
-            if str(item.get('id')) == str(item_id):
-                item['quantity'] = max(quantity, 1)
+        for it in cart:
+            if it['id'] == item_id:
+                it['quantity'] = quantity
                 break
-
         session['cart'] = cart
         session.modified = True
         return redirect(url_for('cart'))
-
     except Exception as e:
-        logging.error(f"Error in update_quantity: {e}")
+        logging.error(e)
         return "Bad Request", 400
-
 
 @app.route('/remove-from-cart', methods=['POST'])
 def remove_from_cart():
     try:
-        item_id = request.form.get('item_id')
-        cart = session.get('cart', [])
-        cart = [item for item in cart if str(item.get('id')) != str(item_id)]
-
+        item_id = request.form['item_id']
+        cart = [i for i in session.get('cart', []) if i['id'] != item_id]
         session['cart'] = cart
         session.modified = True
         return redirect(url_for('cart'))
-
     except Exception as e:
-        logging.error(f"Error in remove_from_cart: {e}")
+        logging.error(e)
         return "Bad Request", 400
 
 @app.route('/clear-cart')
 def clear_cart():
     session.pop('cart', None)
     session.pop('_flashes', None)
+    session.pop('order_id', None)
     flash('Cart cleared.', 'info')
     return redirect(request.referrer or url_for('cart'))
-
 
 @app.route('/checkout')
 def checkout():
@@ -296,254 +285,445 @@ def checkout():
         flash('Your cart is empty.', 'warning')
         return redirect(url_for('cart'))
 
-    total = sum(item.get('price', 0) * item.get('quantity', 1) for item in cart)
+    # Generate a one-off order_id if missing
+    if 'order_id' not in session:
+        session['order_id'] = str(uuid.uuid4())
 
+    total = sum(i['price'] * i['quantity'] for i in cart)
     return render_template(
         'checkout.html',
-        cart_items=session.get("cart", []),
+        cart_items=cart,
         total=total,
-        stripe_public_key=STRIPE_PUBLIC_KEY
+        stripe_public_key=STRIPE_PUBLIC_KEY,
+        order_id=session['order_id']
     )
 
-from flask import Flask, request, session, jsonify, render_template
-import stripe
-import uuid
-import json
-import logging
-from datetime import datetime, timezone
+# -----------------------------------------------------------------------------
+# PayPal Checkout Session – Cart Upload (no shipping, reuse order_id)
+# -----------------------------------------------------------------------------
+@app.route("/create-paypal-payment", methods=["POST"])
+def create_paypal_payment():
+    try:
+        customer_email = request.form.get("email", "").strip()
+        if not customer_email:
+            flash("You must provide an email address.", "warning")
+            return redirect(url_for("checkout"))
+
+        cart = session.get("cart", [])
+        if not cart:
+            flash("Your cart is empty.", "warning")
+            return redirect(url_for("cart"))
+
+        total = sum(i["price"] * i["quantity"] for i in cart)
+        paypal_business = os.getenv("PAYPAL_EMAIL")
+        if not paypal_business:
+            logging.error("PAYPAL_EMAIL environment variable not set.")
+            flash("Payment configuration error.", "danger")
+            return redirect(url_for("checkout"))
+
+        # Reuse existing order_id or generate new
+        invoice_id = session.get("order_id") or str(uuid.uuid4())
+        session["order_id"] = invoice_id
+
+        # 1) Create order entry in memory (pending)
+        orders[invoice_id] = {
+            "email": customer_email,
+            "cart": cart.copy(),
+            "total": total,
+            "method": "PayPal",
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc),
+            "paid_at": None
+        }
+
+        # Send “Order Created” email (pending payment via PayPal)
+        html_items = "".join(
+            f"<li>{item['title']} – {item['plan'].title()} × {item['quantity']} – "
+            f"${item['price'] * item['quantity']:.2f}</li>"
+            for item in cart
+        )
+        send_email(
+            customer_email,
+            "Order Created – Pending PayPal Payment",
+            f"""
+<p>Thank you for your order. Your order is pending PayPal payment.</p>
+<p><strong>Payment Method:</strong> PayPal</p>
+<p><strong>Invoice ID:</strong> {invoice_id}</p>
+<ul>{html_items}</ul>
+<p><strong>Total:</strong> ${total:.2f}</p>
+"""
+        )
+
+        # Build PayPal “cart upload” parameters
+        paypal_params = {
+            "cmd":           "_cart",
+            "upload":        "1",
+            "business":      paypal_business,
+            "invoice":       invoice_id,
+            "currency_code": "USD",
+            "no_shipping":   "1",
+            "return":        url_for("paypal_success", _external=True),
+            "cancel_return": url_for("paypal_cancel", _external=True),
+            "notify_url":    url_for("paypal_ipn", _external=True),
+            "custom":        customer_email,
+        }
+        for idx, item in enumerate(cart, start=1):
+            title = item.get("title", "Unknown Product")
+            price = float(item.get("price", 0.0))
+            qty = int(item.get("quantity", 1))
+            paypal_params[f"item_name_{idx}"] = f"{title} – {item['plan'].title()}"
+            paypal_params[f"amount_{idx}"] = f"{price:.2f}"
+            paypal_params[f"quantity_{idx}"] = str(qty)
+
+        # Save pending payment data for confirmation
+        session["pending_payment"] = {
+            "invoice_id":     invoice_id,
+            "total":          total,
+            "customer_email": customer_email,
+            "cart":           cart.copy()
+        }
+        session.modified = True
+
+        return redirect("https://www.paypal.com/cgi-bin/webscr?" + urlencode(paypal_params))
+
+    except Exception as e:
+        logging.error(f"PayPal redirect error: {e}", exc_info=True)
+        flash("Payment processing error.", "danger")
+        return redirect(url_for("checkout"))
+
+@app.route("/paypal-success")
+def paypal_success():
+    """
+    PayPal redirects here on successful payment.
+    We clear session data and send a confirmation email.
+    """
+    pending = session.pop("pending_payment", None)
+    session.pop("cart", None)
+    session.pop("order_id", None)
+
+    if not pending:
+        flash("Invalid session or no pending payment found.", "error")
+        return redirect(url_for("cart"))
+
+    invoice_id = pending["invoice_id"]
+    # Mark as paid if still pending
+    order = orders.get(invoice_id)
+    if order and order["status"] == "pending":
+        order["status"] = "paid"
+        order["paid_at"] = datetime.now(timezone.utc)
+
+    send_email(
+        pending["customer_email"],
+        "PayPal Payment Confirmed",
+        f"""
+<p>Thank you for your PayPal payment of ${pending['total']:.2f}.</p>
+<p><strong>Payment Method:</strong> PayPal</p>
+<p><strong>Invoice ID:</strong> {invoice_id}</p>
+"""
+    )
+
+    return render_template(
+        "success.html",
+        email=pending["customer_email"],
+        invoice_id=invoice_id,
+        total=f"${pending['total']:.2f}"
+    )
+
+@app.route("/paypal-cancel")
+def paypal_cancel():
+    """
+    If the user cancels on PayPal’s side, they land here.
+    We drop pending_payment and order_id so they can start fresh.
+    """
+    session.pop("pending_payment", None)
+    session.pop("order_id", None)
+    flash("PayPal payment was canceled.", "info")
+    return render_template("cancel.html")
+
+@app.route("/ipn", methods=["POST"])
+def paypal_ipn():
+    """
+    PayPal IPN listener: validates incoming notification and marks orders as paid.
+    """
+    try:
+        ipn_data = request.form.to_dict()
+        verify_payload = {"cmd": "_notify-validate", **ipn_data}
+
+        response = requests.post(
+            "https://www.paypal.com/cgi-bin/webscr",
+            data=verify_payload,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10
+        )
+        response.raise_for_status()
+
+        if response.text == "VERIFIED":
+            payment_status = ipn_data.get("payment_status")
+            invoice = ipn_data.get("invoice")
+            payer_email = ipn_data.get("payer_email")
+            mc_gross = ipn_data.get("mc_gross")
+            mc_currency = ipn_data.get("mc_currency")
+
+            if payment_status == "Completed" and invoice in orders:
+                order = orders[invoice]
+                if order["status"] != "paid":
+                    order["status"] = "paid"
+                    order["paid_at"] = datetime.now(timezone.utc)
+                    logging.info(f"IPN VERIFIED: invoice={invoice}, txn={ipn_data.get('txn_id')}, amount={mc_gross} {mc_currency}, payer={payer_email}")
+
+                    # Send “Payment Confirmed” email (in case user returns via IPN rather than redirect)
+                    send_email(
+                        order["email"],
+                        "PayPal Payment Confirmed",
+                        f"""
+<p>Your PayPal payment of ${order['total']:.2f} has been confirmed via IPN.</p>
+<p><strong>Payment Method:</strong> PayPal</p>
+<p><strong>Invoice ID:</strong> {invoice}</p>
+"""
+                    )
+            else:
+                logging.warning(f"IPN not Completed or invoice not found: status={payment_status}, invoice={invoice}")
+        else:
+            logging.error("IPN Verification FAILED.")
+
+    except Exception as e:
+        logging.error(f"Exception in IPN handler: {e}", exc_info=True)
+
+    return ("", 200)
 
 # -----------------------------------------------------------------------------
-# Stripe Checkout Session (Cart-based)
+# Stripe Checkout Session (uses same order_id)
 # -----------------------------------------------------------------------------
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
-    data = request.get_json(force=True) or {}
-    email = data.get('email')
-
+    data = request.get_json(force=True)
+    customer_email = data.get('email', '').strip()
     cart = session.get('cart', [])
-    if not cart or not email:
-        return jsonify({'error': 'Missing cart items or email'}), 400
+    order_id = session.get('order_id')
+
+    if not cart or not customer_email or not order_id:
+        return jsonify({'error': 'Missing cart, email, or order_id'}), 400
 
     line_items = []
     metadata_items = []
-    total_amount = 0
+    html_items = ""
+    total_amount_cents = 0
+    product_summary = []
 
     for item in cart:
-        quantity = int(item.get('quantity', 1))
+        qty = item.get('quantity', 1)
         raw_name = f"{item['title']} – {item['plan'].title()}"
         name = raw_name[:127]
-        unit_amount = int(item['price'] * 100)
+        unit_price_cents = int(item['price'] * 100)
+        total_item_cents = unit_price_cents * qty
+        total_amount_cents += total_item_cents
+
         line_items.append({
             'price_data': {
                 'currency': 'usd',
+                'unit_amount': unit_price_cents,
                 'product_data': {'name': name},
-                'unit_amount': unit_amount,
             },
-            'quantity': quantity,
+            'quantity': qty,
         })
-        total_amount += unit_amount * quantity
-        metadata_items.append(f"{item['slug']}:{item['plan']}:{quantity}")
+
+        metadata_items.append(f"{item['slug']}:{item['plan']}:{qty}")
+        html_items += f"<li>{name} × {qty} – ${total_item_cents / 100:.2f}</li>"
+        product_summary.append(f"{name} × {qty}")
 
     try:
-        invoice_id = str(uuid.uuid4())
+        # 1) Create Stripe Checkout Session
         session_obj = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
-            customer_email=email,
-            success_url=f"{request.host_url}success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{request.host_url}cancel",
+            customer_email=customer_email,
+            success_url=f"{request.host_url}stripe-success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{request.host_url}stripe-cancel",
             metadata={
-                'invoice_id': invoice_id,
+                'invoice_id': order_id,
                 'cart_items': json.dumps(metadata_items),
+                'product_summary': json.dumps(product_summary),
                 'ip_address': request.remote_addr,
-                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }
         )
 
-        # Send "Order Created" email
-        total_str = f"${total_amount/100:.2f}"
-        html_items += f"<li>{title} – {plan.title()} × {qty}</li>"
-        pay_link = session_obj.url
+        # 2) Create order entry in memory (pending)
+        total_dollars = total_amount_cents / 100
+        orders[order_id] = {
+            "email": customer_email,
+            "cart": cart.copy(),
+            "total": total_dollars,
+            "method": "Stripe",
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc),
+            "paid_at": None
+        }
 
-        html = f"""
-<!DOCTYPE html>
-<html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Order Created</title></head>
-<body style=\"margin:0;padding:0;background:#121212;color:#ECECEC;font-family:Arial,sans-serif;\">
-  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:40px auto;\">
-    <tr>
-      <td style=\"background:#1A1A1A;padding:30px;border-bottom:1px solid #333;\">
-        <h2 style=\"color:#FFF;\">Order Created</h2>
-        <p>Thank you for your order. Your transaction is pending payment.</p>
-        <h3>Order Details</h3>
-        <p><strong>Invoice ID:</strong> {invoice_id}</p>
-        <ul>{items_html}</ul>
-        <p><strong>Total:</strong> {total_str}</p>
-        <p style=\"text-align:center;\"><a href=\"{pay_link}\" style=\"padding:12px 24px;background:#2979FF;color:#FFF;text-decoration:none;border-radius:4px;\">Pay Now</a></p>
-        <p style=\"font-size:12px;color:#777;\">We will send a confirmation once your payment clears.</p>
-      </td>
-    </tr>
-  </table>
-</body></html>
+        # 3) Send “Order Created” email (pending payment via Stripe)
+        send_email(
+            customer_email,
+            "Order Created – Pending Stripe Payment",
+            f"""
+<p>Thank you for your order. Your transaction is pending payment via Stripe.</p>
+<p><strong>Payment Method:</strong> Stripe</p>
+<p><strong>Invoice ID:</strong> {order_id}</p>
+<ul>{html_items}</ul>
+<p><strong>Total:</strong> ${total_dollars:.2f}</p>
+<p><a href="{session_obj.url}">Click here to pay now</a></p>
 """
-        send_email(email, 'Order Created', html)
+        )
 
-        # Clear cart
+        # 4) Clear cart so they cannot resubmit same items
         session.pop('cart', None)
         return jsonify({'id': session_obj.id})
 
-    except stripe.error.StripeError as e:
-        logging.exception("Stripe error creating checkout session")
-        return jsonify(error=e.user_message or str(e)), 500
     except Exception as e:
-        logging.exception("Unexpected error in create_checkout_session")
+        logging.exception("Stripe checkout error")
         return jsonify(error=str(e)), 500
 
-
-# -----------------------------------------------------------------------------
-# Success Route (Post-Payment)
-# -----------------------------------------------------------------------------
-@app.route('/success')
-def success():
-    # 1) Normalize & sanitize session_id
-    raw_id     = request.args.get('session_id', '')
-    session_id = raw_id.strip('{}')
-    if not session_id:
+@app.route('/stripe-success')
+def stripe_success():
+    """
+    Called by Stripe after payment is completed (via success_url).
+    We verify the session, send confirmation, and clear order_id.
+    """
+    raw_session_id = request.args.get('session_id', '').strip('{}')
+    if not raw_session_id:
         return render_template('404.html', message='No session ID provided.'), 400
 
     try:
-        # 2) Fetch the session (we expand only line_items so we get amount_total)
         sess = stripe.checkout.Session.retrieve(
-            session_id,
+            raw_session_id,
             expand=['line_items']
         )
 
-        # 3) Core data
-        customer      = sess.customer_email or sess.customer_details.email
-        invoice_id    = sess.metadata.get('invoice_id', 'N/A')
-        total_dollars = f"${(sess.amount_total or 0) / 100:.2f}"
+        meta = sess.get('metadata', {})
+        customer_email = sess.get('customer_email') or sess.get('customer_details', {}).get('email')
+        invoice_id = meta.get('invoice_id', '')
+        raw_items = meta.get('cart_items', '[]')
 
-        # 4) Build HTML list & summary from the cart_items metadata
-        raw_cart = sess.metadata.get('cart_items', '[]')
-        entries  = json.loads(raw_cart)   # e.g. ["slug1:basic:2", "slug2:pro:1"]
+        try:
+            cart_items = json.loads(raw_items)
+        except Exception:
+            cart_items = []
 
         html_items = ""
         product_summary = []
-        for entry in entries:
-            slug, plan, qty = entry.split(':')
-            qty = int(qty)
+        total_cents = 0
 
-            # lookup the product title from your loaded JSON
-            prod = find_product(slug)
-            title = prod['title'] if prod else slug
+        for entry in cart_items:
+            try:
+                slug, plan, quantity = entry.split(":")
+                quantity = int(quantity)
+                name = f"{slug} – {plan.title()}"
+                unit_price_cents = 0
 
-            # build both representations
-            html_items += f"<li>{title} – {plan.title()} × {qty}</li>"
-            product_summary.append(f"{title} – {plan.title()} × {qty}")
+                for li in sess['line_items']['data']:
+                    if li['price']['product_data']['name'] == name:
+                        unit_price_cents = li['amount_subtotal'] // li['quantity']
+                        break
 
-        product_str = ', '.join(product_summary)
+                subtotal_cents = unit_price_cents * quantity
+                total_cents += subtotal_cents
+                html_items += f"<li>{name} × {quantity} – ${subtotal_cents / 100:.2f}</li>"
+                product_summary.append(f"{name} × {quantity}")
+            except Exception:
+                continue
 
-        # 5) Send the confirmation email ONLY ONCE per session_id
-        sent_flag_key = f"email_sent_for_{session_id}"
-        if not session.get(sent_flag_key):
-            email_html = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><title>Payment Confirmed</title></head>
-<body style="margin:0;padding:0;background:#121212;color:#ECECEC;font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:40px auto;">
-    <tr>
-      <td style="background:#1A1A1A;padding:30px;border-bottom:1px solid #333;">
-        <h2 style="margin:0 0 20px;font-weight:400;color:#FFF;">Payment Confirmed</h2>
-        <p>Thank you for your purchase, {customer}!</p>
-        <h3>Invoice ID: {invoice_id}</h3>
-        <ul style="margin:12px 0;padding-left:20px;">
-          {html_items or '<li>No details available</li>'}
-        </ul>
-        <p><strong>Total Paid:</strong> {total_dollars}</p>
-        <p style="text-align:center;margin:32px 0;">
-          <a href="{request.url_root}"
-             style="padding:12px 24px;background:#2979FF;color:#FFF;
-                    text-decoration:none;border-radius:4px;display:inline-block;">
-            Return to Site
-          </a>
-        </p>
-        <p style="font-size:12px;color:#777;margin:0;">
-          A copy of this receipt has been sent to your email.
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td style="background:#1F1F1F;padding:16px;text-align:center;font-size:12px;color:#777;">
-        © 2025 moealturej | All rights reserved.
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+        total_dollars = f"{total_cents / 100:.2f}"
+
+        # 1) Mark order as paid if still pending
+        order = orders.get(invoice_id)
+        if order and order["status"] == "pending":
+            order["status"] = "paid"
+            order["paid_at"] = datetime.now(timezone.utc)
+
+        # 2) Send “Payment Confirmed” email
+        send_email(
+            customer_email,
+            "Stripe Payment Confirmed",
+            f"""
+<p>Thank you for your payment. Your payment was successful.</p>
+<p><strong>Payment Method:</strong> Stripe</p>
+<p><strong>Invoice ID:</strong> {invoice_id}</p>
+<ul>{html_items}</ul>
+<p><strong>Total Paid:</strong> ${total_dollars}</p>
 """
-            send_email(customer, 'Payment Confirmed', email_html)
-            session[sent_flag_key] = True
-            session.modified = True
-        # If session[sent_flag_key] is already True, skip sending again
-
-        # 6) Render your pretty success page
-        return render_template(
-            'success.html',
-            email=customer,
-            invoice_id=invoice_id,
-            product=product_str,
-            total=total_dollars
         )
 
-    except Exception:
-        logging.exception('Error in success route')
+        # 3) Send Discord notification in background
+        handle_successful_payment(sess)
+
+        # 4) Clear order_id so next checkout gets a fresh one
+        session.pop('order_id', None)
+
+        return render_template(
+            'success.html',
+            email=customer_email,
+            invoice_id=invoice_id,
+            product=", ".join(product_summary),
+            total=f"${total_dollars}"
+        )
+
+    except Exception as e:
+        logging.exception('Error in stripe_success')
         return render_template('404.html', message='Error verifying payment.'), 500
-                               
-@app.route('/cancel')
-def cancel():
+
+@app.route('/stripe-cancel')
+def stripe_cancel():
+    """
+    If the user cancels on Stripe’s side, they land here.
+    We clear order_id so a new one is generated next time.
+    """
+    session.pop('order_id', None)
+    flash('Stripe payment was canceled.', 'info')
     return render_template('cancel.html')
 
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
+    """
+    Stripe Webhook endpoint. Listens for checkout.session.completed events.
+    """
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Stripe-Signature')
 
-    if sig_header is None:
-        logging.warning("⚠️  Missing Stripe-Signature header")
+    if not sig_header:
+        logging.warning("⚠️ Missing Stripe-Signature header")
         return 'Missing signature', 400
 
-    # Verify Stripe signature
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, WEBHOOK_SECRET
         )
         logging.info("✅ Stripe event verified successfully.")
     except ValueError as e:
-        logging.warning(f"⚠️  Invalid payload: {e}")
+        logging.warning(f"⚠️ Invalid payload: {e}")
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError as e:
-        logging.warning(f"⚠️  Invalid signature: {e}")
+        logging.warning(f"⚠️ Invalid signature: {e}")
         return 'Invalid signature', 400
 
-    # Handle the event
-    try:
-        if event['type'] == 'checkout.session.completed':
-            session_obj = event['data']['object']
-            logging.info("💳 Checkout session completed. Processing payment...")
+    if event['type'] == 'checkout.session.completed':
+        session_obj = event['data']['object']
+        invoice_id = session_obj.get('metadata', {}).get('invoice_id')
+        # Mark as paid (in case IPN or redirect missed it)
+        order = orders.get(invoice_id)
+        if order and order["status"] == "pending":
+            order["status"] = "paid"
+            order["paid_at"] = datetime.now(timezone.utc)
+        logging.info("💳 Stripe checkout.session.completed received.")
+        handle_successful_payment(session_obj)
 
-            # Run webhook handler in a background thread to avoid delays
-            threading.Thread(
-                target=handle_successful_payment,
-                args=(session_obj,),
-                daemon=True  # Will not block server shutdown
-            ).start()
+    return 'OK', 200
 
-    except Exception as e:
-        logging.exception(f"🚨 Error handling {event['type']}: {e}")
-        return 'Webhook handler error', 200  # Respond OK to prevent retries
-
-    return 'Webhook handled', 200  # Acknowledge receipt
-
+# -----------------------------------------------------------------------------
+# Run the Flask App
+# -----------------------------------------------------------------------------
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)), debug=False)
+    app.run(
+        host='0.0.0.0',
+        port=int(os.getenv('PORT', 10000)),
+        debug=False
+    )
