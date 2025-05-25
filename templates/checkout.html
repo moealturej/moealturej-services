@@ -201,6 +201,11 @@
       animation-delay: 1s;
     }
 
+    /* Stronger pattern: no spaces, valid characters, at least 2-letter TLD */
+    input[type="email"][pattern] {
+      /* No additional CSS needed here; the pattern attribute is enforced by browser */
+    }
+
     input[type="email"]:focus {
       box-shadow: 0 0 12px var(--accent-hover);
     }
@@ -405,6 +410,8 @@
         id="email"
         placeholder="you@example.com"
         required
+        pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+        title="Please enter a valid email address (no spaces, valid domain)."
       />
     </div>
 
@@ -512,8 +519,11 @@
     // Validate email & checkbox
     function validateFields() {
       const email = emailInput.value.trim();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      // Stricter regex: no spaces, valid characters, at least 2-letter TLD
+      const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
       if (!emailRegex.test(email)) return false;
+
       if (!agreeBox.checked) return false;
       return true;
     }
@@ -527,13 +537,20 @@
       paypalBtn.disabled = !valid;
     }
 
-    emailInput.addEventListener("input", toggleButtons);
+    emailInput.addEventListener("input", () => {
+      // Show/hide built-in HTML5 validation message
+      if (!emailInput.validity.valid && emailInput.value.trim().length > 0) {
+        emailInput.setCustomValidity("Please enter a valid email address (no spaces).");
+      } else {
+        emailInput.setCustomValidity("");
+      }
+      toggleButtons();
+    });
     agreeBox.addEventListener("change", toggleButtons);
 
     {% if stripe_public_key %}
     // Stripe payment click handler
     stripeBtn.addEventListener("click", async () => {
-      console.log("Stripe button clicked");
       errorEl.style.display = "none";
 
       if (!validateFields()) {
@@ -547,14 +564,12 @@
       paypalBtn.disabled = true;
 
       try {
-        console.log("Calling /create-checkout-session …");
         const res = await fetch("/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: emailInput.value.trim() })
         });
         const data = await res.json();
-        console.log("Stripe session response:", data);
 
         if (!res.ok || !data.id) {
           throw new Error(data.error || "Stripe session failed");
@@ -563,7 +578,6 @@
         const { error } = await stripe.redirectToCheckout({ sessionId: data.id });
         if (error) throw new Error(error.message);
       } catch (err) {
-        console.error(err);
         loadingEl.style.display = "none";
         stripeBtn.disabled = false;
         paypalBtn.disabled = false;
@@ -575,7 +589,6 @@
 
     // PayPal payment click handler
     paypalBtn.addEventListener("click", () => {
-      console.log("PayPal button clicked");
       errorEl.style.display = "none";
 
       if (!validateFields()) {
