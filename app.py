@@ -67,6 +67,24 @@ app.products = load_json(PRODUCTS_PATH)
 def find_product(slug):
     return app.products.get(slug)
 
+def get_price_for(slug: str, plan: str) -> float:
+    """
+    Return the “authoritative” unit price (in USD) for a given product slug + plan,
+    by scanning the product['plans'] list. Raises ValueError if not found.
+    """
+    product = find_product(slug)
+    if not product:
+        raise ValueError(f"No such product: {slug}")
+
+    plans_list = product.get('plans', [])
+    for entry in plans_list:
+        if entry.get('plan') == plan:
+            # Found matching plan
+            return float(entry.get('price', 0.0))
+
+    raise ValueError(f"No such plan '{plan}' for product '{slug}'")
+
+
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
@@ -102,6 +120,7 @@ def send_notification_to_webhook(session_data):
     """
     Sends a Discord webhook notification for new Stripe payments.
     """
+    # Turn the Stripe session_data into a plain dict
     if hasattr(session_data, 'to_dict_recursive'):
         session_info = session_data.to_dict_recursive()
     else:
@@ -111,6 +130,15 @@ def send_notification_to_webhook(session_data):
     amount_paid = session_info.get('amount_total', 0) / 100
     customer_email = session_info.get('customer_email', 'Unknown')
 
+    # Load the JSON‐encoded product_summary (if present)
+    raw_summary = meta.get('product_summary', '[]')
+    try:
+        product_list = json.loads(raw_summary)
+        if not isinstance(product_list, list):
+            product_list = []
+    except Exception:
+        product_list = []
+
     discord_payload = {
         'content': 'New Sale Notification',
         'username': 'Store Bot',
@@ -119,7 +147,7 @@ def send_notification_to_webhook(session_data):
                 {'name': 'Invoice ID', 'value': meta.get('invoice_id', 'N/A'), 'inline': False},
                 {'name': 'Total',      'value': f"${amount_paid:.2f}", 'inline': False},
                 {'name': 'Customer',   'value': customer_email, 'inline': False},
-                {'name': 'Items',      'value': ', '.join(meta.get('product_summary', [])) or 'N/A', 'inline': False},
+                {'name': 'Items',      'value': ', '.join(product_list) or 'N/A', 'inline': False},
             ],
             'footer': {
                 'text': f"{datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}"
@@ -181,12 +209,21 @@ def inject_cart_count():
 
 @app.route('/add-to-cart', methods=['POST'])
 def add_to_cart():
+    """
+    Adds a product to session['cart'], but pulls the price from server-side JSON
+    (so users cannot tamper with the price in the browser).
+    """
     try:
         title = request.form['title']
         slug = request.form['slug']
-        price = float(request.form['price'])
         plan = request.form['plan']
         quantity = int(request.form.get('quantity', 1))
+
+        # Look up the “official” price on the server:
+        try:
+            unit_price_usd = get_price_for(slug, plan)
+        except ValueError as e:
+            return jsonify(success=False, error=str(e)), 400
 
         product = find_product(slug)
         if not product:
@@ -196,10 +233,10 @@ def add_to_cart():
             'id': f"{slug}-{plan}",
             'title': title,
             'slug': slug,
-            'price': price,
+            'price': unit_price_usd,
             'plan': plan,
-            'image_url': product['image_url'],
-            'subtitle': product['subtitle'],
+            'image_url': product.get('image_url', ''),
+            'subtitle': product.get('subtitle', ''),
             'quantity': quantity
         }
 
@@ -510,13 +547,24 @@ def create_checkout_session():
     total_amount_cents = 0
     product_summary = []
 
+    # --- REPLACE trusting item['price'] with get_price_for(...) ---
     for item in cart:
+        slug = item['slug']
+        plan = item['plan']
         qty = item.get('quantity', 1)
-        raw_name = f"{item['title']} – {item['plan'].title()}"
-        name = raw_name[:127]
-        unit_price_cents = int(item['price'] * 100)
+
+        # 1) Look up authoritative unit price on the server
+        try:
+            unit_price_usd = get_price_for(slug, plan)
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+
+        unit_price_cents = int(unit_price_usd * 100)
         total_item_cents = unit_price_cents * qty
         total_amount_cents += total_item_cents
+
+        raw_name = f"{item['title']} – {plan.title()}"
+        name = raw_name[:127]
 
         line_items.append({
             'price_data': {
@@ -527,12 +575,12 @@ def create_checkout_session():
             'quantity': qty,
         })
 
-        metadata_items.append(f"{item['slug']}:{item['plan']}:{qty}")
+        metadata_items.append(f"{slug}:{plan}:{qty}")
         html_items += f"<li>{name} × {qty} – ${total_item_cents / 100:.2f}</li>"
         product_summary.append(f"{name} × {qty}")
 
     try:
-        # 1) Create Stripe Checkout Session
+        # 1) Create Stripe Checkout Session with server‐defined prices
         session_obj = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=line_items,
@@ -549,7 +597,7 @@ def create_checkout_session():
             }
         )
 
-        # 2) Create order entry in memory (pending)
+        # 2) Save “pending” order in memory, using canonical total
         total_dollars = total_amount_cents / 100
         orders[order_id] = {
             "email": customer_email,
@@ -575,7 +623,7 @@ def create_checkout_session():
 """
         )
 
-        # 4) Clear cart so they cannot resubmit same items
+        # 4) Clear cart so they cannot manually resubmit lower prices
         session.pop('cart', None)
         return jsonify({'id': session_obj.id})
 
@@ -587,7 +635,7 @@ def create_checkout_session():
 def stripe_success():
     """
     Called by Stripe after payment is completed (via success_url).
-    We verify the session, send confirmation, and clear order_id.
+    We verify the session, double‐check the amount, send confirmation, and clear order_id.
     """
     raw_session_id = request.args.get('session_id', '').strip('{}')
     if not raw_session_id:
@@ -604,6 +652,27 @@ def stripe_success():
         invoice_id = meta.get('invoice_id', '')
         raw_items = meta.get('cart_items', '[]')
 
+        # 1) Look up the pending order
+        expected_order = orders.get(invoice_id)
+        if not expected_order:
+            logging.error(f"Order {invoice_id} not found in memory.")
+            return render_template('404.html', message='Order not found.'), 404
+
+        # 2) Verify that Stripe actually charged the amount we expected
+        actual_paid_cents = sess.get('amount_total', 0)       # in cents
+        expected_paid_cents = int(expected_order['total'] * 100)
+
+        if actual_paid_cents != expected_paid_cents:
+            logging.error(
+                f"⚠️ Payment amount mismatch for invoice {invoice_id}: "
+                f"expected {expected_paid_cents}¢, got {actual_paid_cents}¢"
+            )
+            return render_template(
+                '404.html',
+                message='Payment validation error. Please contact support.'
+            ), 400
+
+        # 3) Rebuild the itemized HTML to include in the confirmation email
         try:
             cart_items = json.loads(raw_items)
         except Exception:
@@ -612,35 +681,31 @@ def stripe_success():
         html_items = ""
         product_summary = []
         total_cents = 0
-
         for entry in cart_items:
             try:
                 slug, plan, quantity = entry.split(":")
                 quantity = int(quantity)
                 name = f"{slug} – {plan.title()}"
-                unit_price_cents = 0
 
-                for li in sess['line_items']['data']:
-                    if li['price']['product_data']['name'] == name:
-                        unit_price_cents = li['amount_subtotal'] // li['quantity']
-                        break
-
+                # Look up unit price again on the server to compute breakdown
+                unit_price_usd = get_price_for(slug, plan)
+                unit_price_cents = int(unit_price_usd * 100)
                 subtotal_cents = unit_price_cents * quantity
                 total_cents += subtotal_cents
+
                 html_items += f"<li>{name} × {quantity} – ${subtotal_cents / 100:.2f}</li>"
                 product_summary.append(f"{name} × {quantity}")
             except Exception:
                 continue
 
-        total_dollars = f"{total_cents / 100:.2f}"
+        total_dollars_str = f"{total_cents / 100:.2f}"
 
-        # 1) Mark order as paid if still pending
-        order = orders.get(invoice_id)
-        if order and order["status"] == "pending":
-            order["status"] = "paid"
-            order["paid_at"] = datetime.now(timezone.utc)
+        # 4) Mark order as paid (if still pending)
+        if expected_order["status"] == "pending":
+            expected_order["status"] = "paid"
+            expected_order["paid_at"] = datetime.now(timezone.utc)
 
-        # 2) Send “Payment Confirmed” email
+        # 5) Send “Payment Confirmed” email
         send_email(
             customer_email,
             "Stripe Payment Confirmed",
@@ -649,14 +714,14 @@ def stripe_success():
 <p><strong>Payment Method:</strong> Stripe</p>
 <p><strong>Invoice ID:</strong> {invoice_id}</p>
 <ul>{html_items}</ul>
-<p><strong>Total Paid:</strong> ${total_dollars}</p>
+<p><strong>Total Paid:</strong> ${total_dollars_str}</p>
 """
         )
 
-        # 3) Send Discord notification in background
+        # 6) Send Discord notification in background
         handle_successful_payment(sess)
 
-        # 4) Clear order_id so next checkout gets a fresh one
+        # 7) Clear order_id so next checkout generates a new one
         session.pop('order_id', None)
 
         return render_template(
@@ -664,7 +729,7 @@ def stripe_success():
             email=customer_email,
             invoice_id=invoice_id,
             product=", ".join(product_summary),
-            total=f"${total_dollars}"
+            total=f"${total_dollars_str}"
         )
 
     except Exception as e:
@@ -708,7 +773,7 @@ def stripe_webhook():
     if event['type'] == 'checkout.session.completed':
         session_obj = event['data']['object']
         invoice_id = session_obj.get('metadata', {}).get('invoice_id')
-        # Mark as paid (in case IPN or redirect missed it)
+        # Mark as paid (in case redirect missed it)
         order = orders.get(invoice_id)
         if order and order["status"] == "pending":
             order["status"] = "paid"
