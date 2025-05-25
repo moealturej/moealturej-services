@@ -80,27 +80,6 @@
       margin-bottom:2rem;
       animation:slideIn var(--keyframe-time) ease-out both .5s;
     }
-    .order-summary {
-      animation:slideIn var(--keyframe-time) ease-out both .6s;
-      text-align:center;
-      font-size:1rem;
-      color:var(--text-primary);
-      margin-bottom:2rem;
-    }
-    .order-summary strong { color: var(--accent-hover); }
-    .product-details {
-      animation:slideIn var(--keyframe-time) ease-out both .7s;
-    }
-    .product-details h3 {
-      font-size:1.3rem;
-      color:var(--accent-hover);
-      margin-bottom:0.75rem;
-      text-align:center;
-    }
-    .product-details p {
-      margin-bottom:0.5rem;
-      text-align:center;
-    }
     .button {
       display:block;
       width:100%; max-width:300px;
@@ -141,16 +120,6 @@
     <i class="fa-solid fa-times-circle icon"></i>
     <h1>Payment Canceled</h1>
     <p class="subtitle">Your payment was not completed. No charges were made.</p>
-
-    <div class="order-summary">
-      <strong>Invoice:</strong> {{ invoice_id }}
-    </div>
-
-    <div class="product-details">
-      <h3>Product: {{ product.replace('_',' ').capitalize() }}</h3>
-      <p>Plan: <strong>{{ plan }} key</strong></p>
-      <p>Email: <strong>{{ email }}</strong></p>
-    </div>
 
     <button class="button" onclick="location.href='/'">Go Back Home</button>
     <p class="footer-note">Need help? <a href="/contact">Contact Support</a></p>
