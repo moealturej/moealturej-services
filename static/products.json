@@ -9,6 +9,15 @@
     "checkoutParam": "bo6-ghost-chair"
   },
   {
+    "id": "bo6-shadow-chair",
+    "name": "BO6 Shadow Chair",
+    "price": "7.99 - 33.99",
+    "image": "https://i.postimg.cc/PqKhL2tj/public.png",
+    "badge": "New",
+    "popular": true,
+    "checkoutParam": "bo6-shadow-chair"
+  },
+  {
     "id": "bo6-fecurity-chair",
     "name": "BO6 Fecurity Chair",
     "price": "8.99 - 35.99",
