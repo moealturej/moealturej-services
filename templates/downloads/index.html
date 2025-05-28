@@ -212,158 +212,6 @@ section.sponsored-section h2 {
   transform: scale(1.03); 
   box-shadow: 0 0 22px rgba(255, 105, 180, 0.7); 
 }
-
-/* =============== PROFESSIONAL SPONSOR SECTION =============== */
-.sponsored-section {
-  font-family: 'Spline Sans', sans-serif;
-  --sponsor-bg: rgba(20, 30, 60, 0.85);
-  --sponsor-bg-image: url('https://i.postimg.cc/J4BFY04B/W1NpRj6.jpg');
-  --sponsor-blur: 4px;
-  --sponsor-accent: #3b82f6;
-}
-
-/* Section Header */
-.sponsored-section h2 {
-  font-size: 2rem;
-  font-weight: 600;
-  background: linear-gradient(45deg, #93c5fd, #bfdbfe);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  position: relative;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.sponsored-section h2::after {
-  content: '';
-  position: absolute;
-  bottom: -0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 2px;
-  background: var(--sponsor-accent);
-  border-radius: 2px;
-}
-
-/* Card Container */
-.sponsored-section .card {
-  position: relative;
-  overflow: hidden;
-  background: var(--sponsor-bg);
-  border: 2px solid rgba(77, 155, 255, 0.15);
-  border-radius: 8px;
-  backdrop-filter: blur(var(--sponsor-blur));
-  transform: translateZ(0);
-  transition: all 0.3s ease;
-}
-
-/* Background Image Layer */
-.sponsored-section .card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--sponsor-bg-image) center/cover;
-  opacity: 0.4;
-  z-index: -1;
-  transition: opacity 0.3s ease;
-}
-
-/* Hover Effects */
-.sponsored-section .card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-}
-
-.sponsored-section .card:hover::before {
-  opacity: 0.3;
-}
-
-/* Card Content */
-.sponsored-section .card-body {
-  padding: 1.99rem;
-  position: relative;
-  z-index: 1;
-}
-
-/* Product Image */
-.sponsored-section .card img {
-  width: 100%;
-  height: 200px;
-  object-fit: contain;
-  margin-bottom: 1.5rem;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
-  transition: transform 0.3s ease;
-}
-
-.sponsored-section .card:hover img {
-  transform: scale(1.02);
-}
-
-/* Text Content */
-.sponsored-section .card h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #3b82f6;
-  margin-bottom: 0.75rem;
-}
-
-.sponsored-section .card p {
-  color: #b2bed4;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-}
-
-/* Styled Download Button */
-.sponsored-section .download-btn {
-  padding: 15px;
-  background: linear-gradient(to right, #4b6ea5, #3368bd);
-  background-size: 200% 200%;
-  background-position: left bottom;
-  color: #ffffff;
-  font-size: 1.2rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 15px;
-  box-shadow: none !important;
-  cursor: pointer;
-  transition: background-position 0.3s ease;
-  min-width: 300px;
-  background-position: left bottom;
-}
-
-.sponsored-section .download-btn:hover {
-  background-position: right bottom !important;
-
-  /* Make 100% sure nothing else sneaks in */
-  transform: translateY(0) !important;
-  box-shadow: none !important;
-}
-
-/* Sponsor Badge */
-.sponsored-section .card::after {
-  content: 'Sponsored';
-  position: absolute;
-  top: 12px;
-  right: -28px;
-  padding: 0.25rem 2rem;
-  background: linear-gradient(45deg, #1d4ed8, #3b82f6);
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transform: rotate(45deg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-.card:hover { transform: translateY(-6px); box-shadow: 0 0 25px var(--border-glow); }
-.card img { width: 100%; height: 160px; object-fit: cover; }
-.card-body {
-  flex: 1;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
 .status { align-self: flex-start; padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; text-transform: uppercase; }
 .status-online { background: #28a745; }
 .status-offline { background: #dc3545; }
@@ -413,14 +261,6 @@ footer a:hover {
   </header>
 
   <main class="container">
-    <!-- Sponsored Section at Top -->
-    <section class="sponsored-section">
-      <h2>Advertisements</h2>
-      <div class="grid" id="sponsored-tools"></div>
-    </section>
-
-    <div class="divider"></div>
-
     <!-- Free Tools -->
     <section>
       <h2>Free Tools</h2>
@@ -436,7 +276,7 @@ footer a:hover {
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script>
     window.addEventListener('load', () => {
       // Initialize particles
@@ -475,29 +315,5 @@ footer a:hover {
           data.free.forEach(t => renderCard(free, t));
           data.paid.forEach(t => renderCard(paid, t, true));
         });
-
-// Render Sponsored OnlyChams.pro (Static Version)
-const sponsoredContainer = document.getElementById('sponsored-tools');
-
-const fb = {
-  image: 'https://i.postimg.cc/NFrthmwW/logo-with-text.png',
-  name: 'OnlyChams.pro',
-  description: 'Premium Undetected EFT Cheats & Safe Tarkov Hacks.',
-  url: 'https://onlychams.pro/',
-};
-
-const card = document.createElement('div');
-card.className = 'card';
-card.innerHTML = `
-  <img src="${fb.image}" alt="${fb.name}" />
-  <div class="card-body">
-    <h3>${fb.name}</h3>
-    <p>${fb.description}</p>
-    <a href="${fb.url}" target="_blank" class="download-btn">
-      OnlyChams.pro <i class="fas fa-arrow-up-right-from-square"></i>
-    </a>
-  </div>`;
-sponsoredContainer.appendChild(card);
-  });
   </script>
 {% endblock %}
