@@ -88,56 +88,6 @@
     },
     "popular": false
   },
-"bo6-shadow-chair": {
-  "slug": "bo6-shadow-chair",
-  "title": "BO6 Shadow Chair",
-  "subtitle": "Next-gen precision with full ESP, radar, and native controller support.",
-  "image_url": "https://i.postimg.cc/wv1d2H5K/public.png",
-  "plans": [
-    { "plan": "day", "price": 7.99, "label": "DAY KEY" },
-    { "plan": "week", "price": 20.50, "label": "WEEK KEY" },
-    { "plan": "month", "price": 33.99, "label": "MONTH KEY" }
-  ],
-  "description": [
-    {
-      "title": "🖥️ System Requirements",
-      "text": "🔹 CPU: Intel/AMD\n🔹 Windows 10/11\n🔹 All Windows Versions Supported"
-    },
-    {
-      "title": "ℹ️ Information",
-      "text": "🔹 Working for Black Ops 6\n🔹 Working for Warzone 4\n🔹 Native Controller Support\n🔹 HWID Spoofer included\n🔹 Anticheat Blocker included"
-    },
-    {
-      "title": "🎯 Aimbot Features",
-      "text": "🔹 Enable Aimbot\n🔹 Enemy Lock\n🔹 Aimbot FOV Circle\n🔹 Adjustable FOV Circle Size\n🔹 Select Bone\n🔹 Visible Check\n🔹 Smoothness Slider\n🔹 Aimbot Distance\n🔹 Aimbot Hotkey\n🔹 Aim At Downed"
-    },
-    {
-      "title": "👁️ Visuals",
-      "text": "🔹 Skeleton\n🔹 Distance\n🔹 2D Box\n🔹 2D Corner\n🔹 2D Fill Box\n🔹 Snaplines\n🔹 Health Bar\n🔹 Player Name\n🔹 Team Check\n🔹 Show Visible Only\n🔹 ESP Thickness Settings\n🔹 ESP/Visuals Color Settings"
-    },
-    {
-      "title": "💼 Loot Visuals",
-      "text": "🔹 Enable\n🔹 Distance\n🔹 Minimum Rarity\n🔹 Show Cash\n🔹 Show Bags\n🔹 Show Cases\n🔹 Show Ammo\n🔹 Show Boxes\n🔹 Show Weapons\n🔹 Show Gas Mask\n🔹 Show Killstreaks"
-    },
-    {
-      "title": "📡 Radar",
-      "text": "🔹 Radar Enable\n🔹 Draw Lines\n🔹 Draw Border\n🔹 Show Enemies\n🔹 Show Teammates\n🔹 Enable Height Arrows\n🔹 Radar Configuration/Position"
-    },
-    {
-      "title": "📊 Lobby Tracker",
-      "text": "🔹 Name\n🔹 Health\n🔹 Team ID\n🔹 Distance\n🔹 Player Ping\n🔹 Player Level\n🔹 Player K/D Ratio\n🔹 Gather all these Information of all players in your lobby"
-    },
-    {
-      "title": "⚙️ Settings",
-      "text": "🔹 Save & Load Configs 1-3\n🔹 Hide Overlay\n🔹 Menu VSync"
-    }
-  ],
-  "refund_policy": {
-    "title": "No Refunds Policy",
-    "text": "Due to the nature of the product, all sales are final."
-  },
-  "popular": false
-},
   "fortnite-external-chair": {
     "slug": "fortnite-external-chair",
     "title": "Fortnite External Chair",
