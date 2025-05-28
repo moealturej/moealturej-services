@@ -7,6 +7,7 @@
   <meta name="keywords" content="BO6 cheats, downloads, game enhancer, moealturej" />
 <style>
 :root {
+  /* Color Palette */
   --bg-start: #0d0d0d;
   --bg-end: #000000;
   --accent-pink: #ff4dd8;
@@ -15,9 +16,13 @@
   --accent-gold: #ffd700;
   --text-main: #f0f0f0;
   --text-muted: #bbb;
+
+  /* Surfaces & Effects */
   --card-bg: rgba(30, 0, 40, 0.5);
   --border-glow: rgba(77, 155, 255, 0.3);
   --border-highlight: rgba(77, 155, 255, 0.6);
+
+  /* Spacing & Radius */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
@@ -27,7 +32,12 @@
   --transition: 0.3s ease;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Global Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   min-height: 100vh;
@@ -37,8 +47,13 @@ body {
   overflow-x: hidden;
 }
 
-#particles-js { position: fixed; inset: 0; z-index: -1; }
+#particles-js { 
+  position: fixed; 
+  inset: 0; 
+  z-index: -1; 
+}
 
+/* Navbar */
 nav.container {
   display: flex;
   justify-content: space-between;
@@ -51,16 +66,29 @@ nav.container {
   z-index: 10;
 }
 
-.logo {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.5rem;
-  color: var(--accent-pink);
+.logo { 
+  font-family: 'Orbitron', sans-serif; 
+  font-size: 1.5rem; 
+  color: var(--accent-pink); 
 }
 
-nav ul { display: flex; gap: 1.5rem; list-style: none; }
-nav a { color: var(--text-main); text-decoration: none; transition: color var(--transition); }
-nav a:hover { color: var(--accent-pink); }
+nav ul { 
+  display: flex; 
+  gap: 1.5rem; 
+  list-style: none; 
+}
 
+nav a { 
+  color: var(--text-main); 
+  text-decoration: none; 
+  transition: color var(--transition); 
+}
+
+nav a:hover { 
+  color: var(--accent-pink); 
+}
+
+/* Header */
 header.container {
   text-align: center;
   padding: 2rem 1rem;
@@ -96,18 +124,27 @@ header h1 {
   transition: background var(--transition);
 }
 
-.status-legend .legend-item:hover { background: rgba(255,255,255,0.2); }
-.legend-icon { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.status-legend .legend-item:hover { 
+  background: rgba(255,255,255,0.2); 
+}
+
+.legend-icon { 
+  width: 12px; 
+  height: 12px; 
+  border-radius: 50%; 
+  display: inline-block; 
+}
 
 .status-online .legend-icon { background: #28a745; }
 .status-offline .legend-icon { background: #dc3545; }
 .status-testing .legend-icon { background: #ffc107; }
 .status-updating .legend-icon { background: #17a2b8; }
 
-main.container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 1rem;
+/* Main Grid & Cards */
+main.container { 
+  max-width: 1200px; 
+  margin: auto; 
+  padding: 1rem; 
 }
 
 section { margin-bottom: 3rem; }
@@ -142,19 +179,7 @@ section.sponsored-section h2 {
   flex-direction: column;
 }
 
-.card img {
-  width: 100%;
-  object-fit: cover;
-  max-height: 180px;
-}
-
-.card-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
+/* Buttons */
 .download-btn, .btn {
   text-decoration: none;
   font-weight: bold;
@@ -168,77 +193,208 @@ section.sponsored-section h2 {
   color: #000;
 }
 
-.download-btn {
-  background: var(--accent-blue);
-  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
-}
-.download-btn:hover {
-  transform: scale(1.03);
-  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7);
+.download-btn { 
+  background: var(--accent-blue); /* Just Blue */
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5); 
 }
 
-.btn {
-  background: var(--accent-pink);
-  box-shadow: 0 0 12px rgba(255, 105, 180, 0.5);
-}
-.btn:hover {
-  transform: scale(1.03);
-  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7);
+.download-btn:hover { 
+  transform: scale(1.03); 
+  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7); 
 }
 
-.status {
-  align-self: flex-start;
-  padding: 0.25rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
+.btn { 
+  background: var(--accent-pink); 
+  box-shadow: 0 0 12px rgba(255, 105, 180, 0.5); 
+}
+
+.btn:hover { 
+  transform: scale(1.03); 
+  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7); 
+}
+
+/* =============== PROFESSIONAL SPONSOR SECTION =============== */
+.sponsored-section {
+  font-family: 'Spline Sans', sans-serif;
+  --sponsor-bg: rgba(20, 30, 60, 0.85);
+  --sponsor-bg-image: url('https://i.postimg.cc/J4BFY04B/W1NpRj6.jpg');
+  --sponsor-blur: 4px;
+  --sponsor-accent: #3b82f6;
+}
+
+/* Section Header */
+.sponsored-section h2 {
+  font-size: 2rem;
   font-weight: 600;
-  color: #fff;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
+  background: linear-gradient(45deg, #93c5fd, #bfdbfe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  position: relative;
+  margin-bottom: 2rem;
+  text-align: center;
 }
+
+.sponsored-section h2::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: var(--sponsor-accent);
+  border-radius: 2px;
+}
+
+/* Card Container */
+.sponsored-section .card {
+  position: relative;
+  overflow: hidden;
+  background: var(--sponsor-bg);
+  border: 2px solid rgba(77, 155, 255, 0.15);
+  border-radius: 8px;
+  backdrop-filter: blur(var(--sponsor-blur));
+  transform: translateZ(0);
+  transition: all 0.3s ease;
+}
+
+/* Background Image Layer */
+.sponsored-section .card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--sponsor-bg-image) center/cover;
+  opacity: 0.4;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+/* Hover Effects */
+.sponsored-section .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.sponsored-section .card:hover::before {
+  opacity: 0.3;
+}
+
+/* Card Content */
+.sponsored-section .card-body {
+  padding: 1.99rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Product Image */
+.sponsored-section .card img {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+  transition: transform 0.3s ease;
+}
+
+.sponsored-section .card:hover img {
+  transform: scale(1.02);
+}
+
+/* Text Content */
+.sponsored-section .card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-bottom: 0.75rem;
+}
+
+.sponsored-section .card p {
+  color: #b2bed4;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+/* Styled Download Button */
+.sponsored-section .download-btn {
+  padding: 15px;
+  background: linear-gradient(to right, #4b6ea5, #3368bd);
+  background-size: 200% 200%;
+  background-position: left bottom;
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 15px;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background-position 0.3s ease;
+  min-width: 300px;
+  background-position: left bottom;
+}
+
+.sponsored-section .download-btn:hover {
+  background-position: right bottom !important;
+
+  /* Make 100% sure nothing else sneaks in */
+  transform: translateY(0) !important;
+  box-shadow: none !important;
+}
+
+/* Sponsor Badge */
+.sponsored-section .card::after {
+  content: 'Sponsored';
+  position: absolute;
+  top: 12px;
+  right: -28px;
+  padding: 0.25rem 2rem;
+  background: linear-gradient(45deg, #1d4ed8, #3b82f6);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transform: rotate(45deg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.card:hover { transform: translateY(-6px); box-shadow: 0 0 25px var(--border-glow); }
+.card img { width: 100%; height: 160px; object-fit: cover; }
+.card-body {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.status { align-self: flex-start; padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; text-transform: uppercase; }
 .status-online { background: #28a745; }
 .status-offline { background: #dc3545; }
 .status-testing { background: #ffc107; color: #000; }
 .status-updating { background: #17a2b8; }
+h3 { font-size: 1.25rem; color: var(--accent-pink); margin-bottom: 0.5rem; }
+p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 1rem; }
 
-h3 {
-  font-size: 1.25rem;
-  color: var(--accent-pink);
-  margin-bottom: 0.5rem;
-}
-p {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  line-height: 1.4;
-  margin-bottom: 1rem;
-}
+/* Divider & Footer */
+.divider { width:60%; height:2px; background:rgba(187,0,255,0.6); margin:2rem auto; }
 
-.divider {
-  width: 60%;
-  height: 2px;
-  background: rgba(187,0,255,0.6);
-  margin: 2rem auto;
+footer.container { 
+  text-align: center; 
+  padding: 1.5rem 1rem; 
+  background: rgba(15,0,25,0.7); 
+  color: var(--text-muted); 
+  font-size: 0.85rem; 
 }
 
-footer.container {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  background: rgba(15,0,25,0.7);
-  color: var(--text-muted);
-  font-size: 0.85rem;
+footer a { 
+  color: var(--accent-pink); 
+  text-decoration: none; 
 }
 
-footer a {
-  color: var(--accent-pink);
-  text-decoration: none;
-}
-footer a:hover {
-  text-shadow: 0 0 6px var(--accent-pink);
+footer a:hover { 
+  text-shadow: 0 0 6px var(--accent-pink); 
 }
 
-@media(max-width:600px) {
-  header h1 { font-size: 2.5rem; }
-  nav ul { flex-wrap: wrap; }
+@media(max-width:600px) { 
+  header h1{font-size:2.5rem;} 
+  nav ul{flex-wrap:wrap;} 
 }
 </style>
 {% endblock %}
@@ -246,79 +402,102 @@ footer a:hover {
 {% block content %}
 <div id="particles-js"></div>
 
-<header class="container">
-  <h1>Downloads Center</h1>
-  <div class="status-legend">
-    <div class="legend-item status-online"><span class="legend-icon"></span>Online</div>
-    <div class="legend-item status-offline"><span class="legend-icon"></span>Offline</div>
-    <div class="legend-item status-testing"><span class="legend-icon"></span>Testing</div>
-    <div class="legend-item status-updating"><span class="legend-icon"></span>Updating</div>
-  </div>
-</header>
+  <header class="container">
+    <h1>Downloads Center</h1>
+    <div class="status-legend">
+      <div class="legend-item status-online"><span class="legend-icon"></span>Online</div>
+      <div class="legend-item status-offline"><span class="legend-icon"></span>Offline</div>
+      <div class="legend-item status-testing"><span class="legend-icon"></span>Testing</div>
+      <div class="legend-item status-updating"><span class="legend-icon"></span>Updating</div>
+    </div>
+  </header>
 
-<main class="container">
-  <section>
-    <h2>Free Tools</h2>
-    <div class="grid" id="free-tools"></div>
-  </section>
+  <main class="container">
+    <!-- Sponsored Section at Top -->
+    <section class="sponsored-section">
+      <h2>Advertisements</h2>
+      <div class="grid" id="sponsored-tools"></div>
+    </section>
 
-  <div class="divider"></div>
+    <div class="divider"></div>
 
-  <section>
-    <h2>Paid Tools</h2>
-    <div class="grid" id="paid-tools"></div>
-  </section>
-</main>
+    <!-- Free Tools -->
+    <section>
+      <h2>Free Tools</h2>
+      <div class="grid" id="free-tools"></div>
+    </section>
 
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-<script>
-  window.addEventListener('load', () => {
-    particlesJS('particles-js', {
-      particles: {
-        number: { value: 60, density: { enable: true, value_area: 800 } },
-        color: { value: '#ff00ff' },
-        shape: { type: 'circle' },
-        opacity: { value: 0.4 },
-        size: { value: 2 },
-        move: { enable: true, speed: 1.5, out_mode: 'out' }
-      },
-      interactivity: {
-        detect_on: 'canvas',
-        events: { onhover: { enable: true, mode: 'repulse' } },
-        modes: { repulse: { distance: 100 } }
-      },
-      retina_detect: true
-    });
+    <div class="divider"></div>
 
-    fetch('/static/data/tools.json')
-      .then(res => res.json())
-      .then(data => {
-        const free = document.getElementById('free-tools');
-        const paid = document.getElementById('paid-tools');
+    <!-- Paid Tools -->
+    <section>
+      <h2>Paid Tools</h2>
+      <div class="grid" id="paid-tools"></div>
+    </section>
+  </main>
 
-        function renderCard(container, t, isPaid = false) {
-          const card = document.createElement('div');
-          card.className = 'card';
-          const statusTag = t.status
-            ? `<span class="status status-${t.status.toLowerCase()}">${t.status}</span>`
-            : '';
-          const actions = isPaid
-            ? `<a href="${t.checkout_url}" class="btn">🛒 Buy Now</a><a href="${t.download_url}" class="download-btn">💾 Download</a>`
-            : `<a href="${t.download_url}" class="download-btn">💾 Download</a>`;
-          card.innerHTML = `
-            <img src="${t.image}" alt="${t.name}" />
-            <div class="card-body">
-              ${statusTag}
-              <h3>${t.name}</h3>
-              <p>${t.description}</p>
-              <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">${actions}</div>
-            </div>`;
-          container.appendChild(card);
-        }
-
-        data.free.forEach(t => renderCard(free, t));
-        data.paid.forEach(t => renderCard(paid, t, true));
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js" defer></script>
+  <script>
+    window.addEventListener('load', () => {
+      // Initialize particles
+      particlesJS('particles-js', {
+        particles: { number:{value:60,density:{enable:true,value_area:800}}, color:{value:'#ff00ff'}, shape:{type:'circle'}, opacity:{value:0.4}, size:{value:2}, move:{enable:true,speed:1.5,out_mode:'out'} },
+        interactivity:{ detect_on:'canvas', events:{ onhover:{enable:true,mode:'repulse'} }, modes:{ repulse:{distance:100} } }, retina_detect:true
       });
+
+      // Render tools from JSON
+      fetch('/static/data/tools.json')
+        .then(res => res.json())
+        .then(data => {
+          const free = document.getElementById('free-tools');
+          const paid = document.getElementById('paid-tools');
+
+          function renderCard(container, t, isPaid=false) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const statusTag = t.status
+              ? <span class="status status-${t.status.toLowerCase()}">${t.status}</span>
+              : '';
+            const actions = isPaid
+              ? <a href="${t.checkout_url}" class="btn">🛒 Buy Now</a><a href="${t.download_url}" class="download-btn">💾 Download</a>
+              : <a href="${t.download_url}" class="download-btn">💾 Download</a>;
+            card.innerHTML = 
+              <img src="${t.image}" alt="${t.name}" />
+              <div class="card-body">
+                ${statusTag}
+                <h3>${t.name}</h3>
+                <p>${t.description}</p>
+                <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">${actions}</div>
+              </div>;
+            container.appendChild(card);
+          }
+
+          data.free.forEach(t => renderCard(free, t));
+          data.paid.forEach(t => renderCard(paid, t, true));
+        });
+
+// Render Sponsored OnlyChams.pro (Static Version)
+const sponsoredContainer = document.getElementById('sponsored-tools');
+
+const fb = {
+  image: 'https://i.postimg.cc/SKBV3jgq/Untitled.jpg',
+  name: 'Sponsored Slot Available',
+  description: 'Promote your product or service here. Contact us to get featured.',
+  url: 'https://www.moealturej.com/contact',
+};
+
+const card = document.createElement('div');
+card.className = 'card';
+card.innerHTML = 
+  <img src="${fb.image}" alt="${fb.name}" />
+  <div class="card-body">
+    <h3>${fb.name}</h3>
+    <p>${fb.description}</p>
+    <a href="${fb.url}" target="_blank" class="download-btn">
+      OnlyChams.pro <i class="fas fa-arrow-up-right-from-square"></i>
+    </a>
+  </div>;
+sponsoredContainer.appendChild(card);
   });
-</script>
+  </script>
 {% endblock %}
