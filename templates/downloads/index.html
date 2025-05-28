@@ -437,67 +437,86 @@ footer a:hover {
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js" defer></script>
-  <script>
-    window.addEventListener('load', () => {
-      // Initialize particles
-      particlesJS('particles-js', {
-        particles: { number:{value:60,density:{enable:true,value_area:800}}, color:{value:'#ff00ff'}, shape:{type:'circle'}, opacity:{value:0.4}, size:{value:2}, move:{enable:true,speed:1.5,out_mode:'out'} },
-        interactivity:{ detect_on:'canvas', events:{ onhover:{enable:true,mode:'repulse'} }, modes:{ repulse:{distance:100} } }, retina_detect:true
+<script>
+  window.addEventListener('load', () => {
+    // Initialize particles
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 60, density: { enable: true, value_area: 800 } },
+        color: { value: '#ff00ff' },
+        shape: { type: 'circle' },
+        opacity: { value: 0.4 },
+        size: { value: 2 },
+        move: { enable: true, speed: 1.5, out_mode: 'out' }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: { onhover: { enable: true, mode: 'repulse' } },
+        modes: { repulse: { distance: 100 } }
+      },
+      retina_detect: true
+    });
+
+    // Render tools from JSON
+    fetch('/static/data/tools.json')
+      .then(res => res.json())
+      .then(data => {
+        const free = document.getElementById('free-tools');
+        const paid = document.getElementById('paid-tools');
+
+        function renderCard(container, t, isPaid = false) {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const statusTag = t.status
+            ? `<span class="status status-${t.status.toLowerCase()}">${t.status}</span>`
+            : '';
+
+          const actions = isPaid
+            ? `<a href="${t.checkout_url}" class="btn">🛒 Buy Now</a>
+               <a href="${t.download_url}" class="download-btn">💾 Download</a>`
+            : `<a href="${t.download_url}" class="download-btn">💾 Download</a>`;
+
+          card.innerHTML = `
+            <img src="${t.image}" alt="${t.name}" />
+            <div class="card-body">
+              ${statusTag}
+              <h3>${t.name}</h3>
+              <p>${t.description}</p>
+              <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">${actions}</div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        }
+
+        data.free.forEach(t => renderCard(free, t));
+        data.paid.forEach(t => renderCard(paid, t, true));
+
+        // Render Sponsored OnlyChams.pro (Static Version)
+        const sponsoredContainer = document.getElementById('sponsored-tools');
+
+        const fb = {
+          image: 'https://i.postimg.cc/SKBV3jgq/Untitled.jpg',
+          name: 'Sponsored Slot Available',
+          description: 'Promote your product or service here. Contact us to get featured.',
+          url: 'https://www.moealturej.com/contact',
+        };
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${fb.image}" alt="${fb.name}" />
+          <div class="card-body">
+            <h3>${fb.name}</h3>
+            <p>${fb.description}</p>
+            <a href="${fb.url}" target="_blank" class="download-btn">
+              OnlyChams.pro <i class="fas fa-arrow-up-right-from-square"></i>
+            </a>
+          </div>
+        `;
+        sponsoredContainer.appendChild(card);
       });
-
-      // Render tools from JSON
-      fetch('/static/data/tools.json')
-        .then(res => res.json())
-        .then(data => {
-          const free = document.getElementById('free-tools');
-          const paid = document.getElementById('paid-tools');
-
-          function renderCard(container, t, isPaid=false) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            const statusTag = t.status
-              ? <span class="status status-${t.status.toLowerCase()}">${t.status}</span>
-              : '';
-            const actions = isPaid
-              ? <a href="${t.checkout_url}" class="btn">🛒 Buy Now</a><a href="${t.download_url}" class="download-btn">💾 Download</a>
-              : <a href="${t.download_url}" class="download-btn">💾 Download</a>;
-            card.innerHTML = 
-              <img src="${t.image}" alt="${t.name}" />
-              <div class="card-body">
-                ${statusTag}
-                <h3>${t.name}</h3>
-                <p>${t.description}</p>
-                <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">${actions}</div>
-              </div>;
-            container.appendChild(card);
-          }
-
-          data.free.forEach(t => renderCard(free, t));
-          data.paid.forEach(t => renderCard(paid, t, true));
-        });
-
-// Render Sponsored OnlyChams.pro (Static Version)
-const sponsoredContainer = document.getElementById('sponsored-tools');
-
-const fb = {
-  image: 'https://i.postimg.cc/SKBV3jgq/Untitled.jpg',
-  name: 'Sponsored Slot Available',
-  description: 'Promote your product or service here. Contact us to get featured.',
-  url: 'https://www.moealturej.com/contact',
-};
-
-const card = document.createElement('div');
-card.className = 'card';
-card.innerHTML = 
-  <img src="${fb.image}" alt="${fb.name}" />
-  <div class="card-body">
-    <h3>${fb.name}</h3>
-    <p>${fb.description}</p>
-    <a href="${fb.url}" target="_blank" class="download-btn">
-      OnlyChams.pro <i class="fas fa-arrow-up-right-from-square"></i>
-    </a>
-  </div>;
-sponsoredContainer.appendChild(card);
   });
-  </script>
+</script>
 {% endblock %}
