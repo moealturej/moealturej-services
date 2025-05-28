@@ -7,7 +7,6 @@
   <meta name="keywords" content="BO6 cheats, downloads, game enhancer, moealturej" />
 <style>
 :root {
-  /* Color Palette */
   --bg-start: #0d0d0d;
   --bg-end: #000000;
   --accent-pink: #ff4dd8;
@@ -16,13 +15,9 @@
   --accent-gold: #ffd700;
   --text-main: #f0f0f0;
   --text-muted: #bbb;
-
-  /* Surfaces & Effects */
   --card-bg: rgba(30, 0, 40, 0.5);
   --border-glow: rgba(77, 155, 255, 0.3);
   --border-highlight: rgba(77, 155, 255, 0.6);
-
-  /* Spacing & Radius */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
@@ -32,12 +27,7 @@
   --transition: 0.3s ease;
 }
 
-/* Global Reset */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   min-height: 100vh;
@@ -47,13 +37,8 @@ body {
   overflow-x: hidden;
 }
 
-#particles-js { 
-  position: fixed; 
-  inset: 0; 
-  z-index: -1; 
-}
+#particles-js { position: fixed; inset: 0; z-index: -1; }
 
-/* Navbar */
 nav.container {
   display: flex;
   justify-content: space-between;
@@ -66,29 +51,16 @@ nav.container {
   z-index: 10;
 }
 
-.logo { 
-  font-family: 'Orbitron', sans-serif; 
-  font-size: 1.5rem; 
-  color: var(--accent-pink); 
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  color: var(--accent-pink);
 }
 
-nav ul { 
-  display: flex; 
-  gap: 1.5rem; 
-  list-style: none; 
-}
+nav ul { display: flex; gap: 1.5rem; list-style: none; }
+nav a { color: var(--text-main); text-decoration: none; transition: color var(--transition); }
+nav a:hover { color: var(--accent-pink); }
 
-nav a { 
-  color: var(--text-main); 
-  text-decoration: none; 
-  transition: color var(--transition); 
-}
-
-nav a:hover { 
-  color: var(--accent-pink); 
-}
-
-/* Header */
 header.container {
   text-align: center;
   padding: 2rem 1rem;
@@ -124,27 +96,18 @@ header h1 {
   transition: background var(--transition);
 }
 
-.status-legend .legend-item:hover { 
-  background: rgba(255,255,255,0.2); 
-}
-
-.legend-icon { 
-  width: 12px; 
-  height: 12px; 
-  border-radius: 50%; 
-  display: inline-block; 
-}
+.status-legend .legend-item:hover { background: rgba(255,255,255,0.2); }
+.legend-icon { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 
 .status-online .legend-icon { background: #28a745; }
 .status-offline .legend-icon { background: #dc3545; }
 .status-testing .legend-icon { background: #ffc107; }
 .status-updating .legend-icon { background: #17a2b8; }
 
-/* Main Grid & Cards */
-main.container { 
-  max-width: 1200px; 
-  margin: auto; 
-  padding: 1rem; 
+main.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 1rem;
 }
 
 section { margin-bottom: 3rem; }
@@ -179,7 +142,19 @@ section.sponsored-section h2 {
   flex-direction: column;
 }
 
-/* Buttons */
+.card img {
+  width: 100%;
+  object-fit: cover;
+  max-height: 180px;
+}
+
+.card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .download-btn, .btn {
   text-decoration: none;
   font-weight: bold;
@@ -193,56 +168,77 @@ section.sponsored-section h2 {
   color: #000;
 }
 
-.download-btn { 
-  background: var(--accent-blue); /* Just Blue */
-  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5); 
+.download-btn {
+  background: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+}
+.download-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7);
 }
 
-.download-btn:hover { 
-  transform: scale(1.03); 
-  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7); 
+.btn {
+  background: var(--accent-pink);
+  box-shadow: 0 0 12px rgba(255, 105, 180, 0.5);
+}
+.btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7);
 }
 
-.btn { 
-  background: var(--accent-pink); 
-  box-shadow: 0 0 12px rgba(255, 105, 180, 0.5); 
+.status {
+  align-self: flex-start;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
 }
-
-.btn:hover { 
-  transform: scale(1.03); 
-  box-shadow: 0 0 22px rgba(255, 105, 180, 0.7); 
-}
-.status { align-self: flex-start; padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; text-transform: uppercase; }
 .status-online { background: #28a745; }
 .status-offline { background: #dc3545; }
 .status-testing { background: #ffc107; color: #000; }
 .status-updating { background: #17a2b8; }
-h3 { font-size: 1.25rem; color: var(--accent-pink); margin-bottom: 0.5rem; }
-p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 1rem; }
 
-/* Divider & Footer */
-.divider { width:60%; height:2px; background:rgba(187,0,255,0.6); margin:2rem auto; }
-
-footer.container { 
-  text-align: center; 
-  padding: 1.5rem 1rem; 
-  background: rgba(15,0,25,0.7); 
-  color: var(--text-muted); 
-  font-size: 0.85rem; 
+h3 {
+  font-size: 1.25rem;
+  color: var(--accent-pink);
+  margin-bottom: 0.5rem;
+}
+p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin-bottom: 1rem;
 }
 
-footer a { 
-  color: var(--accent-pink); 
-  text-decoration: none; 
+.divider {
+  width: 60%;
+  height: 2px;
+  background: rgba(187,0,255,0.6);
+  margin: 2rem auto;
 }
 
-footer a:hover { 
-  text-shadow: 0 0 6px var(--accent-pink); 
+footer.container {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: rgba(15,0,25,0.7);
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
-@media(max-width:600px) { 
-  header h1{font-size:2.5rem;} 
-  nav ul{flex-wrap:wrap;} 
+footer a {
+  color: var(--accent-pink);
+  text-decoration: none;
+}
+footer a:hover {
+  text-shadow: 0 0 6px var(--accent-pink);
+}
+
+@media(max-width:600px) {
+  header h1 { font-size: 2.5rem; }
+  nav ul { flex-wrap: wrap; }
 }
 </style>
 {% endblock %}
@@ -250,70 +246,79 @@ footer a:hover {
 {% block content %}
 <div id="particles-js"></div>
 
-  <header class="container">
-    <h1>Downloads Center</h1>
-    <div class="status-legend">
-      <div class="legend-item status-online"><span class="legend-icon"></span>Online</div>
-      <div class="legend-item status-offline"><span class="legend-icon"></span>Offline</div>
-      <div class="legend-item status-testing"><span class="legend-icon"></span>Testing</div>
-      <div class="legend-item status-updating"><span class="legend-icon"></span>Updating</div>
-    </div>
-  </header>
+<header class="container">
+  <h1>Downloads Center</h1>
+  <div class="status-legend">
+    <div class="legend-item status-online"><span class="legend-icon"></span>Online</div>
+    <div class="legend-item status-offline"><span class="legend-icon"></span>Offline</div>
+    <div class="legend-item status-testing"><span class="legend-icon"></span>Testing</div>
+    <div class="legend-item status-updating"><span class="legend-icon"></span>Updating</div>
+  </div>
+</header>
 
-  <main class="container">
-    <!-- Free Tools -->
-    <section>
-      <h2>Free Tools</h2>
-      <div class="grid" id="free-tools"></div>
-    </section>
+<main class="container">
+  <section>
+    <h2>Free Tools</h2>
+    <div class="grid" id="free-tools"></div>
+  </section>
 
-    <div class="divider"></div>
+  <div class="divider"></div>
 
-    <!-- Paid Tools -->
-    <section>
-      <h2>Paid Tools</h2>
-      <div class="grid" id="paid-tools"></div>
-    </section>
-  </main>
+  <section>
+    <h2>Paid Tools</h2>
+    <div class="grid" id="paid-tools"></div>
+  </section>
+</main>
 
-  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-  <script>
-    window.addEventListener('load', () => {
-      // Initialize particles
-      particlesJS('particles-js', {
-        particles: { number:{value:60,density:{enable:true,value_area:800}}, color:{value:'#ff00ff'}, shape:{type:'circle'}, opacity:{value:0.4}, size:{value:2}, move:{enable:true,speed:1.5,out_mode:'out'} },
-        interactivity:{ detect_on:'canvas', events:{ onhover:{enable:true,mode:'repulse'} }, modes:{ repulse:{distance:100} } }, retina_detect:true
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 60, density: { enable: true, value_area: 800 } },
+        color: { value: '#ff00ff' },
+        shape: { type: 'circle' },
+        opacity: { value: 0.4 },
+        size: { value: 2 },
+        move: { enable: true, speed: 1.5, out_mode: 'out' }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: { onhover: { enable: true, mode: 'repulse' } },
+        modes: { repulse: { distance: 100 } }
+      },
+      retina_detect: true
+    });
+
+    fetch('/static/data/tools.json')
+      .then(res => res.json())
+      .then(data => {
+        const free = document.getElementById('free-tools');
+        const paid = document.getElementById('paid-tools');
+
+        function renderCard(container, t, isPaid = false) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          const statusTag = t.status
+            ? `<span class="status status-${t.status.toLowerCase()}">${t.status}</span>`
+            : '';
+          const actions = isPaid
+            ? `<a href="${t.checkout_url}" class="btn">🛒 Buy Now</a><a href="${t.download_url}" class="download-btn">💾 Download</a>`
+            : `<a href="${t.download_url}" class="download-btn">💾 Download</a>`;
+          card.innerHTML = `
+            <img src="${t.image}" alt="${t.name}" />
+            <div class="card-body">
+              ${statusTag}
+              <h3>${t.name}</h3>
+              <p>${t.description}</p>
+              <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">${actions}</div>
+            </div>`;
+          container.appendChild(card);
+        }
+
+        data.free.forEach(t => renderCard(free, t));
+        data.paid.forEach(t => renderCard(paid, t, true));
       });
-
-      // Render tools from JSON
-      fetch('/static/data/tools.json')
-        .then(res => res.json())
-        .then(data => {
-          const free = document.getElementById('free-tools');
-          const paid = document.getElementById('paid-tools');
-
-          function renderCard(container, t, isPaid=false) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            const statusTag = t.status
-              ? `<span class="status status-${t.status.toLowerCase()}">${t.status}</span>`
-              : '';
-            const actions = isPaid
-              ? `<a href="${t.checkout_url}" class="btn">🛒 Buy Now</a><a href="${t.download_url}" class="download-btn">💾 Download</a>`
-              : `<a href="${t.download_url}" class="download-btn">💾 Download</a>`;
-            card.innerHTML = `
-              <img src="${t.image}" alt="${t.name}" />
-              <div class="card-body">
-                ${statusTag}
-                <h3>${t.name}</h3>
-                <p>${t.description}</p>
-                <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">${actions}</div>
-              </div>`;
-            container.appendChild(card);
-          }
-
-          data.free.forEach(t => renderCard(free, t));
-          data.paid.forEach(t => renderCard(paid, t, true));
-        });
-  </script>
+  });
+</script>
 {% endblock %}
