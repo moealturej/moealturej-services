@@ -17,12 +17,13 @@
     "checkoutParam": "bo6-fecurity-chair"
   },
   {
-    "id": "fivem-susano-chair",
-    "name": "FiveM Susano Chair",
-    "price": "11.99 - 62.99",
-    "image": "https://i.postimg.cc/MK6kjhWq/public.png",
-    "popular": false,
-    "checkoutParam": "fivem-susano-chair"
+    "id": "crusader-r6",
+    "name": "Crusader R6",
+    "price": "7.99 - 42.99",
+    "image": "https://i.postimg.cc/6qHMZb0p/public-1.png",
+    "badge": "New",
+    "popular": true,
+    "checkoutParam": "crusader-r6"
   },
   {
     "id": "temp-spoofer",
