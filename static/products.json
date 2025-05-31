@@ -17,12 +17,12 @@
     "checkoutParam": "bo6-fecurity-chair"
   },
   {
-    "id": "fortnite-external-chair",
-    "name": "Fortnite External Chair",
-    "price": "9.99 - 65.99",
-    "image": "https://i.postimg.cc/zD4LXXtk/public-1.png",
+    "id": "fivem-susano-chair",
+    "name": "FiveM Susano Chair",
+    "price": "11.99 - 62.99",
+    "image": "https://i.postimg.cc/MK6kjhWq/public.png",
     "popular": false,
-    "checkoutParam": "fortnite-external-chair"
+    "checkoutParam": "fivem-susano-chair"
   },
   {
     "id": "temp-spoofer",
