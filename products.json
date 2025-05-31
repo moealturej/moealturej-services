@@ -88,33 +88,30 @@
     },
     "popular": false
   },
-  "fortnite-external-chair": {
-    "slug": "fortnite-external-chair",
-    "title": "Fortnite External Chair",
-    "subtitle": "Visuals, Radar, Aimbot, Item ESP and More — Fully External, Safe & Smooth.",
-    "image_url": "https://i.postimg.cc/zD4LXXtk/public-1.png",
+  "fivem-susano-chair": {
+    "slug": "fivem-susano-chair",
+    "title": "FiveM Susano Chair",
+    "subtitle": "High compatibility: works with ESX, QBCore, vRP and all major GTA V launchers (Steam, Epic, Rockstar)",
+    "image_url": "https://i.postimg.cc/MK6kjhWq/public.png",
     "plans": [
-      { "plan": "day", "price": 9.99, "label": "DAY KEY" },
-      { "plan": "week", "price": 24.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 39.99, "label": "MONTH KEY" },
-      { "plan": "lifetime", "price": 65.99, "label": "LIFETIME KEY" }
+      { "plan": "three days", "price": 11.99, "label": "3 DAYS KEY" },
+      { "plan": "week", "price": 18.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 29.99, "label": "MONTH KEY" },
+      { "plan": "three months", "price": 38.99, "label": "3 MONTHS KEY" },
+      { "plan": "lifetime", "price": 62.99, "label": "LIFETIME KEY" }
     ],
 "description": [
   {
-    "title": "🧱 Visual ESP & Radar",
-    "text": "Get full visual control with boxes, skeletons, kill counters, weapon info, and customizable colors. Built-in radar supports team tracking, distance scaling, and multiple visual tweaks."
+    "title": "Core Features",
+    "text": "Trigger executor: execute server functions in real time | ESP: visual overlays to detect players, vehicles, and loot | Teleport and no-clip: move instantly or fly through objects | Vehicle and object spawner: spawn cars, props, weapons, etc. | God mode and unlimited ammo: invincibility and infinite bullets | Admin tools: useful for managing private servers"
   },
   {
-    "title": "🎯 Aimbot & Triggerbot",
-    "text": "Smart aimbot with hitbox selection, prediction, FOV, smoothing, and bindable keys. Includes triggerbot with hitbox control and delay settings. Fully customizable per weapon."
+    "title": "Security and Stealth",
+    "text": "Undetected operation: bypasses most anti-cheat systems | Built-in HWID spoofer: reduces the risk of hardware bans | Stream-proof visuals: menu doesn’t show on stream/recordings"
   },
   {
-    "title": "🛠️ Item ESP",
-    "text": "Display items by rarity and type with full distance filtering, coloring, and visibility control. Designed to highlight key loot efficiently."
-  },
-  {
-    "title": "💻 Performance & Misc",
-    "text": "Supports controller input, battlemode toggle, vsync, and quick config loading. Smooth, low-latency experience with maximum usability."
+    "title": "User Experience",
+    "text": "Easy-to-use interface: clean layout, mouse-friendly navigation | Performance optimized: minimal FPS drops during gameplay | High compatibility: works with ESX, QBCore, vRP and all major GTA V launchers (Steam, Epic, Rockstar)"
   }
     ],
     "refund_policy": {
