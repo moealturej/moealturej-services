@@ -88,30 +88,28 @@
     },
     "popular": false
   },
-  "fivem-susano-chair": {
-    "slug": "fivem-susano-chair",
-    "title": "FiveM Susano Chair",
-    "subtitle": "High compatibility: works with ESX, QBCore, vRP and all major GTA V launchers (Steam, Epic, Rockstar)",
-    "image_url": "https://i.postimg.cc/MK6kjhWq/public.png",
+  "crusader-r6": {
+    "slug": "crusader-r6",
+    "title": "Crusader R6",
+    "subtitle": "Active Aimbot, ESP & More",
+    "image_url": "https://i.postimg.cc/6qHMZb0p/public-1.png",
     "plans": [
-      { "plan": "three days", "price": 11.99, "label": "3 DAYS KEY" },
-      { "plan": "week", "price": 18.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 29.99, "label": "MONTH KEY" },
-      { "plan": "three months", "price": 38.99, "label": "3 MONTHS KEY" },
-      { "plan": "lifetime", "price": 62.99, "label": "LIFETIME KEY" }
+      { "plan": "day", "price": 7.99, "label": "DAY KEY" },
+      { "plan": "week", "price": 26.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 42.99, "label": "MONTH KEY" }
     ],
 "description": [
   {
-    "title": "Core Features",
-    "text": "Trigger executor: execute server functions in real time | ESP: visual overlays to detect players, vehicles, and loot | Teleport and no-clip: move instantly or fly through objects | Vehicle and object spawner: spawn cars, props, weapons, etc. | God mode and unlimited ammo: invincibility and infinite bullets | Admin tools: useful for managing private servers"
+    "title": "💻 System Requirements",
+    "text": "Operating system: Windows 10, Windows 11 (21H2, 22H2, 23H2, 24H2) | Processor: Intel & AMD | Video card: Nvidia & AMD | Client: UPlay (Ubisoft Connect), Steam, Epic Games"
   },
   {
-    "title": "Security and Stealth",
-    "text": "Undetected operation: bypasses most anti-cheat systems | Built-in HWID spoofer: reduces the risk of hardware bans | Stream-proof visuals: menu doesn’t show on stream/recordings"
+    "title": "🧱 Player ESP",
+    "text": "Player ESP - esp for rainbow, shows players behind walls | ESP Box - ESP in the form of boxes | ESP Line (Up, Center, Bottom) - wh in the form of lines | Player Distance - distance in meters to enemies | Skeleton - wallhack in the form of skeletons | Name - players' nicknames | Head - select head hitbox separately using ESP | Health (Bar, Text) - display of players' HP | Team Check - if you check this box, allies will not be shown (don't check this in arcade) | Max Distance - limit the range of the wallhack"
   },
   {
-    "title": "User Experience",
-    "text": "Easy-to-use interface: clean layout, mouse-friendly navigation | Performance optimized: minimal FPS drops during gameplay | High compatibility: works with ESX, QBCore, vRP and all major GTA V launchers (Steam, Epic, Rockstar)"
+    "title": "🎯 Aimbot",
+    "text": "Active Aimbot - enable aimbot, aiming assistance when shooting | Aimbot Keys - ability to set 2 keys to activate the aimbot | FOV Size - the size of the area within which the aimbot will capture targets | Draw FOV - show the size of the aimbot's working area as a circle around the sight | Hitboxes - selection of body parts (bones) that the aimbot will aim at during operation | Mark Target - visually mark the current target of the aimbot | Sensitivity - sharpness, smoothness of aimbot movements | Crosshair - static crosshair in the middle of the screen"
   }
     ],
     "refund_policy": {
