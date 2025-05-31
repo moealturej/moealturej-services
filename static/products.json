@@ -9,14 +9,6 @@
     "checkoutParam": "bo6-ghost-chair"
   },
   {
-    "id": "bo6-fecurity-chair",
-    "name": "BO6 Fecurity Chair",
-    "price": "8.99 - 35.99",
-    "image": "https://i.postimg.cc/fL98V56m/IMG-4269.jpg",
-    "popular": false,
-    "checkoutParam": "bo6-fecurity-chair"
-  },
-  {
     "id": "crusader-r6",
     "name": "Crusader R6",
     "price": "7.99 - 42.99",
@@ -24,6 +16,14 @@
     "badge": "New",
     "popular": true,
     "checkoutParam": "crusader-r6"
+  },
+  {
+    "id": "bo6-fecurity-chair",
+    "name": "BO6 Fecurity Chair",
+    "price": "8.99 - 35.99",
+    "image": "https://i.postimg.cc/fL98V56m/IMG-4269.jpg",
+    "popular": false,
+    "checkoutParam": "bo6-fecurity-chair"
   },
   {
     "id": "temp-spoofer",
