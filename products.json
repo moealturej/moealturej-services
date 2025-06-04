@@ -190,8 +190,8 @@
     "subtitle": "Bypass hardware bans with a one-time or lifetime key. Supports major motherboards and top games.",
     "image_url": "https://i.postimg.cc/W49zR2qg/public-3.png",
     "plans": [
-      { "plan": "month", "price": 25.00, "label": "MONTH KEY - $25.00" },
-      { "plan": "lifetime", "price": 100.00, "label": "LIFETIME KEY - $100.00" }
+      { "plan": "month", "price": 25.00, "label": "MONTH KEY" },
+      { "plan": "lifetime", "price": 100.00, "label": "LIFETIME KEY" }
     ],
     "description": [
       {
