@@ -633,34 +633,25 @@ def create_checkout_session():
 
 @app.route('/stripe-success')
 def stripe_success():
-    """
-    Called by Stripe after payment is completed (via success_url).
-    We verify the session, double‐check the amount, send confirmation, and clear order_id.
-    """
     raw_session_id = request.args.get('session_id', '').strip('{}')
     if not raw_session_id:
         return render_template('404.html', message='No session ID provided.'), 400
 
     try:
-        sess = stripe.checkout.Session.retrieve(
-            raw_session_id,
-            expand=['line_items']
-        )
-
+        sess = stripe.checkout.Session.retrieve(raw_session_id, expand=['line_items'])
         meta = sess.get('metadata', {})
         customer_email = sess.get('customer_email') or sess.get('customer_details', {}).get('email')
         invoice_id = meta.get('invoice_id', '')
         raw_items = meta.get('cart_items', '[]')
+        raw_product_summary = meta.get('product_summary', '[]')
 
-        # 1) Look up the pending order
-        expected_order = orders.get(invoice_id)
-        if not expected_order:
-            logging.error(f"Order {invoice_id} not found in memory.")
+        order_record = Order.query.get(invoice_id)
+        if not order_record:
+            logging.error(f"Order {invoice_id} not found.")
             return render_template('404.html', message='Order not found.'), 404
 
-        # 2) Verify that Stripe actually charged the amount we expected
-        actual_paid_cents = sess.get('amount_total', 0)       # in cents
-        expected_paid_cents = int(expected_order['total'] * 100)
+        actual_paid_cents = sess.get('amount_total', 0)
+        expected_paid_cents = int(order_record.total * 100)
 
         if actual_paid_cents != expected_paid_cents:
             logging.error(
@@ -672,64 +663,57 @@ def stripe_success():
                 message='Payment validation error. Please contact support.'
             ), 400
 
-        # 3) Rebuild the itemized HTML to include in the confirmation email
+        # Decode cart items (for building the “paid” summary table on the success page)
         try:
             cart_items = json.loads(raw_items)
         except Exception:
             cart_items = []
 
-        html_items = ""
-        product_summary = []
+        html_rows = ""
         total_cents = 0
         for entry in cart_items:
             try:
                 slug, plan, quantity = entry.split(":")
                 quantity = int(quantity)
                 name = f"{slug} – {plan.title()}"
-
-                # Look up unit price again on the server to compute breakdown
                 unit_price_usd = get_price_for(slug, plan)
                 unit_price_cents = int(unit_price_usd * 100)
                 subtotal_cents = unit_price_cents * quantity
                 total_cents += subtotal_cents
-
-                html_items += f"<li>{name} × {quantity} – ${subtotal_cents / 100:.2f}</li>"
-                product_summary.append(f"{name} × {quantity}")
+                html_rows += (
+                    f"<tr>"
+                    f"<td style='padding:8px;border:1px solid #ddd;'>{name}</td>"
+                    f"<td style='padding:8px;border:1px solid #ddd;text-align:center;'>{quantity}</td>"
+                    f"<td style='padding:8px;border:1px solid #ddd;text-align:right;'>"
+                    f"${subtotal_cents/100:.2f}</td>"
+                    f"</tr>"
+                )
             except Exception:
                 continue
 
-        total_dollars_str = f"{total_cents / 100:.2f}"
+        total_paid_dollars = total_cents / 100
 
-        # 4) Mark order as paid (if still pending)
-        if expected_order["status"] == "pending":
-            expected_order["status"] = "paid"
-            expected_order["paid_at"] = datetime.now(timezone.utc)
+        # Mark order as paid if still pending
+        if order_record.status == "pending":
+            order_record.status = "paid"
+            order_record.paid_at = datetime.now(timezone.utc)
+            db.session.commit()
 
-        # 5) Send “Payment Confirmed” email
-        send_email(
-            customer_email,
-            "Stripe Payment Confirmed",
-            f"""
-<p>Thank you for your payment. Your payment was successful.</p>
-<p><strong>Payment Method:</strong> Stripe</p>
-<p><strong>Invoice ID:</strong> {invoice_id}</p>
-<ul>{html_items}</ul>
-<p><strong>Total Paid:</strong> ${total_dollars_str}</p>
-"""
-        )
-
-        # 6) Send Discord notification in background
-        handle_successful_payment(sess)
-
-        # 7) Clear order_id so next checkout generates a new one
+        # Remove email + Discord calls from here—those now live in the webhook.
         session.pop('order_id', None)
+
+        # Decode product_summary so you can display it if needed
+        try:
+            product_summary_list = json.loads(raw_product_summary)
+        except Exception:
+            product_summary_list = []
 
         return render_template(
             'success.html',
             email=customer_email,
             invoice_id=invoice_id,
-            product=", ".join(product_summary),
-            total=f"${total_dollars_str}"
+            product=", ".join(product_summary_list),
+            total=f"${total_paid_dollars:.2f}"
         )
 
     except Exception as e:
@@ -748,9 +732,6 @@ def stripe_cancel():
 
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
-    """
-    Stripe Webhook endpoint. Listens for checkout.session.completed events.
-    """
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Stripe-Signature')
 
@@ -759,10 +740,8 @@ def stripe_webhook():
         return 'Missing signature', 400
 
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, WEBHOOK_SECRET
-        )
-        logging.info("✅ Stripe event verified successfully.")
+        event = stripe.Webhook.construct_event(payload, sig_header, WEBHOOK_SECRET)
+        logging.info("✅ Stripe event verified.")
     except ValueError as e:
         logging.warning(f"⚠️ Invalid payload: {e}")
         return 'Invalid payload', 400
@@ -773,12 +752,111 @@ def stripe_webhook():
     if event['type'] == 'checkout.session.completed':
         session_obj = event['data']['object']
         invoice_id = session_obj.get('metadata', {}).get('invoice_id')
-        # Mark as paid (in case redirect missed it)
-        order = orders.get(invoice_id)
-        if order and order["status"] == "pending":
-            order["status"] = "paid"
-            order["paid_at"] = datetime.now(timezone.utc)
-        logging.info("💳 Stripe checkout.session.completed received.")
+        customer_email = session_obj.get('customer_email') or session_obj.get('customer_details', {}).get('email')
+
+        # 1) Update the Order record (if still pending)
+        order_record = Order.query.get(invoice_id)
+        if order_record and order_record.status == "pending":
+            order_record.status = "paid"
+            order_record.paid_at = datetime.now(timezone.utc)
+            db.session.commit()
+        else:
+            logging.info(f"Order {invoice_id} already paid or not found.")
+
+        # 2) Send the “payment confirmed” email
+        raw_items = session_obj.get('metadata', {}).get('cart_items', '[]')
+        try:
+            cart_items = json.loads(raw_items)
+        except Exception:
+            cart_items = []
+
+        html_rows = ""
+        total_cents = 0
+        for entry in cart_items:
+            try:
+                slug, plan, quantity = entry.split(":")
+                quantity = int(quantity)
+                name = f"{slug} – {plan.title()}"
+                unit_price_usd = get_price_for(slug, plan)
+                unit_price_cents = int(unit_price_usd * 100)
+                subtotal_cents = unit_price_cents * quantity
+                total_cents += subtotal_cents
+                html_rows += (
+                    f"<tr>"
+                    f"<td style='padding:8px;border:1px solid #ddd;'>{name}</td>"
+                    f"<td style='padding:8px;border:1px solid #ddd;text-align:center;'>{quantity}</td>"
+                    f"<td style='padding:8px;border:1px solid #ddd;text-align:right;'>"
+                    f"${subtotal_cents/100:.2f}</td>"
+                    f"</tr>"
+                )
+            except Exception:
+                continue
+
+        total_paid_dollars = total_cents / 100
+
+        email_html = f"""
+<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, Helvetica, sans-serif; background:#f4f4f4; margin:0; padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:20px 0;">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden;">
+            <tr style="background:#4caf50; color:#ffffff;">
+              <td style="padding:20px; text-align:center; font-size:24px; font-weight:bold;">
+                moealturej Payment Confirmed
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px; color:#333333;">
+                <p>Hello,</p>
+                <p>Your Stripe payment of <strong>${total_paid_dollars:.2f}</strong> has been confirmed.</p>
+                <p><strong>Invoice ID:</strong> {invoice_id}</p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-top: 15px;">
+                  <thead>
+                    <tr style="background:#f0f0f0;">
+                      <th style="padding:8px;border:1px solid #ddd;text-align:left;">Item</th>
+                      <th style="padding:8px;border:1px solid #ddd;text-align:center;">Qty</th>
+                      <th style="padding:8px;border:1px solid #ddd;text-align:right;">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {html_rows}
+                  </tbody>
+                </table>
+                <p style="text-align:right; margin-top:15px; font-size:18px;">
+                  <strong>Total Paid: ${total_paid_dollars:.2f}</strong>
+                </p>
+                <p>Thank you for choosing moealturej!</p>
+                <p>Cheers,<br>moealturej Team</p>
+              </td>
+            </tr>
+            <tr style="background:#f0f0f0;">
+              <td style="padding:15px; text-align:center; font-size:12px; color:#777777;">
+                © {datetime.now().year} moealturej | All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+        # Only send email if order was pending (now paid)
+        if order_record:
+            send_email(
+                customer_email,
+                "moealturej – Stripe Payment Confirmed",
+                email_html,
+                body_text=(
+                    f"Your payment of ${total_paid_dollars:.2f} has been confirmed. "
+                    f"Invoice ID: {invoice_id}."
+                )
+            )
+
+        # 3) Send Discord webhook (inside handle_successful_payment, which is idempotent)
         handle_successful_payment(session_obj)
 
     return 'OK', 200
