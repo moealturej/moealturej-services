@@ -46,6 +46,53 @@
     },
     "popular": true
   },
+  "bo6-shadow-chair": {
+    "slug": "bo6-shadow-chair",
+    "title": "BO6 Shadow Chair",
+    "subtitle": "Next-gen External/ Internal hybrid.",
+    "image_url": "https://i.postimg.cc/wv1d2H5K/public.png",
+    "plans": [
+      { "plan": "day", "price": 7.99, "label": "DAY KEY" },
+      { "plan": "week", "price": 17.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 30.99, "label": "MONTH KEY" },
+      { "plan": "month", "price": 205.99, "label": "LIFETIME KEY" }
+    ],
+"description": [
+  {
+    "title": "🖥️ Compatibility & Platform Support",
+    "text": "Works on Windows 10/11, fully compatible with Steam, Battle.net & Gamepass. Supports AMD/Intel CPUs and full controller input."
+  },
+  {
+    "title": "⚙️ Information",
+    "text": "Working for Black Ops 6 & Warzone 4, Native Controller Support, HWID Spoof included & Anticheat Blocker included"
+  },
+  {
+    "title": "🎯 Aimbot",
+    "text": "Enable aimbot, Enemy lock, Aimbot FOV circle, Adjustable FOV circle size, Select Bone, Visible Check, Smoothess Slider, Aimbot Distance, Aimbot Hotkey, Aim At Downed"
+  },
+  {
+    "title": "👁️ Visuals",
+    "text": "Skeleton, Distance, 2D Box, 2D Corner, 2D Fill Box, Snaplines, Health Bar, Player Name, Team Check, Show Visible Only, ESP Thickness Settings, ESP/Visuals Color Settings"
+  },
+  {
+    "title": "💼 Loot ESP",
+    "text": " Enable, Distance, Minimum Rarity, Show Cash, Show Bags, Show Cases, Show Ammo, Show Boxes, Show Weapons, Show Gas Mask, Show Killstreaks"
+  },
+  {
+    "title": "👨‍💻 Lobby Tracker",
+    "text": "Name, Health, Team ID, Distance, Player Ping, Player Level, Player K/D Ratio, Gather all these Information of all players in your lobby"
+  },
+  {
+    "title": "🛡️ Settings",
+    "text": " Save & Load Configs 1-3, Hide Overlay, Menu VSync"
+  }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": true
+  },
   "bo6-fecurity-chair": {
     "slug": "bo6-fecurity-chair",
     "title": "BO6 Fecurity Chair",
