@@ -4,6 +4,18 @@
         "template": "index.html"
     },
     {
+        "url": "/donate",
+        "template": "/donate.html"
+    },
+    {
+        "url": "/submit-wallpapers",
+        "template": "/submit-wallpapers.html"
+    },
+    {
+        "url": "/download-wallpapers",
+        "template": "/download-wallpapers.html"
+    },
+    {
         "url": "/store",
         "template": "/store/index.html"
     },
