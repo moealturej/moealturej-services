@@ -192,6 +192,41 @@
     },
     "popular": true
   },
+  "camo-services": {
+    "slug": "camo-services",
+    "title": "Bo6/Wz4 Camos Services",
+    "subtitle": "All guns",
+    "image_url": "https://i.postimg.cc/mZYs3VJv/public.jpg",
+    "plans": [
+      { "plan": "one camo", "price": 11.49, "label": "1 CAMO ON ALL GUNS" },
+      { "plan": "two camos", "price": 17.49, "label": "2 CAMOS ON ALL GUNS" },
+      { "plan": "three camos", "price": 22.99, "label": "3 CAMOS ON ALL GUNS" },
+      { "plan": "five camos", "price": 30.49, "label": "5 CAMOS ON ALL GUNS" }
+    ],
+"description": [
+  {
+    "title": "⚙️ HOW DO CAMO SERVICES WORK FOR BLACK OPS 6 ?",
+    "text": "Camos can now only be use in game for guns you have already unlocked. You can still get them without the gun unlocked"
+  },
+  {
+    "title": "⚙️ LIST OF AVAILABLE AND SAFE CAMOUFLAGE  ?",
+    "text": "Molten Obsidian - Constellation's End - MWII Platinum - MWII Polyatomic - Mercury"
+  },
+  {
+    "title": "❗ IMPORTANT",
+    "text": "Attachments dont work - Few most recent guns are not available - You can still add attachments to your guns later."
+  },
+  {
+    "title": "❗ RISKY CAMOS",
+    "text": "Gold - Gold Tiger - Mystic Gold - Diamond - Opal - Dark Spine - AfterLife - Dark Matter - Abyss - Nebula - Pink Camo - Citadelle PAP 1 - Citadelle PAP 2 - Citadelle PAP 3 - Liberty PAP 1 - Liberty PAP 2 - Liberty PAP 3 - Terminus PAP 1 - Terminus PAP 2 - Terminus PAP 3 - Tomb PAP 1 - Tomb PAP 2 - Tomb PAP 3 - One Trick - Green & Gold - MWII Gold - MWII Orion - S5 Gold - S5 Platinum - S5 Diamond - S5 Crimson - S5 Iridescent - S5 Top 250 - Flow Thru"
+  }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": true
+  },
   "crusader-r6": {
     "slug": "crusader-r6",
     "title": "Crusader R6",
