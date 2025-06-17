@@ -135,6 +135,63 @@
     },
     "popular": false
   },
+  "r6-inferno-chair": {
+    "slug": "r6-inferno-chair",
+    "title": "Rainbow Six Siege/X: Inferno Chair",
+    "subtitle": "Compatible with Windows 10 and 11 (Intel and AMD systems), Provides full access to all features",
+    "image_url": "https://i.postimg.cc/CLwyPm78/image.png",
+    "plans": [
+      { "plan": "day", "price": 9.99, "label": "DAY KEY" },
+      { "plan": "week", "price": 22.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 40.99, "label": "MONTH KEY" }
+    ],
+"description": [
+  {
+    "title": "⚙️ General Information",
+    "text": " Fully External - Unlock All - ESP + No Recoil"
+  },
+  {
+    "title": "💻 Requirements",
+    "text": "CPU: Intel / AMD - OS: Windows 10 / 11"
+  },
+  {
+    "title": "🛡️ Features",
+    "text": "Player ESP (Box/Skeleton) - Health ESP - Customizable Recoil Control (0 – 100%) - FOV Customizer - Unlock All - Unique builds for Product & Loader - QB Compatible - Web Menu"
+  }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": true
+  },
+
+  "r6-inferno-ula": {
+    "slug": "r6-inferno-ula",
+    "title": "Rainbow Six Siege/X: Inferno Unlocker",
+    "subtitle": "Compatible with Windows 10 and 11 (Intel and AMD systems), Provides full access to all features",
+    "image_url": "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
+    "plans": [
+      { "plan": "day", "price": 8.49, "label": "DAY KEY" },
+      { "plan": "week", "price": 16.99, "label": "WEEK KEY" },
+      { "plan": "month", "price": 33.49, "label": "MONTH KEY" }
+    ],
+"description": [
+  {
+    "title": "⚙️ General Information",
+    "text": " Fully External - Unlock All - Provides full access to all features - Server-sided functionality (visible to all users) - Fully compatible with other running products"
+  },
+  {
+    "title": "💻 Requirements",
+    "text": "CPU: Intel / AMD - OS: Windows 10 / 11"
+  }
+    ],
+    "refund_policy": {
+      "title": "No Refunds Policy",
+      "text": "Due to the nature of the product, all sales are final."
+    },
+    "popular": true
+  },
   "crusader-r6": {
     "slug": "crusader-r6",
     "title": "Crusader R6",
