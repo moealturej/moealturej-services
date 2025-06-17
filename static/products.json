@@ -9,12 +9,29 @@
     "checkoutParam": "bo6-ghost-chair"
   },
   {
+    "id": "r6-inferno-chair",
+    "name": "Rainbow Six Siege/X: Inferno Chair",
+    "price": "9.99 - 40.99",
+    "image": "https://i.postimg.cc/CLwyPm78/image.png",
+    "badge": "New",
+    "popular": true,
+    "checkoutParam": "r6-inferno-chair"
+  },
+  {
+    "id": "r6-inferno-ula",
+    "name": "Rainbow Six Siege/X: Inferno Unlocker",
+    "price": "8.49 - 33.49",
+    "image": "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
+    "badge": "New",
+    "popular": true,
+    "checkoutParam": "r6-inferno-ula"
+  },
+  {
     "id": "crusader-r6",
     "name": "Crusader R6",
     "price": "7.99 - 42.99",
     "image": "https://i.postimg.cc/6qHMZb0p/public-1.png",
-    "badge": "New",
-    "popular": true,
+    "popular": false,
     "checkoutParam": "crusader-r6"
   },
   {
@@ -22,8 +39,7 @@
     "name": "BO6 Shadow Chair",
     "price": "7.99 - 205.99",
     "image": "https://i.postimg.cc/wv1d2H5K/public.png",
-    "badge": "New",
-    "popular": true,
+    "popular": false,
     "checkoutParam": "bo6-shadow-chair"
   },
   {
