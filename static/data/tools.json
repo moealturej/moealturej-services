@@ -1,13 +1,6 @@
 {
   "free": [
     {
-      "name": "Combat Master Cheat Table",
-      "description": "Cheat table for Combat Master.",
-      "image": "https://i.postimg.cc/FHNxwbWp/Screenshot-2025-04-05-215824.jpg",
-      "download_url": "https://gofile.io/d/m6TQzR",
-      "status": "Online"
-    },
-    {
       "name": "Cheat Engine",
       "description": "Universal game memory editor.",
       "image": "/static/files/cheatengine_logo_234.jpg",
@@ -26,14 +19,14 @@
       "description": "Unlock Spotify Premium features.",
       "image": "https://i.postimg.cc/gks3Dw4t/open-graph-default.png",
       "download_url": "/static/files/Spotify-Premium-Tool.exe",
-      "status": "Online"
+      "status": "Updating"
     },
     {
       "name": "Windows Activation Tool",
       "description": "Activate Windows OS permanently.",
       "image": "https://i.postimg.cc/fLvbNdV6/microsoft-windows-10x-logo-glowing-blue-circuits-by-vchal-gettyimages-1186902469-2400x1600-100882265.webp",
       "download_url": "/static/files/Windows_Activation_Tool.exe",
-      "status": "Updating"
+      "status": "Testing"
     },
     {
       "name": "Adobe Premiere Pro",
@@ -75,14 +68,6 @@
       "status": "Online"
     },
     {
-      "name": "Bo6/Wz4 Camos Services",
-      "description": "All Guns",
-      "image": "https://i.postimg.cc/mZYs3VJv/public.jpg",
-      "checkout_url": "/store/camo-services",
-      "download_url": "https://mega.nz/file/IW9WRLRK#d_SFk6UDgvpEW9rNi-aLMUpfdfvHYKrsbsdFiiW_ptk",
-      "status": "Online"
-    },
-    {
       "name": "Rainbow Six Siege/X: Inferno Chair",
       "description": "Compatible with Windows 10 and 11 (Intel and AMD systems), Provides full access to all features",
       "image": "https://i.postimg.cc/CLwyPm78/image.png",
@@ -99,35 +84,11 @@
       "status": "Online"
     },
     {
-      "name": "Crusader R6",
-      "description": "Active Aimbot, ESP & More",
-      "image": "https://i.postimg.cc/6qHMZb0p/public-1.png",
-      "checkout_url": "/store/crusader-r6",
-      "download_url": "https://gofile.io/d/cE3evg",
-      "status": "Online"
-    },
-    {
-      "name": "BO6 Shadow chair",
-      "description": "Next-gen External/ Internal hybrid.",
-      "image": "https://i.postimg.cc/wv1d2H5K/public.png",
-      "checkout_url": "/store/bo6-shadow-chair",
-      "download_url": "https://gofile.io/d/DAJZoW",
-      "status": "Online"
-    },
-    {
-      "name": "BO6 Fecurity chair",
-      "description": "Next-gen External/ Internal hybrid.",
-      "image": "https://i.postimg.cc/fL98V56m/IMG-4269.jpg",
-      "checkout_url": "/store/bo6-fecurity-chair",
-      "download_url": "https://mega.nz/folder/ORsFGQDT#nOKWTNSs97e42MbQhuIoSg",
-      "status": "Online"
-    },
-    {
-      "name": "Temp Spoofer",
-      "description": "Temporary hardware ID spoofer.",
-      "image": "https://i.postimg.cc/0N5jH6j9/public-2.png",
-      "checkout_url": "/store/temp-spoofer",
-      "download_url": "https://gofile.io/d/sOx7iW",
+      "name": "BO6 ZeroAim External Chair",
+      "description": "Top-Rated External on the Market",
+      "image": "https://i.postimg.cc/cHfjc8cR/public-1.jpg",
+      "checkout_url": "/store/bo6-zeroaim-chair",
+      "download_url": "https://gofile.io/d/QjhbAe",
       "status": "Online"
     },
     {
