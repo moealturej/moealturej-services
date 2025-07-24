@@ -54,7 +54,7 @@
     "plans": [
       { "plan": "day", "price": 7.49, "label": "DAY KEY" },
       { "plan": "week", "price": 17.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 35.99, "label": "MONTH KEY" },
+      { "plan": "month", "price": 35.99, "label": "MONTH KEY" }
     ],
 "description": [
   {
