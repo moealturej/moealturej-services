@@ -46,16 +46,15 @@
     },
     "popular": true
   },
-  "bo6-shadow-chair": {
-    "slug": "bo6-shadow-chair",
-    "title": "BO6 Shadow Chair",
-    "subtitle": "Next-gen External/ Internal hybrid.",
-    "image_url": "https://i.postimg.cc/wv1d2H5K/public.png",
+  "bo6-zeroaim-chair": {
+    "slug": "bo6-zeroaim-chair",
+    "title": "BO6 ZeroAim External Chair",
+    "subtitle": "Top-Rated External on the Market",
+    "image_url": "https://i.postimg.cc/cHfjc8cR/public-1.jpg",
     "plans": [
-      { "plan": "day", "price": 7.99, "label": "DAY KEY" },
+      { "plan": "day", "price": 7.49, "label": "DAY KEY" },
       { "plan": "week", "price": 17.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 30.99, "label": "MONTH KEY" },
-      { "plan": "month", "price": 205.99, "label": "LIFETIME KEY" }
+      { "plan": "month", "price": 35.99, "label": "MONTH KEY" },
     ],
 "description": [
   {
@@ -68,23 +67,39 @@
   },
   {
     "title": "🎯 Aimbot",
-    "text": "Enable aimbot, Enemy lock, Aimbot FOV circle, Adjustable FOV circle size, Select Bone, Visible Check, Smoothess Slider, Aimbot Distance, Aimbot Hotkey, Aim At Downed"
+    "text": "Aimbot [Toggle], Max Range [Adjustable – 300 shown], Bind Action [Custom keybind – e.g., X2 Mouse], Smoothness [Adjustable – 5 shown]"
+  },
+  {
+    "title": "🙋 Targeting Options",
+    "text": "Downed Target [Toggle], Visible Target [Toggle], Single Lock [Toggle], Line to Target [Toggle], Field of View (FOV) [Adjustable – 200 shown], Draw FOV [Toggle], Target Team [Toggle]"
+  },
+  {
+    "title": "🎮 Controller Settings",
+    "text": "Enable Controller [Toggle], Smoothness [Adjustable – 40 shown], Bind List [e.g., bLeftTrigger]"
+  },
+  {
+    "title": "⬆️ Aimbot Modes",
+    "text": "Enable Radar [Toggle], No Background [Toggle], Draw Local [Toggle], Draw Arrow [Toggle], Draw Team [Toggle]"
+  },
+  {
+    "title": "🗺️ Radar Tab",
+    "text": "Working for Black Ops 6 & Warzone 4, Native Controller Support, HWID Spoof included & Anticheat Blocker included"
   },
   {
     "title": "👁️ Visuals",
-    "text": "Skeleton, Distance, 2D Box, 2D Corner, 2D Fill Box, Snaplines, Health Bar, Player Name, Team Check, Show Visible Only, ESP Thickness Settings, ESP/Visuals Color Settings"
+    "text": "Enable ESP [Toggle], Draw Box [Toggle], Max Range [Adjustable – 200 shown], Draw Bones [Toggle], Line to Target [Toggle], Draw Name [Toggle], Draw Distance [Toggle], Draw Healthbar [Toggle], Draw Stance Info [Toggle], Target Visibility [Toggle], Player Weapon [Toggle], Draw Team [Toggle]"
   },
   {
     "title": "💼 Loot ESP",
-    "text": " Enable, Distance, Minimum Rarity, Show Cash, Show Bags, Show Cases, Show Ammo, Show Boxes, Show Weapons, Show Gas Mask, Show Killstreaks"
+    "text": "Enable [Toggle], Distance [Toggle], Max Range [Adjustable – 200 shown], Minimum Rarity [Dropdown – e.g., Common]"
   },
   {
-    "title": "👨‍💻 Lobby Tracker",
-    "text": "Name, Health, Team ID, Distance, Player Ping, Player Level, Player K/D Ratio, Gather all these Information of all players in your lobby"
+    "title": "👨‍💻 Item Categories",
+    "text": "Cash [Toggle], Bag [Toggle], Armor Plates [Toggle], Storage Containers [Toggle], Armor Box [Toggle], Ammo Box [Toggle], Killstreaks [Toggle], Specialist [Toggle], Self Revive Kits [Toggle], Gas Mask [Toggle], Weapon [Toggle], Ammo [Toggle]"
   },
   {
     "title": "🛡️ Settings",
-    "text": " Save & Load Configs 1-3, Hide Overlay, Menu VSync"
+    "text": "Profiles Tab – Save/Load configuration profiles using function keys: Profile 1 [F1], Profile 2 [F2], Profile 3 [F3], Profile 4 [F4], Profile 5 [F5], Profile 6 [F6], Profile 7 [F7]; Save: Store current settings, Load: Apply saved profile instantly"
   }
     ],
     "refund_policy": {
@@ -92,48 +107,6 @@
       "text": "Due to the nature of the product, all sales are final."
     },
     "popular": true
-  },
-  "bo6-fecurity-chair": {
-    "slug": "bo6-fecurity-chair",
-    "title": "BO6 Fecurity Chair",
-    "subtitle": "Next-gen External/ Internal hybrid.",
-    "image_url": "https://i.postimg.cc/fL98V56m/IMG-4269.jpg",
-    "plans": [
-      { "plan": "day", "price": 8.99, "label": "DAY KEY" },
-      { "plan": "week", "price": 20.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 35.99, "label": "MONTH KEY" }
-    ],
-"description": [
-  {
-    "title": "🎯 Precision Aimbot",
-    "text": "Toggle aim assist with options for shooting, scoping, visibility checks, gamepad support, and unique hitbox logic. Dial in your targeting with precision and speed."
-  },
-  {
-    "title": "⚙️ Easy & Pro Aimbot Modes",
-    "text": "Choose between EASY mode with simple FOV & degree limits, or PRO mode with advanced graph-based scaling for distance and time. Customize like a true pro."
-  },
-  {
-    "title": "👁️‍🗨️ Visual ESP + UAV Radar",
-    "text": "Track players with full ESP—boxes, health, shields, names, ranks, and even ping. Radar mode offers range-based detection, OOF indicators, and clean visuals."
-  },
-  {
-    "title": "💡 Advanced Glow Options",
-    "text": "Enable glow effects with fill, thickness, and type (default, thermal, noisy). Includes visibility checks for smarter rendering."
-  },
-  {
-    "title": "💼 Loot ESP",
-    "text": "Enable loot detection with categories like weapons, armor, cash, perks & more. Customize how loot appears—icons, names, distances, and full color control."
-  },
-  {
-    "title": "🛠️ Misc Features",
-    "text": "Includes a custom clantag system, no-recoil toggle, and selectable distance units (feet, yards, meters) for your personal preference."
-  }
-    ],
-    "refund_policy": {
-      "title": "No Refunds Policy",
-      "text": "Due to the nature of the product, all sales are final."
-    },
-    "popular": false
   },
   "r6-inferno-chair": {
     "slug": "r6-inferno-chair",
@@ -165,7 +138,6 @@
     },
     "popular": true
   },
-
   "r6-inferno-ula": {
     "slug": "r6-inferno-ula",
     "title": "Rainbow Six Siege/X: Inferno Unlocker",
@@ -192,137 +164,6 @@
     },
     "popular": true
   },
-  "camo-services": {
-    "slug": "camo-services",
-    "title": "Bo6/Wz4 Camos Services",
-    "subtitle": "All guns",
-    "image_url": "https://i.postimg.cc/mZYs3VJv/public.jpg",
-    "plans": [
-      { "plan": "one camo", "price": 11.49, "label": "1 CAMO ON ALL GUNS" },
-      { "plan": "two camos", "price": 17.49, "label": "2 CAMOS ON ALL GUNS" },
-      { "plan": "three camos", "price": 22.99, "label": "3 CAMOS ON ALL GUNS" },
-      { "plan": "five camos", "price": 30.49, "label": "5 CAMOS ON ALL GUNS" }
-    ],
-"description": [
-  {
-    "title": "⚙️ HOW DO CAMO SERVICES WORK FOR BLACK OPS 6 ?",
-    "text": "Camos can now only be use in game for guns you have already unlocked. You can still get them without the gun unlocked"
-  },
-  {
-    "title": "⚙️ LIST OF AVAILABLE AND SAFE CAMOUFLAGE  ?",
-    "text": "Molten Obsidian - Constellation's End - MWII Platinum - MWII Polyatomic - Mercury"
-  },
-  {
-    "title": "❗ IMPORTANT",
-    "text": "Attachments dont work - Few most recent guns are not available - You can still add attachments to your guns later."
-  },
-  {
-    "title": "❗ RISKY CAMOS",
-    "text": "Gold - Gold Tiger - Mystic Gold - Diamond - Opal - Dark Spine - AfterLife - Dark Matter - Abyss - Nebula - Pink Camo - Citadelle PAP 1 - Citadelle PAP 2 - Citadelle PAP 3 - Liberty PAP 1 - Liberty PAP 2 - Liberty PAP 3 - Terminus PAP 1 - Terminus PAP 2 - Terminus PAP 3 - Tomb PAP 1 - Tomb PAP 2 - Tomb PAP 3 - One Trick - Green & Gold - MWII Gold - MWII Orion - S5 Gold - S5 Platinum - S5 Diamond - S5 Crimson - S5 Iridescent - S5 Top 250 - Flow Thru"
-  }
-    ],
-    "refund_policy": {
-      "title": "No Refunds Policy",
-      "text": "Due to the nature of the product, all sales are final."
-    },
-    "popular": true
-  },
-  "crusader-r6": {
-    "slug": "crusader-r6",
-    "title": "Crusader R6",
-    "subtitle": "Active Aimbot, ESP & More",
-    "image_url": "https://i.postimg.cc/6qHMZb0p/public-1.png",
-    "plans": [
-      { "plan": "day", "price": 7.99, "label": "DAY KEY" },
-      { "plan": "week", "price": 26.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 42.99, "label": "MONTH KEY" }
-    ],
-"description": [
-  {
-    "title": "💻 System Requirements",
-    "text": "Operating system: Windows 10, Windows 11 (21H2, 22H2, 23H2, 24H2) | Processor: Intel & AMD | Video card: Nvidia & AMD | Client: UPlay (Ubisoft Connect), Steam, Epic Games"
-  },
-  {
-    "title": "🧱 Player ESP",
-    "text": "Player ESP - esp for rainbow, shows players behind walls | ESP Box - ESP in the form of boxes | ESP Line (Up, Center, Bottom) - wh in the form of lines | Player Distance - distance in meters to enemies | Skeleton - wallhack in the form of skeletons | Name - players' nicknames | Head - select head hitbox separately using ESP | Health (Bar, Text) - display of players' HP | Team Check - if you check this box, allies will not be shown (don't check this in arcade) | Max Distance - limit the range of the wallhack"
-  },
-  {
-    "title": "🎯 Aimbot",
-    "text": "Active Aimbot - enable aimbot, aiming assistance when shooting | Aimbot Keys - ability to set 2 keys to activate the aimbot | FOV Size - the size of the area within which the aimbot will capture targets | Draw FOV - show the size of the aimbot's working area as a circle around the sight | Hitboxes - selection of body parts (bones) that the aimbot will aim at during operation | Mark Target - visually mark the current target of the aimbot | Sensitivity - sharpness, smoothness of aimbot movements | Crosshair - static crosshair in the middle of the screen"
-  }
-    ],
-    "refund_policy": {
-      "title": "No Refunds Policy",
-      "text": "Due to the nature of the product, all sales are final."
-    },
-    "popular": false
-  },
-  "temp-spoofer": {
-    "slug": "temp-spoofer",
-    "title": "Temp Spoofer",
-    "subtitle": "Protect your real HWID temporarily with full support for external cheats, no traces, and safe on game restarts.",
-    "image_url": "https://i.postimg.cc/0N5jH6j9/public-2.png",
-    "plans": [
-      { "plan": "day", "price": 5.99, "label": "DAY KEY" },
-      { "plan": "week", "price": 12.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 22.99, "label": "MONTH KEY" }
-    ],
-    "description": [
-      {
-        "title": "Description",
-        "text": "🔒 Temporary spoof to protect real HWID while gaming, ✅ Perfect for COD externals, seamless compatibility & 🔄 HWID reverts to normal after a restart"
-      },
-      {
-        "title": "🎮 Works with major games like:",
-        "text": "COD, Fortnite, Rust, R6, more"
-      }
-    ],
-    "refund_policy": {
-      "title": "No Refunds Policy",
-      "text": "Due to the nature of the product, all sales are final."
-    },
-    "popular": false
-  },
-
-"reseller-exclusive-key": {
-  "slug": "reseller-exclusive-key",
-  "title": "Reseller Exclusive Key",
-  "subtitle": "⚠️ FOR APPROVED RESELLERS ONLY — Unauthorized purchases will result in NO delivery and NO refund.",
-  "image_url": "https://i.postimg.cc/L6zbDYps/construction.jpg",
-  "plans": [
-  { "plan": "ghost day *single*", "price": 3.50, "label": "ghost day *single*" },
-  { "plan": "ghost day bulk (10)", "price": 30.00, "label": "ghost day bulk (10)" },
-
-  { "plan": "ghost week *single*", "price": 8.00, "label": "ghost week *single*" },
-  { "plan": "ghost week bulk (10)", "price": 75.00, "label": "ghost week bulk (10)" },
-
-  { "plan": "ghost month *single*", "price": 14.00, "label": "ghost month *single*" },
-  { "plan": "ghost month bulk (10)", "price": 120.00, "label": "ghost month bulk (10)" }
-  ],
-  "description": [
-    {
-      "title": "⚠️ Reseller-Only Access",
-      "text": "This product is strictly for officially approved resellers appointed by the moealturej Solutions Owner. If you are not an approved reseller and you purchase this product, **you will NOT receive any product or support**."
-    },
-    {
-      "title": "🚫 No Exceptions, No Refunds",
-      "text": "Unauthorized buyers will be **automatically blacklisted** and no refund will be provided under any circumstances. Ensure you are verified before purchasing."
-    },
-    {
-      "title": "📦 Bulk License Packs",
-      "text": "Each purchase includes the number of keys specified. Ideal for distribution by resellers to their own clients."
-    },
-    {
-      "title": "✅ What You Get (If Verified)",
-      "text": "Bulk key packs delivered within 24hrs directly to you. Use them freely to distribute to customers."
-    }
-  ],
-  "refund_policy": {
-    "title": "Zero Tolerance Refund Policy",
-    "text": "This product is **non-refundable**. Any unauthorized purchase will be treated as a **forfeit** and the buyer will receive nothing."
-  },
-  "popular": false
-},
   "perm-spoofer": {
     "slug": "perm-spoofer",
     "title": "Perm Spoofer",
