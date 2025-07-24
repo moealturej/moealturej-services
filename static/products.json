@@ -9,21 +9,11 @@
     "checkoutParam": "bo6-ghost-chair"
   },
   {
-    "id": "camo-services",
-    "name": "Bo6/Wz4 Camos Services",
-    "price": "11.49 - 30.49",
-    "image": "https://i.postimg.cc/mZYs3VJv/public.jpg",
-    "badge": "New",
-    "popular": true,
-    "checkoutParam": "camo-services"
-  },
-  {
     "id": "r6-inferno-chair",
     "name": "Rainbow Six Siege/X: Inferno Chair",
     "price": "9.99 - 40.99",
     "image": "https://i.postimg.cc/CLwyPm78/image.png",
-    "badge": "New",
-    "popular": true,
+    "popular": false,
     "checkoutParam": "r6-inferno-chair"
   },
   {
@@ -31,41 +21,17 @@
     "name": "Rainbow Six Siege/X: Inferno Unlocker",
     "price": "8.49 - 33.49",
     "image": "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
-    "badge": "New",
-    "popular": true,
+    "popular": false,
     "checkoutParam": "r6-inferno-ula"
   },
   {
-    "id": "crusader-r6",
-    "name": "Crusader R6",
-    "price": "7.99 - 42.99",
-    "image": "https://i.postimg.cc/6qHMZb0p/public-1.png",
-    "popular": false,
-    "checkoutParam": "crusader-r6"
-  },
-  {
-    "id": "bo6-shadow-chair",
-    "name": "BO6 Shadow Chair",
-    "price": "7.99 - 205.99",
-    "image": "https://i.postimg.cc/wv1d2H5K/public.png",
-    "popular": false,
-    "checkoutParam": "bo6-shadow-chair"
-  },
-  {
-    "id": "bo6-fecurity-chair",
-    "name": "BO6 Fecurity Chair",
-    "price": "8.99 - 35.99",
-    "image": "https://i.postimg.cc/fL98V56m/IMG-4269.jpg",
-    "popular": false,
-    "checkoutParam": "bo6-fecurity-chair"
-  },
-  {
-    "id": "temp-spoofer",
-    "name": "Temporary HWID Spoofer",
-    "price": "5.99 - 22.99",
-    "image": "https://i.postimg.cc/0N5jH6j9/public-2.png",
-    "popular": false,
-    "checkoutParam": "temp-spoofer"
+    "id": "bo6-zeroaim-chair",
+    "name": "BO6 ZeroAim External Chair",
+    "price": "7.49 - 35.99",
+    "image": "https://i.postimg.cc/cHfjc8cR/public-1.jpg",
+    "badge": "New",
+    "popular": true,
+    "checkoutParam": "bo6-zeroaim-chair"
   },
   {
     "id": "perm-spoofer",
