@@ -114,9 +114,9 @@
     "subtitle": "Compatible with Windows 10 and 11 (Intel and AMD systems), Provides full access to all features",
     "image_url": "https://i.postimg.cc/CLwyPm78/image.png",
     "plans": [
-      { "plan": "day", "price": 9.99, "label": "DAY KEY" },
-      { "plan": "week", "price": 22.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 40.99, "label": "MONTH KEY" }
+      { "plan": "day", "price": 9.00, "label": "DAY KEY" },
+      { "plan": "week", "price": 32.00, "label": "WEEK KEY" },
+      { "plan": "month", "price": 60.00, "label": "MONTH KEY" }
     ],
 "description": [
   {
