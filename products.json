@@ -7,8 +7,7 @@
     "plans": [
       { "plan": "day", "price": 6.99, "label": "DAY KEY" },
       { "plan": "week", "price": 19.99, "label": "WEEK KEY" },
-      { "plan": "month", "price": 29.99, "label": "MONTH KEY" },
-      { "plan": "lifetime", "price": 89.99, "label": "LIFETIME KEY" }
+      { "plan": "month", "price": 29.99, "label": "MONTH KEY" }
     ],
 "description": [
   {
