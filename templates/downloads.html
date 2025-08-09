@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+<title>Downloads - moealturej</title>
+
+{% block extra_head %}
+<meta name="description" content="Access free and premium BO6 tools instantly." />
+<meta name="keywords" content="BO6 cheats, downloads, game enhancer, moealturej" />
+{% endblock %}
+
+{% block content %}
+<style>
+/* Scoped to avoid clashes with other pages */
+.downloads-page { color: #eee; font-family: 'Segoe UI', sans-serif; }
+
+/* General layout */
+.downloads-page .container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 2rem;
+}
+
+/* Headings */
+.downloads-page h1,
+.downloads-page h2 {
+  color: #ff66ff;
+  text-shadow: 0 0 8px rgba(255,102,255,0.7);
+}
+
+/* Links */
+.downloads-page a { color: #ff66ff; text-decoration: none; }
+.downloads-page a:hover { color: #ff99ff; }
+
+/* Status legend */
+.downloads-page .status-legend { display:flex; gap:1.5rem; margin:1rem 0; flex-wrap:wrap; }
+.downloads-page .legend-item { display:flex; align-items:center; font-size:0.95rem; }
+.downloads-page .legend-icon { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:0.5rem; }
+.downloads-page .status-online .legend-icon { background:#00ff9f; box-shadow:0 0 6px #00ff9f; }
+.downloads-page .status-offline .legend-icon { background:#ff4d4d; box-shadow:0 0 6px #ff4d4d; }
+.downloads-page .status-testing .legend-icon { background:#ffd633; box-shadow:0 0 6px #ffd633; }
+.downloads-page .status-updating .legend-icon { background:#00aaff; box-shadow:0 0 6px #00aaff; }
+
+/* Grid for tools */
+.downloads-page .grid {
+  display:grid;
+  gap:1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  margin-top:1rem;
+}
+
+/* Card style */
+.downloads-page .card {
+  background:#141420;
+  border:1px solid rgba(255,102,255,0.15);
+  border-radius:10px;
+  overflow:hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.downloads-page .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 15px rgba(255,102,255,0.5);
+}
+.downloads-page .card img { width:100%; display:block; height:180px; object-fit:cover; }
+.downloads-page .card-body { padding:1rem; }
+.downloads-page .card-body h3 { color:#ff80ff; margin-bottom:0.5rem; }
+.downloads-page .card-body p { font-size:0.95rem; color:#ccc; margin-bottom:1rem; }
+
+/* Status tag inside card */
+.downloads-page .status { display:inline-block; padding:0.2rem 0.6rem; border-radius:5px; font-size:0.8rem; font-weight:bold; margin-bottom:0.5rem; }
+.downloads-page .status-online { background: rgba(0,255,159,0.15); color:#00ff9f; border:1px solid #00ff9f; }
+.downloads-page .status-offline { background: rgba(255,77,77,0.15); color:#ff4d4d; border:1px solid #ff4d4d; }
+.downloads-page .status-testing { background: rgba(255,214,51,0.15); color:#ffd633; border:1px solid #ffd633; }
+.downloads-page .status-updating { background: rgba(0,170,255,0.15); color:#00aaff; border:1px solid #00aaff; }
+
+/* Buttons */
+.downloads-page .btn, .downloads-page .download-btn {
+  background: linear-gradient(135deg, #ff00ff, #9900ff);
+  color:#fff;
+  padding:0.5rem 1rem;
+  border-radius:6px;
+  font-weight:bold;
+  display:inline-block;
+  transition: background .2s ease, transform .2s ease;
+}
+.downloads-page .btn:hover, .downloads-page .download-btn:hover {
+  background: linear-gradient(135deg, #ff33ff, #b84dff);
+  transform: scale(1.05);
+}
+
+/* Divider */
+.downloads-page .divider {
+  height:2px;
+  background: linear-gradient(to right, transparent, #ff00ff, transparent);
+  margin:2rem 0;
+}
+</style>
+
+<div class="downloads-page">
+  <header class="container">
+    <h1>Downloads Center</h1>
+    <div class="status-legend">
+      <div class="legend-item status-online"><span class="legend-icon"></span>Online</div>
+      <div class="legend-item status-offline"><span class="legend-icon"></span>Offline</div>
+      <div class="legend-item status-testing"><span class="legend-icon"></span>Testing</div>
+      <div class="legend-item status-updating"><span class="legend-icon"></span>Updating</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section>
+      <h2>Free Tools</h2>
+      <div class="grid" id="free-tools"></div>
+    </section>
+
+    <div class="divider"></div>
+  </main>
+</div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js" defer></script>
+<script>
+  window.addEventListener('load', () => {
+    // Initialize particles
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 60, density: { enable: true, value_area: 800 } },
+        color: { value: '#ff00ff' },
+        shape: { type: 'circle' },
+        opacity: { value: 0.4 },
+        size: { value: 2 },
+        move: { enable: true, speed: 1.5, out_mode: 'out' }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: { onhover: { enable: true, mode: 'repulse' } },
+        modes: { repulse: { distance: 100 } }
+      },
+      retina_detect: true
+    });
+
+    // Render tools from JSON
+    fetch('/static/data/tools.json')
+      .then(res => res.json())
+      .then(data => {
+        const free = document.getElementById('free-tools');
+        const paid = document.getElementById('paid-tools');
+
+        function renderCard(container, t, isPaid = false) {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const statusTag = t.status
+            ? `<span class="status status-${t.status.toLowerCase()}">${t.status}</span>`
+            : '';
+
+          const actions = isPaid
+            ? `<a href="${t.checkout_url}" class="btn">🛒 Buy Now</a>
+               <a href="${t.download_url}" class="download-btn">💾 Download</a>`
+            : `<a href="${t.download_url}" class="download-btn">💾 Download</a>`;
+
+          card.innerHTML = `
+            <img src="${t.image}" alt="${t.name}" />
+            <div class="card-body">
+              ${statusTag}
+              <h3>${t.name}</h3>
+              <p>${t.description}</p>
+              <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">${actions}</div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        }
+
+        data.free.forEach(t => renderCard(free, t));
+        data.paid.forEach(t => renderCard(paid, t, true));
+
+        // Render Sponsored OnlyChams.pro (Static Version)
+        const sponsoredContainer = document.getElementById('sponsored-tools');
+
+        const fb = {
+          image: 'https://i.postimg.cc/SKBV3jgq/Untitled.jpg',
+          name: 'Sponsored Slot Available',
+          description: 'Promote your product or service here. Contact us to get featured.',
+          url: 'https://www.moealturej.com/contact',
+        };
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${fb.image}" alt="${fb.name}" />
+          <div class="card-body">
+            <h3>${fb.name}</h3>
+            <p>${fb.description}</p>
+            <a href="${fb.url}" target="_blank" class="download-btn">
+              OnlyChams.pro <i class="fas fa-arrow-up-right-from-square"></i>
+            </a>
+          </div>
+        `;
+        sponsoredContainer.appendChild(card);
+      });
+  });
+</script>
+{% endblock %}

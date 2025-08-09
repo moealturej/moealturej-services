@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+<title>Terms Of Service - moealturej</title>
+
+{% block content %}
+<style>
+    /* Neon Dark Theme */
+    .hero {
+        background: rgba(20, 0, 30, 0.8);
+        padding: 3rem 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 0 30px rgba(255, 0, 255, 0.25);
+        text-align: center;
+    }
+    .hero h1 {
+        color: #ff66cc;
+        font-size: 2.5rem;
+        text-shadow: 0 0 15px rgba(255, 0, 255, 0.8);
+        margin-bottom: 1rem;
+    }
+    .hero p {
+        color: #e0c3ff;
+        font-size: 1.1rem;
+        max-width: 800px;
+        margin: auto;
+    }
+    .last-update {
+        color: #a566ff;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+    }
+
+    /* TOS container and cards */
+    .tos-container {
+        margin-top: 2rem;
+        display: grid;
+        gap: 1.5rem;
+    }
+    .tos-card {
+        background: rgba(25, 0, 40, 0.85);
+        border: 1px solid rgba(255, 0, 255, 0.15);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 0 20px rgba(204, 0, 255, 0.15);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .tos-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0 25px rgba(255, 0, 255, 0.4);
+    }
+
+    /* Term headers */
+    .term-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    .term-number {
+        background: linear-gradient(135deg, #ff66cc, #a566ff);
+        color: white;
+        font-weight: bold;
+        padding: 0.6rem 1rem;
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+    }
+    .term-title {
+        color: #ff99ff;
+        font-size: 1.4rem;
+    }
+    .term-content {
+        color: #d1b3ff;
+        line-height: 1.6;
+    }
+    .term-highlight {
+        background: linear-gradient(135deg, #ff66cc, #a566ff);
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.3rem;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 0 8px rgba(255, 0, 255, 0.5);
+    }
+
+    /* Important terms */
+    .important-term {
+        margin-top: 1rem;
+        background: rgba(255, 0, 255, 0.08);
+        padding: 0.8rem;
+        border-left: 4px solid #ff66cc;
+        border-radius: 0.5rem;
+        color: #ffb3ff;
+        font-size: 0.95rem;
+    }
+
+    /* Contact section */
+    .contact-section {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: rgba(20, 0, 30, 0.85);
+        border-radius: 1rem;
+        box-shadow: 0 0 25px rgba(138, 43, 226, 0.3);
+        text-align: center;
+    }
+    .contact-section h2 {
+        color: #ff66cc;
+        margin-bottom: 1rem;
+    }
+    .contact-section p {
+        color: #d1b3ff;
+        margin-bottom: 1.5rem;
+    }
+    .contact-btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #ff66cc, #a566ff);
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: bold;
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .contact-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(255, 0, 255, 0.6);
+    }
+</style>
+
+<!-- Nebula overlay -->
+<div class="nebula-overlay"></div>
+
+<!-- Floating elements -->
+<div class="floating-element floating-1"></div>
+<div class="floating-element floating-2"></div>
+
+<main class="container">
+    <section class="hero">
+        <div class="hero-content">
+            <h1>TERMS OF SERVICE</h1>
+            <p>By accessing or using our website, you agree to be bound by these Terms of Service. Please read them carefully before using our services as they affect your legal rights and obligations.</p>
+            <div class="last-update">
+                <i class="fas fa-history"></i> Last updated: July 31, 2025
+            </div>
+        </div>
+    </section>
+
+        <div class="tos-container">
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">1</div>
+                    <h2 class="term-title">Acceptance of Terms</h2>
+                </div>
+                <p class="term-content">Accessing or using our website signifies your agreement to these Terms, our Privacy Policy, and any additional terms applicable to specific services. Your continued use constitutes ongoing acceptance.</p>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">2</div>
+                    <h2 class="term-title">Changes to Terms</h2>
+                </div>
+                <p class="term-content">We reserve the right to modify these Terms at any time. Continued use after changes means acceptance. We will notify users of significant changes through our platform or via email.</p>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">3</div>
+                    <h2 class="term-title">Eligibility</h2>
+                </div>
+                <p class="term-content">You must be at least <span class="term-highlight">18 years old</span> to use our services. By using the site, you confirm you meet this requirement and have the legal capacity to enter into binding agreements.</p>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">4</div>
+                    <h2 class="term-title">Product Descriptions</h2>
+                </div>
+                <p class="term-content">We strive for accuracy but do not guarantee descriptions are error-free or current. Product images are for illustrative purposes and may not exactly match the product.</p>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">5</div>
+                    <h2 class="term-title">Pricing and Payment</h2>
+                </div>
+                <p class="term-content">All prices are in <span class="term-highlight">USD</span> and subject to change. You authorize payment method use and the total charge by purchasing. All payments are processed through secure third-party gateways.</p>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">6</div>
+                    <h2 class="term-title">Delivery</h2>
+                </div>
+                <p class="term-content">We aim for timely delivery but are not liable for delays due to factors beyond our control. Estimated delivery times are provided as guidance only.</p>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">7</div>
+                    <h2 class="term-title">Disclaimer of Warranties</h2>
+                </div>
+                <p class="term-content">Services are provided <span class="term-highlight">"as is"</span> without express or implied warranties. Use at your own risk.</p>
+                <div class="important-term">
+                    <p><i class="fas fa-exclamation-triangle"></i> This is a critical term regarding service warranties and limitations</p>
+                </div>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">8</div>
+                    <h2 class="term-title">Limitation of Liability</h2>
+                </div>
+                <p class="term-content">We are not liable for any damages arising from your use of the site or services, direct or indirect, including but not limited to loss of data, revenue, or profits.</p>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">9</div>
+                    <h2 class="term-title">Account Ban Disclaimer</h2>
+                </div>
+                <p class="term-content">We are not responsible for any bans or suspensions on your game accounts. Use our tools at your own risk.</p>
+                <div class="important-term">
+                    <p><i class="fas fa-exclamation-circle"></i> Important: Using our tools may violate game terms of service and could result in account termination</p>
+                </div>
+            </div>
+            
+            <div class="tos-card">
+                <div class="term-header">
+                    <div class="term-number">10</div>
+                    <h2 class="term-title">No Refund Policy</h2>
+                </div>
+                <p class="term-content"><span class="term-highlight">All sales are final.</span> No refunds or exchanges. Please review your orders carefully before purchase.</p>
+                <div class="important-term">
+                    <p><i class="fas fa-exclamation-circle"></i> Please review this policy carefully before purchasing as exceptions will not be made</p>
+                </div>
+            </div>
+        </div>
+
+        <section class="contact-section">
+            <h2>Have Questions About Our Terms?</h2>
+            <p class="term-content">If you have any questions about these Terms of Service, please reach out to our support team for clarification. We're here to help you understand our policies and procedures.</p>
+            <a href="#" class="contact-btn">
+                <i class="fas fa-headset"></i> Contact Support Team
+            </a>
+        </section>
+    </main>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+        // GSAP animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize GSAP with ScrollTrigger
+            gsap.registerPlugin(ScrollTrigger);
+            
+            // Animate cards on scroll
+            gsap.utils.toArray('.tos-card').forEach((card, i) => {
+                gsap.from(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 90%",
+                        toggleActions: "play none none none"
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 0.8,
+                    delay: i * 0.1,
+                    ease: "power3.out"
+                });
+            });
+            
+            // Hero text animation
+            gsap.from('.hero h1', {
+                duration: 1.5,
+                y: -50,
+                opacity: 0,
+                ease: "elastic.out(1, 0.8)"
+            });
+            
+            gsap.from('.hero p', {
+                duration: 1.2,
+                y: 30,
+                opacity: 0,
+                delay: 0.5,
+                ease: "power3.out"
+            });
+            
+            gsap.from('.last-update', {
+                duration: 1,
+                scale: 0.8,
+                opacity: 0,
+                delay: 1,
+                ease: "back.out(1.7)"
+            });
+            
+            // Contact section animation
+            gsap.from('.contact-section', {
+                scrollTrigger: {
+                    trigger: '.contact-section',
+                    start: "top 80%",
+                    toggleActions: "play none none none"
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                ease: "power3.out"
+            });
+            
+            // Button hover effect enhancement
+            const buttons = document.querySelectorAll('.contact-btn, .term-highlight');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    gsap.to(button, {
+                        duration: 0.3,
+                        scale: 1.05,
+                        boxShadow: "0 15px 40px rgba(204, 0, 255, 0.8)",
+                        ease: "power2.out"
+                    });
+                });
+                
+                button.addEventListener('mouseleave', () => {
+                    gsap.to(button, {
+                        duration: 0.3,
+                        scale: 1,
+                        boxShadow: "0 10px 30px rgba(138, 43, 226, 0.5)",
+                        ease: "power2.out"
+                    });
+                });
+            });
+        });
+        
+        // Optimize particles on scroll
+        window.addEventListener('scroll', function() {
+            const scrollPosition = window.scrollY;
+            const particlesContainer = document.getElementById('particles-js');
+            
+            // Reduce particles opacity when scrolling
+            if (scrollPosition > 500) {
+                particlesContainer.style.opacity = '0.5';
+            } else {
+                particlesContainer.style.opacity = '1';
+            }
+        });
+    </script>
+{% endblock %}

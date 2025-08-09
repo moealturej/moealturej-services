@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Meta Tags & SEO -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 | moealturej</title>
+
+  <!-- Favicon & Fonts -->
+  <link rel="icon" href="https://i.postimg.cc/63hbBb6B/New-logo.jpg" type="image/x-icon" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    :root {
+      --bg1: #12002b;
+      --bg2: #000a1a;
+      --accent: #bb00ff;
+      --accent-hover: #e600ff;
+      --error-red: #ff3b3b;
+      --text-main: #f0f0f0;
+      --text-sub: #bbb;
+      --card-bg: rgba(255,255,255,0.03);
+      --transition: 0.3s ease;
+      --keyframe-time: 0.4s;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      height:100vh; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      font-family:'Roboto',sans-serif; color:var(--text-main); overflow:hidden;
+    }
+    #particles-js { position:fixed; inset:0; z-index:-1; }
+    .error-card {
+      position:relative; max-width:480px; width:90%; padding:2rem;
+      background: var(--card-bg); border-radius:16px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      animation:fadeIn var(--keyframe-time) ease both;
+      text-align:center;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);} }
+    .bg-shape {
+      position:absolute; width:180px; height:180px; border-radius:50%;
+      background: radial-gradient(circle, var(--accent), transparent 70%);
+      filter:blur(60px); opacity:0.7; z-index:-1;
+      animation:fadeIn var(--keyframe-time) ease both;
+    }
+    .shape1 { top:-40px; left:-40px; animation-delay:0.2s; }
+    .shape2 { bottom:-40px; right:-40px; animation-delay:0.4s; }
+    .icon {
+      font-size:4rem; color: var(--error-red);
+      margin-bottom:0.5rem;
+      animation:fadeIn var(--keyframe-time) ease both .3s;
+    }
+    h1 {
+      font-family:'Orbitron',sans-serif; font-size:3rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+      -webkit-background-clip:text; color:transparent;
+      margin-bottom:0.5rem;
+      animation:fadeIn var(--keyframe-time) ease both .4s;
+    }
+    .subtitle {
+      font-size:1rem; color:var(--text-sub);
+      margin-bottom:1rem;
+      animation:fadeIn var(--keyframe-time) ease both .5s;
+    }
+    .message {
+      font-size:1.1rem; color:var(--text-main);
+      margin-bottom:2rem;
+      animation:fadeIn var(--keyframe-time) ease both .6s;
+    }
+    .btn-group {
+      display:flex; gap:1rem; justify-content:center;
+      animation:fadeIn var(--keyframe-time) ease both .7s;
+    }
+    .btn {
+      padding:0.75rem 1.5rem; border:none; border-radius:8px;
+      font-weight:bold; cursor:pointer; display:inline-flex;
+      align-items:center; gap:0.5rem;
+      transition:transform var(--transition), box-shadow var(--transition);
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+      box-shadow:0 0 12px rgba(187,0,255,0.5);
+    }
+    .btn-primary:hover { transform:scale(1.05); box-shadow:0 0 22px rgba(187,0,255,0.7); }
+    .btn-secondary {
+      background: var(--error-red);
+      box-shadow:0 0 12px rgba(255,59,59,0.5);
+    }
+    .btn-secondary:hover { transform:scale(1.05); box-shadow:0 0 22px rgba(255,59,59,0.7); }
+    footer {
+      position:absolute; bottom:20px; width:100%; text-align:center;
+      font-size:0.85rem; color:var(--text-sub);
+      animation:fadeIn var(--keyframe-time) ease both .8s;
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <div class="error-card">
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+    <i class="fa-solid fa-exclamation-circle icon"></i>
+    <h1>404 Error</h1>
+    <div class="subtitle">Page Not Found</div>
+    <div class="message">Sorry, we can’t find the page you’re looking for.</div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="location.href='/'"><i class="fa-solid fa-house"></i>Home</button>
+      <button class="btn btn-secondary" onclick="location.href='/contact'"><i class="fa-solid fa-headset"></i>Support</button>
+    </div>
+  </div>
+  <footer>&copy; 2025 moealturej | All rights reserved.</footer>
+
+  <!-- Load Particles.js First -->
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    // Initialize particles after library is ready
+    window.addEventListener('load', () => {
+      particlesJS('particles-js', {
+        particles: { number:{value:60,density:{enable:true,value_area:800}}, color:{value:'#bb00ff'}, shape:{type:'circle'}, opacity:{value:0.3}, size:{value:3}, move:{enable:true,speed:1.5,out_mode:'out'} },
+        interactivity:{ detect_on:'canvas', events:{ onhover:{enable:true,mode:'repulse'}, onclick:{enable:true,mode:'push'} }, modes:{ repulse:{distance:100}, push:{particles_nb:4} } },
+        retina_detect:true
+      });
+    });
+  </script>
+</body>
+</html>
