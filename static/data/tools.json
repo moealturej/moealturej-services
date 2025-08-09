@@ -60,8 +60,42 @@
       "name": "Fix Files",
       "description": "Utility for repairing game files.",
       "image": "https://i.postimg.cc/jqHBPPk3/unnamed.webp",
-      "checkout_url": "/store/fix-files",
       "download_url": "/static/files/fix_files.zip",
+      "status": "Online"
+    },
+    {
+      "name": "BO6 ZeroAim External Chair",
+      "description": "Top-Rated External on the Market.",
+      "image": "https://i.postimg.cc/cHfjc8cR/public-1.jpg",
+      "download_url": "https://gofile.io/d/QjhbAe",
+      "status": "Online"
+    },
+    {
+      "name": "BO6 Ghost External Chair",
+      "description": "Unlock your full potential in BO6 with the Ghost Chair. Designed for top-tier gameplay and stealth.",
+      "image": "https://i.postimg.cc/PqKhL2tj/public.png",
+      "download_url": "https://gofile.io/d/eyuWQh",
+      "status": "Offline"
+    },
+    {
+      "name": "MW3 Zenith Internal Chair",
+      "description": "",
+      "image": "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
+      "download_url": "https://gofile.io/d/zKS46S",
+      "status": "Online"
+    },
+    {
+      "name": "COD - EzVPN",
+      "description": "",
+      "image": "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
+      "download_url": "https://mega.nz/file/tqcRCTIQ#lr7MHjW0GvTTbRNar4ce-ww6GjeR7qIagNTqn4M-OgI",
+      "status": "Online"
+    },
+    {
+      "name": "Perm Spoofer",
+      "description": "",
+      "image": "https://i.postimg.cc/W49zR2qg/public-3.png",
+      "download_url": "https://gofile.io/d/B6A2cE",
       "status": "Online"
     }
   ]
