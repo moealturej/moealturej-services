@@ -41,17 +41,13 @@ CSP_POLICY = (
     "object-src 'none';"
 )
 
-# More realistic rate limiting for a busy site
+# Rate limiting configuration
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
-    default_limits=[
-        "10 per second",     # short bursts allowed
-        "500 per minute",    # sustained browsing
-        "20,000 per day"     # heavy daily traffic
-    ],
-    storage_uri="redis://localhost:6379",  # persistent + faster for high traffic
-    strategy="moving-window"               # smoother limiting than fixed-window
+    default_limits=["10000 per day", "2500 per hour"],
+    storage_uri="memory://",
+    strategy="moving-window"
 )
 
 # Configure logging
