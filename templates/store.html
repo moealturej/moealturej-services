@@ -1052,7 +1052,13 @@
         }
 
         .badge.bestseller {
-            background: linear-gradient(135deg, #ff9d00, #ff006e);
+            background: linear-gradient(135deg, #FF10F0, #FF00FF);
+            color: white;
+            animation-delay: 0.5s;
+        }
+
+        .badge.not-operational {
+            background: linear-gradient(135deg, #FF0000, #D22B2B);
             color: white;
             animation-delay: 0.5s;
         }
@@ -1627,6 +1633,7 @@
                 color: "#8338ec",
                 category: "bo6",
                 detailsLink: "/descriptions/bo6-ghost",
+                badges: ["not-operational"],
                 options: [
                     { id: 581771, name: "DAY KEY", price: 6.99 },
                     { id: 581772, name: "WEEK KEY", price: 19.99 },
@@ -1810,6 +1817,7 @@
                     product.badges.forEach(badgeType => {
                         let badgeText = badgeType;
                         if (badgeType === 'new') badgeText = 'NEW';
+                        if (badgeType === 'not-operational') badgeText = 'NOT OPERATIONAL';
                         if (badgeType === 'bestseller') badgeText = 'BEST SELLER';
                         if (badgeType === 'popular') badgeText = 'POPULAR';
                         
