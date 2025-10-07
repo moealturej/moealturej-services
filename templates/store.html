@@ -1,39 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Meta Basics -->
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Store - moealturej</title>
-
-    <!-- SEO Meta -->
-    <meta name="description" content="Your ultimate source for game cheats, mods, and premium tools. Stay ahead in every game with moealturej." />
-    <meta name="keywords" content="game cheats, mods, hack tools, game enhancements, moealturej, cheatvault" />
-    <meta name="author" content="moealturej Team" />
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:title" content="{% block og_title %}moealturej{% endblock %}" />
-    <meta property="og:description" content="Your ultimate source for game cheats, mods, and premium tools." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.moealturej.com" />
-    <meta property="og:image" content="https://i.postimg.cc/VLQRwg8g/standard-15.gif" />
-
-    <!-- Twitter Meta -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="moealturej" />
-    <meta name="twitter:description" content="Your ultimate source for game cheats, mods, and premium tools." />
-    <meta name="twitter:image" content="https://i.postimg.cc/VLQRwg8g/standard-15.gif" />
-    <meta name="twitter:site" content="@moealturej" />
-
-    <!-- Favicon -->
-    <link rel="icon" href="https://i.postimg.cc/pLP4TGBM/channels4-profile.jpg" type="image/x-icon" />
-    <link rel="shortcut icon" href="https://i.postimg.cc/Rh8dCBdC/New-logo.jpg" type="image/x-icon" />
-    <script src="https://sellauth.com/assets/js/sellauth-embed-2.js"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>moealturej - Premium Game Tools & Enhancements</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://embed.sellauth.com/embed.js"></script>
+    <script src="https://sellauth.com/assets/js/sellauth-embed-2.js"></script>
     <style>
         :root {
             --bg: #0a0a0f;
@@ -1593,7 +1568,6 @@
             <button class="filter-btn active" data-category="all">All Products</button>
             <button class="filter-btn" data-category="bo6">BO6 Tools</button>
             <button class="filter-btn" data-category="cod">COD Tools</button>
-            <button class="filter-btn" data-category="r6">R6 Tools</button>
             <button class="filter-btn" data-category="utility">Utilities</button>
         </div>
         <div class="products-grid" id="products-container">
@@ -1792,7 +1766,7 @@
             id: 405260,
             name: "BO6 Zenith Internal Chair",
             description: "Unlock your full potential in BO6 with the zenith Chair. Designed for top-tier gameplay and stealth.",
-            image: "https://i.postimg.cc/PqKhL2tj/public.png",
+            image: "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
             color: "#8338ec",
             category: "bo6",
             badges: ["new"],
@@ -2191,55 +2165,62 @@
         localStorage.setItem('sellauthCart', JSON.stringify(cart));
     }
     
-    // Show product details in modal
-    function showProductDetails(productId) {
-        const product = products.find(p => p.id === productId);
-        if (!product) return;
-        
-        let featuresHTML = '';
-        if (product.features && product.features.length) {
-            featuresHTML = `
-                <h3 style="margin-top: 1.8rem; margin-bottom: 1.2rem; color: var(--accent2);">Features:</h3>
-                <ul style="list-style-type: none; padding-left: 0;">
-                    ${product.features.map(feature => `
-                        <li style="padding: 0.7rem 0; display: flex; align-items: center;">
-                            <i class="fas fa-check" style="color: var(--success); margin-right: 0.8rem;"></i>
-                            ${feature}
-                        </li>
-                    `).join('')}
-                </ul>
-            `;
-        }
-        
-        productModalContent.innerHTML = `
-            <h2 style="margin-bottom: 1rem;">${product.name}</h2>
-            <img src="${product.image}" alt="${product.name}" style="width: 100%; border-radius: 1.2rem; margin: 1.2rem 0; border: 1px solid rgba(255,255,255,0.1);">
-            <p style="line-height: 1.7; margin-bottom: 1.5rem;">${product.detailedDescription || product.description}</p>
-            ${featuresHTML}
-            <div class="key-options" style="margin-top: 2rem;">
-                ${product.options.map(option => `
-                    <div class="key-option" data-option-id="${option.id}" onclick="selectOption(${product.id}, ${option.id})">
-                        <div class="key-name">${option.name}</div>
-                        <div class="key-price">$${option.price.toFixed(2)}</div>
-                    </div>
+// Show product details in modal
+function showProductDetails(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    let featuresHTML = '';
+    if (product.features && product.features.length) {
+        featuresHTML = `
+            <h3 style="margin-top: 1.8rem; margin-bottom: 1.2rem; color: var(--accent2);">Features:</h3>
+            <ul style="list-style-type: none; padding-left: 0;">
+                ${product.features.map(feature => `
+                    <li style="padding: 0.7rem 0; display: flex; align-items: center;">
+                        <i class="fas fa-check" style="color: var(--success); margin-right: 0.8rem;"></i>
+                        ${feature}
+                    </li>
                 `).join('')}
-            </div>
-            <div class="quantity-selector" style="margin: 1.8rem 0;">
-                <span class="quantity-label">Quantity:</span>
-                <div class="quantity-controls">
-                    <button class="quantity-btn" onclick="updateQuantity(${product.id}, -1)">-</button>
-                    <div class="quantity-display" id="quantity-${product.id}">${product.quantity || 1}</div>
-                    <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)">+</button>
-                </div>
-            </div>
-            <button class="add-to-cart-btn" style="width: 100%; padding: 1.2rem;" onclick="addToCart(${product.id}); productModal.style.display = 'none';">
-                <i class="fas fa-cart-plus"></i>
-                Add to Cart
-            </button>
+            </ul>
         `;
-        
-        productModal.style.display = 'flex';
     }
+    
+    productModalContent.innerHTML = `
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="margin: 0;">${product.name}</h2>
+<button 
+  class="close-modal" 
+  onclick="productModal.style.display = 'none'" 
+  style="background: transparent; border: none; color: transparent; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; opacity: 1; transition: none;">
+</button>
+        </div>
+        <img src="${product.image}" alt="${product.name}" style="width: 100%; border-radius: 1.2rem; margin: 1.2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+        <p style="line-height: 1.7; margin-bottom: 1.5rem;">${product.detailedDescription || product.description}</p>
+        ${featuresHTML}
+        <div class="key-options" style="margin-top: 2rem;">
+            ${product.options.map(option => `
+                <div class="key-option" data-option-id="${option.id}" onclick="selectOption(${product.id}, ${option.id})">
+                    <div class="key-name">${option.name}</div>
+                    <div class="key-price">$${option.price.toFixed(2)}</div>
+                </div>
+            `).join('')}
+        </div>
+        <div class="quantity-selector" style="margin: 1.8rem 0;">
+            <span class="quantity-label">Quantity:</span>
+            <div class="quantity-controls">
+                <button class="quantity-btn" onclick="updateQuantity(${product.id}, -1)">-</button>
+                <div class="quantity-display" id="quantity-${product.id}">${product.quantity || 1}</div>
+                <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)">+</button>
+            </div>
+        </div>
+        <button class="add-to-cart-btn" style="width: 100%; padding: 1.2rem;" onclick="addToCart(${product.id}); productModal.style.display = 'none';">
+            <i class="fas fa-cart-plus"></i>
+            Add to Cart
+        </button>
+    `;
+    
+    productModal.style.display = 'flex';
+}
     
     // Show notification
     function showNotification(message, type = 'success') {
@@ -2467,7 +2448,6 @@
             cart = [];
             saveCartToStorage();
             updateCartUI();
-            showNotification('Order placed successfully!', 'success');
         }).catch(error => {
             console.error('Checkout error:', error);
             showNotification('Checkout failed. Please try again.', 'danger');
