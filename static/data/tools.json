@@ -50,10 +50,10 @@
       "status": "Online"
     },
     {
-      "name": "Fix Files",
+      "name": "Fix File",
       "description": "Utility for repairing game files.",
       "image": "https://i.postimg.cc/jqHBPPk3/unnamed.webp",
-      "download_url": "/static/files/fix_files.zip",
+      "download_url": "/static/files/Support_Tools.exe",
       "status": "Online"
     },
     {
