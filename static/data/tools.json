@@ -1,13 +1,6 @@
 {
   "free": [
     {
-      "name": "Combat Master Cheat Table",
-      "description": "Cheat table for Combat Master.",
-      "image": "https://i.postimg.cc/FHNxwbWp/Screenshot-2025-04-05-215824.jpg",
-      "download_url": "/downloads",
-      "status": "Offline"
-    },
-    {
       "name": "Cheat Engine",
       "description": "Universal game memory editor.",
       "image": "/static/files/cheatengine_logo_234.jpg",
