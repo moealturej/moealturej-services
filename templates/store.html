@@ -20,6 +20,7 @@
             --text-secondary: rgba(245,245,245,0.7);
             --success: #00ff88;
             --warning: #ffaa00;
+            --bo7: rgba(255, 220, 60, 0.9);
             --danger: #ff4757;
             --gradient: linear-gradient(135deg, var(--accent), var(--accent2));
             --gradient2: linear-gradient(135deg, var(--accent3), var(--accent));
@@ -45,136 +46,6 @@
             overflow-x: hidden;
             line-height: 1.6;
             min-height: 100vh;
-        }
-        
-        /* ZeroAim Banner Section */
-        .zeroaim-banner {
-            background: linear-gradient(135deg, rgba(255, 61, 245, 0.15), rgba(0, 224, 255, 0.15));
-            padding: 2rem 1rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 61, 245, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .zeroaim-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('https://i.postimg.cc/cHfjc8cR/public-1.jpg') center/cover;
-            opacity: 0.1;
-            z-index: -1;
-        }
-        
-        .zeroaim-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-        
-        .zeroaim-text {
-            flex: 1;
-            min-width: 300px;
-            text-align: left;
-        }
-        
-        .zeroaim-badge {
-            display: inline-block;
-            background: var(--gradient);
-            color: white;
-            padding: 0.5rem 1.5rem;
-            border-radius: 2rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 0 20px rgba(255, 61, 245, 0.5);
-            animation: pulse 2s infinite;
-        }
-        
-        .zeroaim-title {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(0, 224, 255, 0.4);
-            line-height: 1.2;
-        }
-        
-        .zeroaim-subtitle {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
-            opacity: 0.9;
-            line-height: 1.5;
-        }
-        
-        .zeroaim-stats {
-            display: flex;
-            gap: 2rem;
-            margin-top: 1.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--accent2);
-            text-shadow: 0 0 15px var(--accent2);
-        }
-        
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-        
-        .zeroaim-visual {
-            flex: 1;
-            min-width: 300px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .zeroaim-image {
-            max-width: 100%;
-            border-radius: 1rem;
-            border: 2px solid rgba(255, 61, 245, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transition: var(--transition);
-        }
-        
-        .zeroaim-image:hover {
-            transform: scale(1.02);
-            box-shadow: 0 15px 40px rgba(255, 61, 245, 0.4);
-        }
-        
-        .undetected-guarantee {
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid var(--success);
-            color: var(--success);
-            padding: 0.8rem 1.5rem;
-            border-radius: 2rem;
-            font-weight: bold;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
         }
         
         /* Header */
@@ -602,6 +473,11 @@
         
         .product-badge.bestseller {
             background: var(--accent);
+            color: white;
+        }
+
+        .product-badge.bo7 {
+            background: var(--bo7);
             color: white;
         }
         
@@ -1557,23 +1433,6 @@
                 width: 45px;
                 height: 45px;
             }
-            
-            .zeroaim-title {
-                font-size: 2rem;
-            }
-            
-            .zeroaim-content {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .zeroaim-text {
-                text-align: center;
-            }
-            
-            .stat-item {
-                align-items: center;
-            }
         }
         
         @media (max-width: 480px) {
@@ -1601,18 +1460,6 @@
             .filter-btn {
                 padding: 0.7rem 1.2rem;
                 font-size: 0.9rem;
-            }
-            
-            .zeroaim-title {
-                font-size: 1.8rem;
-            }
-            
-            .zeroaim-subtitle {
-                font-size: 1rem;
-            }
-            
-            .zeroaim-stats {
-                justify-content: center;
             }
         }
     </style>
@@ -1646,40 +1493,6 @@
             </div>
         </div>
     </header>
-
-    <!-- ZeroAim Banner Section -->
-    <section class="zeroaim-banner">
-        <div class="zeroaim-content">
-            <div class="zeroaim-text">
-                <div class="zeroaim-badge">#1 Undetected</div>
-                <h2 class="zeroaim-title">BO6 ZeroAim External Chair</h2>
-                <p class="zeroaim-subtitle">The most undetected chair ever. With built in TPM spoofer to be extra safe.</p>
-                
-                <div class="zeroaim-stats">
-                    <div class="stat-item">
-                        <div class="stat-value">0</div>
-                        <div class="stat-label">Detection Reports</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">10K+</div>
-                        <div class="stat-label">Active Users</div>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <a href="#products" class="btn"><i class="fas fa-bolt"></i> Get ZeroAim Now</a>
-                    <a href="#testimonials" class="btn btn-secondary"><i class="fas fa-star"></i> See Reviews</a>
-                </div>
-            </div>
-            
-            <div class="zeroaim-visual">
-                <img src="https://i.postimg.cc/cHfjc8cR/public-1.jpg" alt="ZeroAim Chair" class="zeroaim-image">
-                <div class="undetected-guarantee">
-                    <i class="fas fa-shield-alt"></i> 99.8% Undetected
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -1759,6 +1572,7 @@
         
         <div class="filters">
             <button class="filter-btn active" data-category="all">All Products</button>
+            <button class="filter-btn" data-category="bo7">BO7 Tools</button>
             <button class="filter-btn" data-category="bo6">BO6 Tools</button>
             <button class="filter-btn" data-category="bf6">BF6 Tools</button>
             <button class="filter-btn" data-category="cod">COD Tools</button>
@@ -1798,7 +1612,7 @@
                     <i class="fas fa-star"></i>
                     <i class="fas fa-star"></i>
                 </div>
-                <p class="testimonial-content">"10/10 good chair fast support and cheap chair"</p>
+                <p class="10/10 good chair fast support and cheap chair"</p>
                 <div class="testimonial-author">
                     <div class="author-avatar">SJ</div>
                     <div class="author-info">
@@ -1941,13 +1755,28 @@
     // Product data
     const products = [
         {
+            id: 524683,
+            name: "BO7 Yama Internal Chair (Racor)",
+            description: "Best internal on the market! With Sticky ULA",
+            image: "https://i.postimg.cc/pd4PG4Kq/image1.png",
+            color: "#8338ec",
+            category: "bo7",
+            badges: ["bo7"],
+            detailedDescription: "The BO7 Yama Internal Chair is the definitive internal enhancement built for players who demand total precision, control, and visual mastery. Designed for full integration within the game, Yama combines deeply customizable targeting systems with advanced visual layers and exploit tools for an unmatched competitive edge. Featuring a built-in spoofer and full Windows compatibility, its adaptive aimbot includes silent and normal modes, bone overrides, prediction control, and detailed visibility checks for flawless accuracy in every situation. The powerful ESP and radar suite provides complete awareness with chams, 3D boxes, tracers, and team-based color customization, while loot ESP and compass-based indicators keep you informed at all times. Visual and gameplay removals eliminate recoil, spread, flash, and fog for a cleaner experience, and exploit options like third-person mode, fast reload, FOV changer, and unlock all push Yama’s capabilities to the next level. With full color customization, multiple configuration slots, and account-level tools for unlocks and management, the BO6 Yama Internal Chair delivers the most advanced, feature-rich, and fully integrated enhancement experience available.",
+            features: ["Includes Sticky Unlock All", "AimBot", "ESP", "Recoil", "Customizable Settings", "Performance Optimization"],
+            options: [
+                { id: 797293, name: "DAY KEY", price: 7.00 },
+                { id: 797294, name: "WEEK KEY", price: 17.00 },
+                { id: 797295, name: "MONTH KEY", price: 35.00 }
+            ]
+        },
+        {
             id: 406303,
             name: "BO6 ZeroAim External Chair",
             description: "Top-Rated External on the Market.",
             image: "https://i.postimg.cc/cHfjc8cR/public-1.jpg",
             color: "#3a86ff",
             category: "bo6",
-            badges: ["bestseller"],
             detailedDescription: "The BO6 Chair offers complete control and customization across every gameplay aspect. With a powerful Aimbot tab featuring adjustable range, smoothness, visibility filters, and multiple aiming modes like Legit, Semi-Legit, and Rage, you can fine-tune your performance to perfection. The ESP and Radar tabs provide advanced situational awareness with options for player boxes, bone ESP, item tracking, and radar overlays. Loot ESP displays essential gear with rarity filters and distance indicators. Controller users benefit from full support with adjustable smoothness and custom keybinds. Profiles can be saved and switched instantly using function keys, allowing quick access to personalized setups for any playstyle.",
             features: ["Aimbot", "ESP/Wallhack", "Radar", "Undetectable", "Profiles Tab"],
             options: [
@@ -1963,7 +1792,6 @@
             image: "https://i.postimg.cc/4d0XGhW6/Screenshot-2025-10-13-133402.png",
             color: "#8338ec",
             category: "bo6",
-            badges: ["new"],
             detailedDescription: "The BO6 Liora Internal Chair represents the pinnacle of internal enhancement technology. Designed for precision and control, it provides a seamless experience directly within the game environment. Fully compatible with all Windows versions and featuring an integrated spoofer, Liora delivers unmatched stability, performance, and power. Its advanced aimbot system includes multiple aim types such as Lock-On, Silent Aim, and Trigger-Bot, combined with adjustable smoothing and smart targeting priority modes for flawless accuracy. Manipulation tools allow fine-tuned recoil, rapid fire, and full camo customization, while the robust ESP suite provides complete awareness with player indicators, skeletons, and live preview layouts. Loot ESP and Chams systems enhance visibility and situational control, supported by a fully customizable screen overlay and radar interface. Exploit options such as Unlock All, Spinbot, and visual FX control push boundaries even further, while the adjustable camera tools and dynamic FOV system let you personalize your perspective. With a full menu and configuration system for profiles, themes, and DPI scaling, the BO6 Liora Internal Chair stands as the ultimate all-in-one internal solution for serious players who demand precision, performance, and total dominance.",
             features: ["Includes Unlock All", "AimBot", "ESP", "Camos", "Customizable Settings", "Performance Optimization"],
             options: [
@@ -1979,8 +1807,7 @@
             image: "https://i.postimg.cc/Ghxh89t1/image.png",
             color: "#8338ec",
             category: "bo6",
-            badges: ["new"],
-            detailedDescription: "The BO6 Yama Internal Chair is the definitive internal enhancement built for players who demand total precision, control, and visual mastery. Designed for full integration within the game, Yama combines deeply customizable targeting systems with advanced visual layers and exploit tools for an unmatched competitive edge. Featuring a built-in spoofer and full Windows compatibility, its adaptive aimbot includes silent and normal modes, bone overrides, prediction control, and detailed visibility checks for flawless accuracy in every situation. The powerful ESP and radar suite provides complete awareness with chams, 3D boxes, tracers, and team-based color customization, while loot ESP and compass-based indicators keep you informed at all times. Visual and gameplay removals eliminate recoil, spread, flash, and fog for a cleaner experience, and exploit options like third-person mode, fast reload, FOV changer, and unlock all push Yama's capabilities to the next level. With full color customization, multiple configuration slots, and account-level tools for unlocks and management, the BO6 Yama Internal Chair delivers the most advanced, feature-rich, and fully integrated enhancement experience available.",
+            detailedDescription: "The BO6 Yama Internal Chair is the definitive internal enhancement built for players who demand total precision, control, and visual mastery. Designed for full integration within the game, Yama combines deeply customizable targeting systems with advanced visual layers and exploit tools for an unmatched competitive edge. Featuring a built-in spoofer and full Windows compatibility, its adaptive aimbot includes silent and normal modes, bone overrides, prediction control, and detailed visibility checks for flawless accuracy in every situation. The powerful ESP and radar suite provides complete awareness with chams, 3D boxes, tracers, and team-based color customization, while loot ESP and compass-based indicators keep you informed at all times. Visual and gameplay removals eliminate recoil, spread, flash, and fog for a cleaner experience, and exploit options like third-person mode, fast reload, FOV changer, and unlock all push Yama’s capabilities to the next level. With full color customization, multiple configuration slots, and account-level tools for unlocks and management, the BO6 Yama Internal Chair delivers the most advanced, feature-rich, and fully integrated enhancement experience available.",
             features: ["Includes Unlock All", "AimBot", "ESP", "Recoil", "Customizable Settings", "Performance Optimization"],
             options: [
                 { id: 731769, name: "DAY KEY", price: 8.00 },
@@ -1995,7 +1822,6 @@
             image: "https://i.postimg.cc/y8mFYsH7/capsule-616x353.jpg",
             color: "#8338ec",
             category: "bf6",
-            badges: ["new"],
             detailedDescription: "The Battlefield 6 Ancient Chair delivers precise control and advanced customization for every player. The Aimbot system includes adjustable FOV and smooth radius, with support for dual aim keys, visibility checks, prediction, and multiple target bones such as Head, Neck, Body, and Pelvis. Players can fine-tune targeting with nearest bone detection and force bone options, achieving perfect balance between accuracy and realism. The ESP system enhances situational awareness with adjustable max distance, player boxes, skeleton outlines, health indicators, snaplines, nicknames, and distance tracking. Additional tools like customizable crosshair sizing, FPS overlay display, and a full configuration manager allow easy profile saving, loading, sharing, and deletion—ensuring complete flexibility for any playstyle.",
             features: ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Profiles Tab"],
             options: [
@@ -2005,20 +1831,19 @@
             ]
         },
         {
-            id: 517163,
-            name: "Temp HWID & TPM Spoofer [2]",
-            description: "Tested on Warzone, BO7, BO6 & Fortnite.",
+            id: 423862,
+            name: "MW3 Ghost Internal Chair",
+            description: "Advanced internal tool for MW3 with premium features.",
             image: "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
             color: "#8338ec",
-            category: "utility",
-            badges: ["new, updated"],
-            detailedDescription: "Highly recommended for BO7 & FN.",
-            features: ["Warzone", "BO7", "BO6", "Fortnite"],
+            category: "cod",
+            detailedDescription: "The MW3 Ghost Internal Chair provides internal access to game functions for maximum performance. With features like unlock all, weapon customization, and more.",
+            features: ["Unlock All Content", "Weapon Customization", "Player Stats", "In-Game Menu"],
             options: [
-                { id: 783700, name: "DAY KEY", price: 4.50 },
-                { id: 783701, name: "WEEK KEY", price: 14.00 },
-                { id: 783702, name: "MONTH KEY", price: 28.00 },
-                { id: 783703, name: "LIFETIME KEY", price: 90.00 }
+                { id: 614209, name: "DAY KEY", price: 3.50 },
+                { id: 614210, name: "WEEK KEY", price: 7.50 },
+                { id: 614211, name: "MONTH KEY", price: 18.50 },
+                { id: 702961, name: "LIFETIME KEY", price: 25.00 }
             ]
         },
         {
@@ -2028,7 +1853,6 @@
             image: "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
             color: "#ff006e",
             category: "cod",
-            badges: ["new"],
             detailedDescription: "EzVPN allows you to manipulate your matchmaking by spoofing your location. Get easier lobbies and improve your gameplay experience.",
             features: ["Location Spoofing", "SBMM Manipulation", "Easy Setup", "No Performance Impact"],
             options: [
@@ -2044,7 +1868,6 @@
             image: "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
             color: "#8338ec",
             category: "utility",
-            badges: ["new"],
             detailedDescription: "Highly recommended for BO7 & FN.",
             features: ["Warzone", "BO7", "BO6", "Fortnite"],
             options: [
@@ -2167,6 +1990,7 @@
                     if (badgeType === 'new') badgeText = 'NEW';
                     if (badgeType === 'not-operational') badgeText = 'NOT OPERATIONAL';
                     if (badgeType === 'bestseller') badgeText = 'BEST SELLER';
+                    if (badgeType === 'bo7') badgeText = 'Black Ops 7';
                     
                     badgesHTML += `<div class="product-badge ${badgeType}">${badgeText}</div>`;
                 });
@@ -2391,57 +2215,62 @@
         localStorage.setItem('sellauthCart', JSON.stringify(cart));
     }
     
-    // Show product details in modal
-    function showProductDetails(productId) {
-        const product = products.find(p => p.id === productId);
-        if (!product) return;
-        
-        let featuresHTML = '';
-        if (product.features && product.features.length) {
-            featuresHTML = `
-                <h3 style="margin-top: 1.8rem; margin-bottom: 1.2rem; color: var(--accent2);">Features:</h3>
-                <ul style="list-style-type: none; padding-left: 0;">
-                    ${product.features.map(feature => `
-                        <li style="padding: 0.7rem 0; display: flex; align-items: center;">
-                            <i class="fas fa-check" style="color: var(--success); margin-right: 0.8rem;"></i>
-                            ${feature}
-                        </li>
-                    `).join('')}
-                </ul>
-            `;
-        }
-        
-        productModalContent.innerHTML = `
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 style="margin: 0;">${product.name}</h2>
-            </div>
-            <img src="${product.image}" alt="${product.name}" style="width: 100%; border-radius: 1.2rem; margin: 1.2rem 0; border: 1px solid rgba(255,255,255,0.1);">
-            <p style="line-height: 1.7; margin-bottom: 1.5rem;">${product.detailedDescription || product.description}</p>
-            ${featuresHTML}
-            <div class="key-options" style="margin-top: 2rem;">
-                ${product.options.map(option => `
-                    <div class="key-option" data-option-id="${option.id}" onclick="selectOption(${product.id}, ${option.id})">
-                        <div class="key-name">${option.name}</div>
-                        <div class="key-price">$${option.price.toFixed(2)}</div>
-                    </div>
+// Show product details in modal
+function showProductDetails(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    let featuresHTML = '';
+    if (product.features && product.features.length) {
+        featuresHTML = `
+            <h3 style="margin-top: 1.8rem; margin-bottom: 1.2rem; color: var(--accent2);">Features:</h3>
+            <ul style="list-style-type: none; padding-left: 0;">
+                ${product.features.map(feature => `
+                    <li style="padding: 0.7rem 0; display: flex; align-items: center;">
+                        <i class="fas fa-check" style="color: var(--success); margin-right: 0.8rem;"></i>
+                        ${feature}
+                    </li>
                 `).join('')}
-            </div>
-            <div class="quantity-selector" style="margin: 1.8rem 0;">
-                <span class="quantity-label">Quantity:</span>
-                <div class="quantity-controls">
-                    <button class="quantity-btn" onclick="updateQuantity(${product.id}, -1)">-</button>
-                    <div class="quantity-display" id="quantity-${product.id}">${product.quantity || 1}</div>
-                    <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)">+</button>
-                </div>
-            </div>
-            <button class="add-to-cart-btn" style="width: 100%; padding: 1.2rem;" onclick="addToCart(${product.id}); productModal.style.display = 'none';">
-                <i class="fas fa-cart-plus"></i>
-                Add to Cart
-            </button>
+            </ul>
         `;
-        
-        productModal.style.display = 'flex';
     }
+    
+    productModalContent.innerHTML = `
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="margin: 0;">${product.name}</h2>
+<button 
+  class="close-modal" 
+  onclick="productModal.style.display = 'none'" 
+  style="background: transparent; border: none; color: transparent; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; opacity: 1; transition: none;">
+</button>
+        </div>
+        <img src="${product.image}" alt="${product.name}" style="width: 100%; border-radius: 1.2rem; margin: 1.2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+        <p style="line-height: 1.7; margin-bottom: 1.5rem;">${product.detailedDescription || product.description}</p>
+        ${featuresHTML}
+        <div class="key-options" style="margin-top: 2rem;">
+            ${product.options.map(option => `
+                <div class="key-option" data-option-id="${option.id}" onclick="selectOption(${product.id}, ${option.id})">
+                    <div class="key-name">${option.name}</div>
+                    <div class="key-price">$${option.price.toFixed(2)}</div>
+                </div>
+            `).join('')}
+        </div>
+        <div class="quantity-selector" style="margin: 1.8rem 0;">
+            <span class="quantity-label">Quantity:</span>
+            <div class="quantity-controls">
+                <button class="quantity-btn" onclick="updateQuantity(${product.id}, -1)">-</button>
+                <div class="quantity-display" id="quantity-${product.id}">${product.quantity || 1}</div>
+                <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)">+</button>
+            </div>
+        </div>
+        <button class="add-to-cart-btn" style="width: 100%; padding: 1.2rem;" onclick="addToCart(${product.id}); productModal.style.display = 'none';">
+            <i class="fas fa-cart-plus"></i>
+            Add to Cart
+        </button>
+    `;
+    
+    productModal.style.display = 'flex';
+}
     
     // Show notification
     function showNotification(message, type = 'success') {
