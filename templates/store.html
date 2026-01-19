@@ -444,6 +444,68 @@
             border-color: rgba(255, 61, 245, 0.3);
         }
         
+        /* Disabled Product Styles */
+        .product-card.disabled {
+            position: relative;
+            opacity: 0.8;
+        }
+        
+        .product-card.disabled::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 1.5rem;
+            z-index: 1;
+        }
+        
+        .product-card.disabled .product-info > *:not(.product-name):not(.product-description):not(.disabled-overlay) {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .disabled-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            padding: 2rem;
+        }
+        
+        .disabled-content {
+            text-align: center;
+            background: rgba(20, 20, 40, 0.95);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 2px solid var(--warning);
+            max-width: 90%;
+        }
+        
+        .disabled-content i {
+            font-size: 2.5rem;
+            color: var(--warning);
+            margin-bottom: 1rem;
+        }
+        
+        .disabled-content h4 {
+            color: var(--warning);
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+        
+        .disabled-content p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        
         /* IMPROVED Product Badges */
         .product-badges {
             position: absolute;
@@ -507,6 +569,7 @@
         
         .product-info {
             text-align: center;
+            position: relative;
         }
         
         .product-name {
@@ -1338,6 +1401,63 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
         
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+        
+        .toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+        
+        .toggle:hover {
+            color: var(--text);
+        }
+        
+        .toggle input {
+            display: none;
+        }
+        
+        .toggle-slider {
+            width: 50px;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            position: relative;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 19px;
+            height: 19px;
+            border-radius: 50%;
+            background: var(--accent2);
+            top: 2px;
+            left: 3px;
+            transition: var(--transition);
+        }
+        
+        .toggle input:checked + .toggle-slider::before {
+            transform: translateX(24px);
+            background: var(--success);
+        }
+        
+        .toggle input:checked + .toggle-slider {
+            background: rgba(0, 224, 255, 0.1);
+            border-color: var(--accent2);
+        }
+        
         /* Responsive */
         @media (max-width: 1024px) {
             .hero h2 {
@@ -1612,7 +1732,7 @@
                     <i class="fas fa-star"></i>
                     <i class="fas fa-star"></i>
                 </div>
-                <p class="10/10 good chair fast support and cheap chair"</p>
+                <p class="testimonial-content">"10/10 good chair fast support and cheap chair"</p>
                 <div class="testimonial-author">
                     <div class="author-avatar">SJ</div>
                     <div class="author-info">
@@ -1762,6 +1882,8 @@
             color: "#8338ec",
             category: "bf6",
             badges: ["new"],
+            enabled: true,
+            disabledMessage: "Temporarily out of stock - Check back soon!",
             detailedDescription: "The Battlefield 6 Arcane Chair delivers precise control and advanced customization for every player. The Aimbot system includes adjustable FOV and smooth radius, with support for dual aim keys, visibility checks, prediction, and multiple target bones such as Head, Neck, Body, and Pelvis. Players can fine-tune targeting with nearest bone detection and force bone options, achieving perfect balance between accuracy and realism. The ESP system enhances situational awareness with adjustable max distance, player boxes, skeleton outlines, health indicators, snaplines, nicknames, and distance tracking. Additional tools like customizable crosshair sizing, FPS overlay display, and a full configuration manager allow easy profile saving, loading, sharing, and deletion—ensuring complete flexibility for any playstyle.",
             features: ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
             options: [
@@ -1778,6 +1900,8 @@
             color: "#3a86ff",
             category: "bo7",
             badges: ["bo7"],
+            enabled: false,
+            disabledMessage: "Please refer to the status page for more info.",
             detailedDescription: "The BO7/ WZ Chair offers complete control and customization across every gameplay aspect. With a powerful Aimbot tab featuring adjustable range, smoothness, visibility filters, and multiple aiming modes like Legit, Semi-Legit, and Rage, you can fine-tune your performance to perfection. The ESP and Radar tabs provide advanced situational awareness with options for player boxes, bone ESP, item tracking, and radar overlays. Loot ESP displays essential gear with rarity filters and distance indicators. Controller users benefit from full support with adjustable smoothness and custom keybinds. Profiles can be saved and switched instantly using function keys, allowing quick access to personalized setups for any playstyle.",
             features: ["Aimbot", "ESP/Wallhack", "Radar", "Undetectable", "Profiles Tab"],
             options: [
@@ -1794,7 +1918,10 @@
             color: "#3a86ff",
             category: "bo7",
             badges: ["bo7"],
-            detailedDescription: "Requirements: Windows 10/11 (23H2 & 24H2), Steam, Battle.net, and Gamepass supported, compatible with AMD and Intel CPUs, full controller support. Information: 100% external overlay with full system compatibility, streamproof for OBS, Discord, TikTok Live, and Twitch, featuring an undetected external interface. Aimbot features include precision aim assistance with toggleable activation, zombies-only mode, lock-on targeting, movement prediction, team filtering, ignore-downed option, adjustable FOV and smoothing, max distance control, deadzone radius, aim bone selection, custom crosshair settings, and keybinds. ESP functionality provides entity tracking with 2D/3D/fill boxes, skeletons, snaplines, health bars, names, distance indicators, team display, adjustable render distance, custom line thickness, and support for zombies, players, and bots. Radar includes a compact tracking system with team and bot visibility toggles and distance indicators. Settings include anti-recording mode, save/load configs, and full overlay and ESP color customization including visible and invisible states, plus zombie box highlighting.",            features: ["Aimbot", "ESP/Wallhack", "Radar", "Undetectable", "Profiles Tab"],
+            enabled: true,
+            disabledMessage: "Temporarily out of stock - Check back soon!",
+            detailedDescription: "Requirements: Windows 10/11 (23H2 & 24H2), Steam, Battle.net, and Gamepass supported, compatible with AMD and Intel CPUs, full controller support. Information: 100% external overlay with full system compatibility, streamproof for OBS, Discord, TikTok Live, and Twitch, featuring an undetected external interface. Aimbot features include precision aim assistance with toggleable activation, zombies-only mode, lock-on targeting, movement prediction, team filtering, ignore-downed option, adjustable FOV and smoothing, max distance control, deadzone radius, aim bone selection, custom crosshair settings, and keybinds. ESP functionality provides entity tracking with 2D/3D/fill boxes, skeletons, snaplines, health bars, names, distance indicators, team display, adjustable render distance, custom line thickness, and support for zombies, players, and bots. Radar includes a compact tracking system with team and bot visibility toggles and distance indicators. Settings include anti-recording mode, save/load configs, and full overlay and ESP color customization including visible and invisible states, plus zombie box highlighting.",
+            features: ["Aimbot", "ESP/Wallhack", "Radar", "Undetectable", "Profiles Tab"],
             options: [
                 { id: 912141, name: "DAY KEY", price: 5.00 },
                 { id: 912142, name: "WEEK KEY", price: 14.00 },
@@ -1808,6 +1935,8 @@
             image: "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
             color: "#ff006e",
             category: "cod",
+            enabled: true,
+            disabledMessage: "Temporarily out of stock - Check back soon!",
             detailedDescription: "EzVPN allows you to manipulate your matchmaking by spoofing your location. Get easier lobbies and improve your gameplay experience.",
             features: ["Location Spoofing", "SBMM Manipulation", "Easy Setup", "No Performance Impact"],
             options: [
@@ -1823,6 +1952,8 @@
             image: "https://i.postimg.cc/R0XMM20w/Screenshot-2025-06-17-134532.png",
             color: "#8338ec",
             category: "utility",
+            enabled: true,
+            disabledMessage: "Temporarily out of stock - Check back soon!",
             detailedDescription: "Spoofs: Disk Drives, Motherboard, TPM Endorsement Keys, Network MAC Addresses. Confirmed Game Compatibility: COD, BF6, Fortnite, FiveM  Please note that this does not imply incompatibility with other games; it simply indicates that we have not yet conducted tests for others",
             features: ["COD", "BF6", "FiveM", "Fortnite"],
             options: [
@@ -1839,6 +1970,8 @@
             image: "https://i.postimg.cc/W49zR2qg/public-3.png",
             color: "#06d6a0",
             category: "utility",
+            enabled: true,
+            disabledMessage: "Temporarily out of stock - Check back soon!",
             detailedDescription: "The Perm Spoofer allows you to bypass hardware bans on major gaming platforms. Works with all popular games and supports various motherboard types.",
             features: ["Hardware ID Spoofing", "Motherboard Support", "One-Time Use", "Lifetime Option"],
             options: [
@@ -1852,6 +1985,7 @@
     let cart = JSON.parse(localStorage.getItem('sellauthCart')) || [];
     let currentFilter = 'all';
     let currentSearch = '';
+    let showDisabledProducts = true;
     
     // DOM elements
     const cartCount = document.querySelector('.cart-count');
@@ -1867,6 +2001,7 @@
     const productModal = document.getElementById('product-modal');
     const productModalContent = document.getElementById('product-modal-content');
     const scrollToTopBtn = document.getElementById('scroll-to-top');
+    const showDisabledToggle = document.getElementById('show-disabled');
     
     // Toggle cart modal
     cartIcon.addEventListener('click', toggleCartModal);
@@ -1874,6 +2009,9 @@
     
     function toggleCartModal() {
         cartModal.style.display = cartModal.style.display === 'flex' ? 'none' : 'flex';
+        if (cartModal.style.display === 'flex') {
+            updateCartUI();
+        }
     }
     
     // Close modal when clicking outside
@@ -1886,10 +2024,14 @@
         }
     });
     
-    // Search functionality
+    // Search functionality with debounce
+    let searchTimeout;
     searchInput.addEventListener('input', function() {
-        currentSearch = this.value.toLowerCase();
-        renderProducts();
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentSearch = this.value.toLowerCase();
+            renderProducts();
+        }, 300);
     });
     
     // Render products
@@ -1898,6 +2040,11 @@
         
         // Filter products
         let filteredProducts = [...products];
+        
+        // Apply enabled/disabled filter
+        if (!showDisabledProducts) {
+            filteredProducts = filteredProducts.filter(product => product.enabled !== false);
+        }
         
         // Apply category filter
         if (currentFilter !== 'all') {
@@ -1936,6 +2083,11 @@
             productCard.className = 'product-card';
             productCard.dataset.category = product.category;
             
+            // Add disabled class if product is disabled
+            if (product.enabled === false) {
+                productCard.classList.add('disabled');
+            }
+            
             // Generate badges HTML
             let badgesHTML = '';
             if (product.badges && product.badges.length) {
@@ -1952,13 +2104,18 @@
                 badgesHTML += '</div>';
             }
             
-            productCard.innerHTML = `
-                ${badgesHTML}
-                <img src="${product.image}" alt="${product.name}" class="product-image">
-                <div class="product-info">
-                    <h3 class="product-name">${product.name}</h3>
-                    <p class="product-description">${product.description}</p>
-                    
+            let keyOptionsHTML = '';
+            let quantitySelectorHTML = '';
+            let productActionsHTML = '';
+            
+            if (product.enabled === false) {
+                // Disabled product overlay
+                keyOptionsHTML = '';
+                quantitySelectorHTML = '';
+                productActionsHTML = '';
+            } else {
+                // Enabled product - normal UI
+                keyOptionsHTML = `
                     <div class="key-options">
                         ${product.options.map(option => `
                             <div class="key-option ${product.selectedOption === option.id ? 'selected' : ''}" 
@@ -1969,7 +2126,9 @@
                             </div>
                         `).join('')}
                     </div>
-                    
+                `;
+                
+                quantitySelectorHTML = `
                     <div class="quantity-selector">
                         <span class="quantity-label">Quantity:</span>
                         <div class="quantity-controls">
@@ -1978,7 +2137,9 @@
                             <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)">+</button>
                         </div>
                     </div>
-                    
+                `;
+                
+                productActionsHTML = `
                     <div class="product-actions">
                         <button class="add-to-cart-btn" id="add-btn-${product.id}" onclick="addToCart(${product.id})" ${product.selectedOption ? '' : 'disabled'}>
                             <i class="fas fa-cart-plus"></i>
@@ -1989,6 +2150,29 @@
                             Details
                         </button>
                     </div>
+                `;
+            }
+            
+            productCard.innerHTML = `
+                ${badgesHTML}
+                <img src="${product.image}" alt="${product.name}" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-name">${product.name}</h3>
+                    <p class="product-description">${product.description}</p>
+                    
+                    ${keyOptionsHTML}
+                    ${quantitySelectorHTML}
+                    ${productActionsHTML}
+                    
+                    ${product.enabled === false ? `
+                        <div class="disabled-overlay">
+                            <div class="disabled-content">
+                                <i class="fas fa-ban"></i>
+                                <h4>Temporarily Unavailable</h4>
+                                <p>${product.disabledMessage || 'This product is currently disabled'}</p>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
             productsContainer.appendChild(productCard);
@@ -1998,11 +2182,14 @@
     // Select a key option
     function selectOption(productId, optionId) {
         const product = products.find(p => p.id === productId);
-        if (!product) return;
+        if (!product || product.enabled === false) return;
         
-        // Remove selected class from all options
-        const options = document.querySelectorAll(`.key-option`);
-        options.forEach(opt => opt.classList.remove('selected'));
+        // Remove selected class from all options in this product
+        const productCard = document.querySelector(`.product-card[data-category="${product.category}"]`);
+        if (productCard) {
+            const options = productCard.querySelectorAll('.key-option');
+            options.forEach(opt => opt.classList.remove('selected'));
+        }
         
         // Update selected option
         product.selectedOption = optionId;
@@ -2023,7 +2210,7 @@
     // Update quantity for a product
     function updateQuantity(productId, change) {
         const product = products.find(p => p.id === productId);
-        if (!product) return;
+        if (!product || product.enabled === false) return;
         
         let quantity = (product.quantity || 1) + change;
         if (quantity < 1) quantity = 1;
@@ -2040,7 +2227,15 @@
     // Add item to cart
     function addToCart(productId) {
         const product = products.find(p => p.id === productId);
-        if (!product || !product.selectedOption) return;
+        if (!product || product.enabled === false) {
+            showNotification(`${product.name} is currently unavailable`, 'warning');
+            return;
+        }
+        
+        if (!product.selectedOption) {
+            showNotification('Please select a key option first', 'warning');
+            return;
+        }
         
         const option = product.options.find(opt => opt.id === product.selectedOption);
         if (!option) return;
@@ -2161,7 +2356,7 @@
             saveCartToStorage();
             
             // Show removal notification
-            showNotification(`${removedItem.productName} removed from cart`, 'danger');
+            showNotification(`${removedItem.productName} removed from cart`, 'warning');
         }
     }
     
@@ -2170,65 +2365,83 @@
         localStorage.setItem('sellauthCart', JSON.stringify(cart));
     }
     
-// Show product details in modal
-function showProductDetails(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-    
-    let featuresHTML = '';
-    if (product.features && product.features.length) {
-        featuresHTML = `
-            <h3 style="margin-top: 1.8rem; margin-bottom: 1.2rem; color: var(--accent2);">Features:</h3>
-            <ul style="list-style-type: none; padding-left: 0;">
-                ${product.features.map(feature => `
-                    <li style="padding: 0.7rem 0; display: flex; align-items: center;">
-                        <i class="fas fa-check" style="color: var(--success); margin-right: 0.8rem;"></i>
-                        ${feature}
-                    </li>
-                `).join('')}
-            </ul>
-        `;
-    }
-    
-    productModalContent.innerHTML = `
-        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h2 style="margin: 0;">${product.name}</h2>
-<button 
-  class="close-modal" 
-  onclick="productModal.style.display = 'none'" 
-  style="background: transparent; border: none; color: transparent; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; opacity: 1; transition: none;">
-</button>
-        </div>
-        <img src="${product.image}" alt="${product.name}" style="width: 100%; border-radius: 1.2rem; margin: 1.2rem 0; border: 1px solid rgba(255,255,255,0.1);">
-        <p style="line-height: 1.7; margin-bottom: 1.5rem;">${product.detailedDescription || product.description}</p>
-        ${featuresHTML}
-        <div class="key-options" style="margin-top: 2rem;">
-            ${product.options.map(option => `
-                <div class="key-option" data-option-id="${option.id}" onclick="selectOption(${product.id}, ${option.id})">
-                    <div class="key-name">${option.name}</div>
-                    <div class="key-price">$${option.price.toFixed(2)}</div>
+    // Show product details in modal
+    function showProductDetails(productId) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+        
+        // Check if product is disabled
+        if (product.enabled === false) {
+            productModalContent.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-ban" style="font-size: 4rem; color: var(--warning); margin-bottom: 1.5rem;"></i>
+                    <h2 style="color: var(--warning); margin-bottom: 1rem;">${product.name}</h2>
+                    <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">${product.disabledMessage || 'This product is temporarily unavailable'}</p>
+                    <img src="${product.image}" alt="${product.name}" style="width: 100%; border-radius: 1rem; opacity: 0.5; margin: 1.5rem 0;">
+                    <button class="btn btn-secondary" onclick="productModal.style.display = 'none'" style="margin-top: 1rem;">
+                        <i class="fas fa-arrow-left"></i> Back to Products
+                    </button>
                 </div>
-            `).join('')}
-        </div>
-        <div class="quantity-selector" style="margin: 1.8rem 0;">
-            <span class="quantity-label">Quantity:</span>
-            <div class="quantity-controls">
-                <button class="quantity-btn" onclick="updateQuantity(${product.id}, -1)">-</button>
-                <div class="quantity-display" id="quantity-${product.id}">${product.quantity || 1}</div>
-                <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)">+</button>
+            `;
+            productModal.style.display = 'flex';
+            return;
+        }
+        
+        let featuresHTML = '';
+        if (product.features && product.features.length) {
+            featuresHTML = `
+                <h3 style="margin-top: 1.8rem; margin-bottom: 1.2rem; color: var(--accent2);">Features:</h3>
+                <ul style="list-style-type: none; padding-left: 0;">
+                    ${product.features.map(feature => `
+                        <li style="padding: 0.7rem 0; display: flex; align-items: center;">
+                            <i class="fas fa-check" style="color: var(--success); margin-right: 0.8rem;"></i>
+                            ${feature}
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+        
+        productModalContent.innerHTML = `
+            <h2 style="margin-bottom: 1rem;">${product.name}</h2>
+            <img src="${product.image}" alt="${product.name}" style="width: 100%; border-radius: 1.2rem; margin: 1.2rem 0; border: 1px solid rgba(255,255,255,0.1);">
+            <p style="line-height: 1.7; margin-bottom: 1.5rem;">${product.detailedDescription || product.description}</p>
+            ${featuresHTML}
+            <div class="key-options" style="margin-top: 2rem;">
+                ${product.options.map(option => `
+                    <div class="key-option" data-option-id="${option.id}" onclick="selectOption(${product.id}, ${option.id});">
+                        <div class="key-name">${option.name}</div>
+                        <div class="key-price">$${option.price.toFixed(2)}</div>
+                    </div>
+                `).join('')}
             </div>
-        </div>
-        <button class="add-to-cart-btn" style="width: 100%; padding: 1.2rem;" onclick="addToCart(${product.id}); productModal.style.display = 'none';">
-            <i class="fas fa-cart-plus"></i>
-            Add to Cart
-        </button>
-    `;
-    
-    productModal.style.display = 'flex';
-}
+            <div class="quantity-selector" style="margin: 1.8rem 0;">
+                <span class="quantity-label">Quantity:</span>
+                <div class="quantity-controls">
+                    <button class="quantity-btn" onclick="updateQuantity(${product.id}, -1)">-</button>
+                    <div class="quantity-display" id="modal-quantity-${product.id}">${product.quantity || 1}</div>
+                    <button class="quantity-btn" onclick="updateQuantity(${product.id}, 1)">+</button>
+                </div>
+            </div>
+            <button class="add-to-cart-btn" style="width: 100%; padding: 1.2rem;" onclick="addToCart(${product.id}); productModal.style.display = 'none';">
+                <i class="fas fa-cart-plus"></i>
+                Add to Cart
+            </button>
+        `;
+        
+        productModal.style.display = 'flex';
+    }
     
     // Show notification
     function showNotification(message, type = 'success') {
+        // Remove any existing notifications
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        });
+        
         // Create notification element
         const notification = document.createElement('div');
         notification.className = `notification ${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : ''}`;
@@ -2381,6 +2594,9 @@ function showProductDetails(productId) {
         
         // Initialize scroll to top
         initScrollToTop();
+        
+        // Start clock
+        startEasternClock();
     });
 
     // Make functions globally accessible for onclick handlers
@@ -2394,8 +2610,6 @@ function showProductDetails(productId) {
     function startEasternClock() {
         function updateClock() {
             const now = new Date();
-
-            // Convert to Eastern Time (handles EST/EDT automatically)
             const easternTime = new Date(
                 now.toLocaleString("en-US", { timeZone: "America/New_York" })
             );
@@ -2403,9 +2617,6 @@ function showProductDetails(productId) {
             let hours = easternTime.getHours();
             const minutes = easternTime.getMinutes();
             const seconds = easternTime.getSeconds();
-
-            // Convert to 12-hour format if needed (optional)
-            // hours = hours % 12 || 12;
 
             document.getElementById("hours").textContent = hours.toString().padStart(2, "0");
             document.getElementById("minutes").textContent = minutes.toString().padStart(2, "0");
@@ -2415,13 +2626,11 @@ function showProductDetails(productId) {
         updateClock();
         setInterval(updateClock, 1000);
     }
-
-    startEasternClock();
     
     // Enhanced Sellauth Checkout
     checkoutBtn.addEventListener('click', function() {
         if (cart.length === 0) {
-            showNotification('Your cart is empty!', 'danger');
+            showNotification('Your cart is empty!', 'warning');
             return;
         }
         
@@ -2453,6 +2662,7 @@ function showProductDetails(productId) {
             cart = [];
             saveCartToStorage();
             updateCartUI();
+            showNotification('Checkout completed successfully!', 'success');
         }).catch(error => {
             console.error('Checkout error:', error);
             showNotification('Checkout failed. Please try again.', 'danger');
