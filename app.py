@@ -1,263 +1,396 @@
-import os
 import json
 import logging
-from datetime import timedelta
-from functools import wraps
-from flask import Flask, session, render_template, abort, request, g
+import os
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from dotenv import load_dotenv
+from flask import Flask, abort, jsonify, render_template, request, send_from_directory, session
+from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_compress import Compress
-from dotenv import load_dotenv
-import html
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.utils import safe_join
+
 
 # -----------------------------------------------------------------------------
-# Initialization
+# Environment / Setup
 # -----------------------------------------------------------------------------
 load_dotenv()
 
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+STATIC_DIR = BASE_DIR / "static"
+PRODUCTS_FILE = DATA_DIR / "products.json"
+FILES_DIR = DATA_DIR / "files"
+
+FLASK_ENV = os.getenv("FLASK_ENV", "development").lower()
+IS_PRODUCTION = FLASK_ENV == "production"
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, log_level, logging.INFO),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+# -----------------------------------------------------------------------------
+# Flask App
+# -----------------------------------------------------------------------------
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# Apply proxy fix if behind a reverse proxy
-if os.getenv('BEHIND_PROXY', 'false').lower() == 'true':
+# Reverse proxy support (Render / Nginx / Cloudflare / etc.)
+if os.getenv("BEHIND_PROXY", "false").lower() == "true":
     app.wsgi_app = ProxyFix(
-        app.wsgi_app, 
-        x_for=1, 
-        x_proto=1, 
-        x_host=1, 
+        app.wsgi_app,
+        x_for=1,
+        x_proto=1,
+        x_host=1,
         x_port=1,
-        x_prefix=1
+        x_prefix=1,
     )
 
-# Validate secret key configuration
-secret_key = os.getenv('SECRET_KEY')
+# -----------------------------------------------------------------------------
+# Secret key / Sessions
+# -----------------------------------------------------------------------------
+secret_key = os.getenv("SECRET_KEY")
 if not secret_key:
-    # Fallback to a temporary key for development with a warning
-    if os.getenv('FLASK_ENV') == 'development':
-        secret_key = 'dev-key-change-in-production-' + os.urandom(16).hex()
-        logging.warning("Using temporary secret key for development. Set SECRET_KEY for production.")
-    else:
+    if IS_PRODUCTION:
         raise RuntimeError("SECRET_KEY environment variable is not set")
-app.secret_key = secret_key
+    secret_key = f"dev-key-{os.urandom(24).hex()}"
+    logger.warning("Using temporary development SECRET_KEY. Set SECRET_KEY for production.")
 
-# Session configuration
 app.config.update(
+    SECRET_KEY=secret_key,
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=20),
-    SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_REFRESH_EACH_REQUEST=True
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=IS_PRODUCTION,
+    SESSION_REFRESH_EACH_REQUEST=True,
+    JSON_SORT_KEYS=False,
 )
 
-# Security headers configuration
+# -----------------------------------------------------------------------------
+# Compression
+# -----------------------------------------------------------------------------
+Compress(app)
+
+# -----------------------------------------------------------------------------
+# Rate Limiting
+# -----------------------------------------------------------------------------
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["3000 per day", "500 per hour", "60 per minute"],
+    storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+    strategy="fixed-window",
+    headers_enabled=True,
+)
+
+# -----------------------------------------------------------------------------
+# Security Headers
+# -----------------------------------------------------------------------------
 CSP_POLICY = (
     "default-src 'self'; "
     "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sell.app https://sellauth.com; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
-    "img-src 'self' https://i.postimg.cc data: https://sellauth.com https:; "
-    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
-    "connect-src 'self' https://api-internal-2.sellauth.com https://sellauth.com https://formspree.io; "
-    "worker-src 'self' blob:; "
+    "img-src 'self' data: https:; "
+    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+    "connect-src 'self' https://cdn.jsdelivr.net https://api-internal-2.sellauth.com https://api-internal-3.sellauth.com https://sellauth.com https://formspree.io; "
     "frame-src https://*.mysellauth.com https://sellauth.com; "
-    "object-src 'none';"
-    "base-uri 'self';"
-    "form-action 'self';"
+    "worker-src 'self' blob:; "
+    "object-src 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "frame-ancestors 'none';"
 )
 
-# Initialize compression
-Compress(app)
-
-# Rate limiting configuration
-limiter = Limiter(
-    key_func=get_remote_address,
-    app=app,
-    default_limits=["5000 per day", "1000 per hour", "100 per minute"],
-    storage_uri="memory://",
-    strategy="moving-window",
-    headers_enabled=True
-)
-
-# Configure logging
-log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-logging.basicConfig(
-    level=log_level,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
-
-# Paths to JSON data
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROUTES_PATH = os.path.join(BASE_DIR, 'static', 'data', 'routes.json')
-
-# Cache for route data
-route_cache = None
-route_cache_time = 0
-CACHE_TIMEOUT = 300  # 5 minutes
 
 # -----------------------------------------------------------------------------
-# Helper Functions and Decorators
+# Helpers
 # -----------------------------------------------------------------------------
-def load_json(path):
-    """Safely load JSON data from file with caching"""
-    global route_cache, route_cache_time
-    
-    current_time = os.path.getmtime(path) if os.path.exists(path) else 0
-    
-    # Return cached data if it's still valid
-    if route_cache and current_time <= route_cache_time + CACHE_TIMEOUT:
-        return route_cache
-    
+def load_products() -> list:
+    """Safely load product data from JSON."""
+    if not PRODUCTS_FILE.exists():
+        logger.warning("Products file does not exist: %s", PRODUCTS_FILE)
+        return []
+
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with PRODUCTS_FILE.open("r", encoding="utf-8") as f:
             data = json.load(f)
-            route_cache = data
-            route_cache_time = current_time
-            return data
-    except FileNotFoundError:
-        logger.error("JSON file not found: %s", path)
+
+        if not isinstance(data, list):
+            logger.warning("Products JSON is not a list.")
+            return []
+
+        return data
+
+    except json.JSONDecodeError:
+        logger.exception("Failed to decode products JSON.")
         return []
-    except json.JSONDecodeError as e:
-        logger.error("Error parsing JSON file %s: %s", path, str(e))
-        return []
-    except Exception as e:
-        logger.exception("Unexpected error loading JSON: %s", str(e))
+    except OSError:
+        logger.exception("Failed to read products file.")
         return []
 
-def rate_limit_exempt(f):
-    """Decorator to exempt a route from rate limiting"""
-    f._rate_limit_exempt = True
-    return f
+
+def filter_products(section_name: str) -> list:
+    """Return products where a given section is enabled."""
+    return [
+        product
+        for product in load_products()
+        if isinstance(product, dict) and product.get(section_name, {}).get("enabled") is True
+    ]
+
+
+def is_maintenance_mode() -> bool:
+    return os.getenv("MAINTENANCE_MODE", "false").lower() == "true"
+
 
 # -----------------------------------------------------------------------------
-# Middleware Handlers
+# Template globals
+# -----------------------------------------------------------------------------
+@app.context_processor
+def inject_global_template_vars():
+    return {
+        "current_year": datetime.now().year,
+    }
+
+
+# -----------------------------------------------------------------------------
+# Request hooks
 # -----------------------------------------------------------------------------
 @app.before_request
 def set_session_timeout():
     session.permanent = True
 
+
 @app.before_request
 def check_maintenance():
-    """Check if site is in maintenance mode"""
-    if os.getenv('MAINTENANCE_MODE', 'false').lower() == 'true':
-        if request.path != '/maintenance':
-            return render_template('maintenance.html'), 503
+    if not is_maintenance_mode():
+        return None
+
+    allowed_paths = {
+        "/maintenance",
+        "/health",
+    }
+
+    if request.path.startswith("/static/"):
+        return None
+
+    if request.path not in allowed_paths:
+        return render_template("maintenance.html", active_page=None), 503
+
+    return None
+
 
 @app.after_request
 def apply_security_headers(response):
-    """Apply security headers to all responses"""
     response.headers["Content-Security-Policy"] = CSP_POLICY
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+    # Old header; mostly legacy, but harmless if you want it
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["X-Download-Options"] = "noopen"
-    
-    # HSTS header - only in production
-    if os.getenv('FLASK_ENV') == 'production' and request.is_secure:
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    
+
+    if IS_PRODUCTION and request.is_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+
     return response
 
+
 # -----------------------------------------------------------------------------
-# Error Handlers
+# Error handlers
 # -----------------------------------------------------------------------------
 @app.errorhandler(404)
-def page_not_found(e):
-    return render_template("404.html"), 404
+def page_not_found(error):
+    return render_template("404.html", active_page=None), 404
+
+
+@app.errorhandler(403)
+def forbidden(error):
+    return render_template("403.html", error=getattr(error, "description", "Forbidden"), active_page=None), 403
+
 
 @app.errorhandler(429)
-def ratelimit_handler(e):
-    return render_template("429.html", error=str(e.description)), 429
+def ratelimit_handler(error):
+    return render_template("403.html", error="Too many requests. Please slow down.", active_page=None), 429
+
 
 @app.errorhandler(500)
-def internal_error(e):
-    logger.error("Server error: %s", str(e))
-    return render_template("500.html"), 500
+def internal_error(error):
+    logger.exception("Internal server error: %s", error)
+    return render_template("500.html", active_page=None), 500
 
-@app.errorhandler(503)
-def service_unavailable(e):
-    return render_template("503.html"), 503
 
 # -----------------------------------------------------------------------------
-# Dynamic Routes Loader
+# Main pages
+# -----------------------------------------------------------------------------
+@app.route("/")
+def home():
+    return render_template("index.html", active_page="home")
+
+
+@app.route("/store")
+@app.route("/products")
+def store():
+    return render_template("store.html", active_page="products")
+
+
+@app.route("/downloads")
+def downloads():
+    return render_template("downloads.html", active_page="downloads")
+
+
+@app.route("/status")
+def status():
+    return render_template("status.html", active_page="status")
+
+
+@app.route("/support")
+def support():
+    return render_template("support.html", active_page="support")
+
+
+@app.route("/maintenance")
+def maintenance():
+    return render_template("maintenance.html", active_page=None), 503
+
+
+# -----------------------------------------------------------------------------
+# Legal pages
+# -----------------------------------------------------------------------------
+@app.route("/legal")
+def legal_center():
+    return render_template("legal_center.html", active_page="legal")
+
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html", active_page="legal")
+
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html", active_page="legal")
+
+
+@app.route("/refund-policy")
+def refund_policy():
+    return render_template("refund_policy.html", active_page="legal")
+
+
+@app.route("/cookie-policy")
+def cookie_policy():
+    return render_template("cookie_policy.html", active_page="legal")
+
+
+@app.route("/license")
+def license_page():
+    return render_template("license.html", active_page="legal")
+
+
+# -----------------------------------------------------------------------------
+# API routes
+# -----------------------------------------------------------------------------
+@app.route("/api/products")
+@limiter.limit("120 per minute")
+def api_products():
+    return jsonify(load_products())
+
+
+@app.route("/api/store-products")
+@limiter.limit("120 per minute")
+def api_store_products():
+    return jsonify(filter_products("store"))
+
+
+@app.route("/api/downloads")
+@limiter.limit("120 per minute")
+def api_downloads():
+    return jsonify(filter_products("downloads"))
+
+
+@app.route("/api/status")
+@limiter.limit("120 per minute")
+def api_status():
+    return jsonify(filter_products("status"))
+
+
+# -----------------------------------------------------------------------------
+# Downloads
+# -----------------------------------------------------------------------------
+@app.route("/download/<path:filename>")
+@limiter.limit("30 per minute")
+def download_file(filename):
+    safe_path = safe_join(str(FILES_DIR), filename)
+
+    if not safe_path:
+        abort(404)
+
+    file_path = Path(safe_path)
+
+    if not file_path.exists() or not file_path.is_file():
+        abort(404)
+
+    return send_from_directory(
+        directory=str(FILES_DIR),
+        path=filename,
+        as_attachment=True,
+        conditional=True,
+    )
+
+
+# -----------------------------------------------------------------------------
+# Health
+# -----------------------------------------------------------------------------
+@app.route("/health")
+@limiter.exempt
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "message": "Service is running",
+        "environment": FLASK_ENV,
+    })
+
+
+# -----------------------------------------------------------------------------
+# Optional dynamic routes
 # -----------------------------------------------------------------------------
 def register_dynamic_routes():
-    """Register routes from JSON configuration with error handling"""
-    routes = load_json(ROUTES_PATH)
-    if not routes:
-        logger.warning("No routes loaded from configuration")
-        # Add a fallback route
-        @app.route('/')
-        @rate_limit_exempt
-        def fallback_home():
-            return render_template('index.html')
-        return
+    """
+    Placeholder for future dynamic route loading.
+    Safe no-op so startup does not crash if routes.json logic is not ready yet.
+    """
+    return None
 
-    for route in routes:
-        try:
-            tpl = route['template']
-            url = route['url']
-            methods = route.get('methods', ['GET'])
-            
-            # Create dedicated view function for each route
-            def view_func(template=tpl):
-                try:
-                    return render_template(template)
-                except Exception as e:
-                    logger.error("Error rendering template %s: %s", template, str(e))
-                    abort(500)
-            
-            # Set the function name for debugging
-            view_func.__name__ = f"route_{url.replace('/', '_').replace('-', '_')}"
-            
-            # Apply rate limiting unless exempt
-            if route.get('rate_limit_exempt', False):
-                view_func = rate_limit_exempt(view_func)
-            
-            app.add_url_rule(
-                url, 
-                endpoint=url.replace('/', '_').replace('-', '_'), 
-                view_func=view_func,
-                methods=methods
-            )
-            logger.info("Registered route: %s -> %s", url, tpl)
-        except KeyError as e:
-            logger.error("Invalid route configuration: %s. Missing key: %s", route, str(e))
-        except Exception as e:
-            logger.exception("Error registering route %s: %s", route, str(e))
 
-# Health check endpoint
-@app.route('/health')
-@rate_limit_exempt
-def health_check():
-    """Endpoint for health checks"""
-    return {'status': 'healthy', 'message': 'Service is running'}
-
-# -----------------------------------------------------------------------------
-# Application Startup
-# -----------------------------------------------------------------------------
 register_dynamic_routes()
 
-if __name__ == '__main__':
-    # Production settings
-    port = int(os.getenv('PORT', 10000))
-    debug = os.getenv('FLASK_ENV', 'development') == 'development'
-    
-    # Disable debug in production
-    if os.getenv('FLASK_ENV') == 'production':
-        debug = False
-    
+
+# -----------------------------------------------------------------------------
+# App start
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 10000))
+    debug = not IS_PRODUCTION
+
     logger.info("Starting application on port %d (debug=%s)", port, debug)
-    
-    # Use waitress for production instead of Flask's dev server
-    if os.getenv('FLASK_ENV') == 'production':
+
+    if IS_PRODUCTION:
         from waitress import serve
-        serve(app, host='0.0.0.0', port=port, threads=8)
+
+        serve(app, host="0.0.0.0", port=port, threads=8)
     else:
         app.run(
-            host='0.0.0.0',
+            host="0.0.0.0",
             port=port,
             debug=debug,
-            use_reloader=debug
+            use_reloader=debug,
         )
