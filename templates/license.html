@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}License | moealturej{% endblock %}
+
+{% block content %}
+<section class="page-section legal-doc-page">
+  <div class="container">
+    <div class="legal-doc">
+      <div class="doc-kicker">legal</div>
+      <h1>License</h1>
+      <p class="doc-intro">
+        This License explains how purchased or downloaded products from moealturej solutions may be used.
+      </p>
+
+      <div class="doc-content">
+        <h2>1. Permitted Use</h2>
+        <p>Unless otherwise stated, products are licensed for personal or approved use only and are not sold with full ownership rights.</p>
+
+        <h2>2. Restrictions</h2>
+        <p>You may not resell, redistribute, leak, repackage, publicly share, or claim the products as your own unless explicit written permission is provided.</p>
+
+        <h2>3. Modification</h2>
+        <p>Modification rights depend on the specific product. Unless stated otherwise, editing for private use may be allowed while redistribution remains prohibited.</p>
+
+        <h2>4. Revocation</h2>
+        <p>License access may be revoked if terms are violated, including unauthorized sharing or abusive use.</p>
+
+        <h2>5. Product-Specific Terms</h2>
+        <p>Some products may include additional license terms. In those cases, the product-specific terms also apply.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .legal-doc {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, rgba(12,12,22,0.88), rgba(8,8,16,0.94));
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.30);
+  }
+
+  .doc-kicker {
+    color: var(--purple-2);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+  }
+
+  .legal-doc h1 {
+    margin: 0 0 14px;
+    font-size: clamp(38px, 5vw, 54px);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+  }
+
+  .doc-intro {
+    margin: 0 0 26px;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .doc-content h2 {
+    margin: 26px 0 10px;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+  }
+
+  .doc-content p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.85;
+  }
+
+  @media (max-width: 640px) {
+    .legal-doc {
+      padding: 22px;
+      border-radius: 18px;
+    }
+  }
+</style>
+{% endblock %}

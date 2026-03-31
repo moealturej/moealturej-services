@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Status | moealturej{% endblock %}
+
+{% block extra_head %}
+<style>
+  .status-page {
+    padding: 64px 0 80px;
+  }
+
+  .status-hero {
+    text-align: center;
+    padding: 38px 0 46px;
+  }
+
+  .status-hero h1 {
+    margin: 0 0 14px;
+    font-size: clamp(40px, 6vw, 66px);
+    line-height: 0.96;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+  }
+
+  .status-hero .accent {
+    color: var(--purple);
+  }
+
+  .status-panel {
+    background: linear-gradient(180deg, rgba(17,17,28,0.98), rgba(10,10,18,0.98));
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow:
+      0 20px 45px rgba(0,0,0,0.35),
+      0 0 0 1px rgba(255,255,255,0.02) inset;
+  }
+
+  /* NEW cleaner standout header box */
+  .status-header {
+    padding: 24px 28px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+  }
+
+  .status-header h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+  }
+
+  .status-list {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Cleaner boxed rows */
+  .status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.18s ease;
+  }
+
+  .status-row:hover {
+    background: rgba(255,255,255,0.04);
+    transform: translateY(-1px);
+  }
+
+  .status-name {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .status-pill.operational {
+    background: rgba(59,242,159,0.14);
+    color: #69f5b2;
+    border: 1px solid rgba(59,242,159,0.18);
+  }
+
+  .status-pill.degraded {
+    background: rgba(255,188,66,0.14);
+    color: #ffbc42;
+    border: 1px solid rgba(255,188,66,0.18);
+  }
+
+  .status-pill.offline {
+    background: rgba(255,93,115,0.14);
+    color: #ff7186;
+    border: 1px solid rgba(255,93,115,0.18);
+  }
+
+  .status-empty {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .status-empty h3 {
+    margin: 0 0 8px;
+    color: #fff;
+    font-size: 22px;
+  }
+
+  @media (max-width: 760px) {
+    .status-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="status-page">
+  <div class="container">
+    <section class="status-hero">
+      <h1>Service <span class="accent">status</span></h1>
+    </section>
+
+    <section class="status-panel">
+      <div class="status-header">
+        <h2>Product Status</h2>
+      </div>
+
+      <div class="status-list" id="status-list"></div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const statusList = document.getElementById("status-list");
+
+  function getStatusClass(state) {
+    const value = String(state || "").toLowerCase();
+    if (value === "operational") return "operational";
+    if (value === "degraded") return "degraded";
+    if (value === "offline") return "offline";
+    return "operational";
+  }
+
+  function renderStatus(items) {
+    statusList.innerHTML = "";
+
+    if (!items.length) {
+      statusList.innerHTML = `
+        <div class="status-empty">
+          <h3>No status items found</h3>
+          <p>No products are currently available.</p>
+        </div>
+      `;
+      return;
+    }
+
+    items.forEach(item => {
+      const state = item.status?.state || "Operational";
+      const label = item.status?.label || state;
+
+      const row = document.createElement("div");
+      row.className = "status-row";
+      row.innerHTML = `
+        <div class="status-name">${item.name}</div>
+        <div class="status-pill ${getStatusClass(state)}">${label}</div>
+      `;
+      statusList.appendChild(row);
+    });
+  }
+
+  async function loadStatus() {
+    try {
+      const response = await fetch("/api/status");
+      if (!response.ok) throw new Error("Failed to load status");
+
+      const items = await response.json();
+      renderStatus(items);
+    } catch (error) {
+      statusList.innerHTML = `
+        <div class="status-empty">
+          <h3>Status unavailable</h3>
+          <p>Could not load status right now.</p>
+        </div>
+      `;
+    }
+  }
+
+  loadStatus();
+</script>
+{% endblock %}
