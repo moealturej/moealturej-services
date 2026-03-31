@@ -1,0 +1,20 @@
+{
+  "name": "moealturej",
+  "short_name": "moealturej",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070711",
+  "theme_color": "#070711",
+  "icons": [
+    {
+      "src": "/static/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/logo (1).png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
