@@ -1,0 +1,256 @@
+[
+  {
+    "id": 667523,
+    "slug": "mw19-ghost-internal",
+    "name": "MW19 Ghost Internal",
+    "detailedDescription": "• Spoofer Included\n• Compatible with Windows 10 / Windows 11\n• Controller Supported\n• Supports Battle.net + Steam\n\n• Aimbot: Silent Aim, 180° Toggle, Prediction, Humanization, Rapid Fire, Custom Keybinds, Bone Selection\n• Anti Aim: Spinbot with Custom Keybind\n• Targeting: Downed Check, Visibility Check, No Recoil, No Spread, No Shake, Adjustable Speed / FOV / Distance\n• Override: Keybind Config + Aim Bone Override\n• Visuals: FOV Circle, Snaplines, Names, Distance, Bone ESP, Box ESP, Health, Weapon ESP, Color Switching\n• Unlocks: Unlock All + Reverse Camos\n• Misc: Crash Server, Leave Match, Super Slide, Long Melee, Air Stuck, Chat Spam, 1000 FOV, No Stun / Flash\n• Exploits: Class Editor, Operator Swapper, Dev Clantags, Custom Camos, Modded Weapons, Gesture Swapper\n• Dvars (Battle.net Only): Third Person, FPS Boost, No Fog, Max Brightness, Motion Blur Toggle, Flash / Stun Disable",
+    "image": "/static/mw19.png",
+    "category": "cod",
+    "type": "product",
+    "featured": true,
+    "features": ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Unlock All", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1055147, "name": "DAY KEY", "price": 2.0 },
+        { "id": 1055148, "name": "WEEK KEY", "price": 4.50 },
+        { "id": 1055149, "name": "MONTH KEY", "price": 12.0 },
+        { "id": 1055150, "name": "LIFETIME KEY", "price": 35.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v6.8.4",
+      "downloadUrl": "/download/mw19.exe",
+      "fileSize": "45.7 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 667973,
+    "slug": "mw19-unlock-all",
+    "name": "MW19 Unlock All",
+    "detailedDescription": "• Spoofer Included\n• Compatible with Windows 10 / Windows 11\n• Supports Battle.net + Steam\n\n• • Unlock everything in-game (No server checks)\n • F6 to activate in-game\n",
+    "image": "/static/mw19ula.png",
+    "category": "cod",
+    "type": "product",
+    "featured": true,
+    "features": ["Spoofer", "Unlock All"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1056032, "name": "DAY KEY", "price": 1.0 },
+        { "id": 1056033, "name": "WEEK KEY", "price": 2.50 },
+        { "id": 1056034, "name": "MONTH KEY", "price": 5.0 },
+        { "id": 1056035, "name": "LIFETIME KEY", "price": 10.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v6.8.4",
+      "downloadUrl": "/download/mw19.exe",
+      "fileSize": "45.7 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 667992,
+    "slug": "mw2dmz-grey-internal",
+    "name": "MW2/DMZ Grey Internal",
+    "detailedDescription": "• Advanced Aimbot System: Smooth customizable targeting, Silent Aim, Auto Fire, Sway Compensation, Adjustable FOV + Max Distance, Custom Activation Key\n• Targeting: Bone Selection, FOV Priority, Distance Priority, Visibility Checks, Ignore Downed, Ignore Teammates, Ignore Bots, Ignore Bomb Drones\n• ESP Categories: Enemy ESP, Team ESP, Bot ESP, World ESP (Bomb Drone Support)\n• Enemy ESP: Box, Health, Skeleton, Names, Distance, Snaplines\n• Team ESP: Box, Skeleton, Names, Distance, Snaplines\n• Bot ESP: Box, Skeleton, Names, Distance, Snaplines\n• World ESP: Bomb Drone ESP, Box, Names, Distance, Snaplines\n• Visual Features: FOV Circle, Adjustable Render Distance, Visibility Filtering\n• Weapon: No Recoil\n• Camera / View: Spinbot, Third Person, Custom FOV\n• Support: Controller Support + Spoofer Support\n• Compatibility: Windows 10 / 11 (21H2–25H2)\n• Customization: Custom ESP Colors, Feature Toggles, Adjustable Distance, Legit + Aggressive Playstyles\n• Performance: Clean UI, Fast Menu, Minimal FPS Impact\n• Security: Regular Updates, Secure Loader, Anti-Detection Measures\n• Complete MW2 / DMZ All-in-One Solution",
+    "image": "/static/gray.png",
+    "category": "cod",
+    "type": "product",
+    "featured": true,
+    "features": ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1056076, "name": "DAY KEY", "price": 5.0 },
+        { "id": 1056077, "name": "WEEK KEY", "price": 10.0 },
+        { "id": 1056078, "name": "MONTH KEY", "price": 12.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v4.2.6",
+      "downloadUrl": "/download/gray.rar",
+      "fileSize": "5.8 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 668001,
+    "slug": "progress-external-mw2-bo7",
+    "name": "Progress External (MW2-BO7)",
+    "detailedDescription": "• Aimbot: Enable Aimbot, Mouse / Controller Aim Mode, Target Bone Selection, Adjustable FOV, Smoothness, Aim Key Bind, Target Priority, Prediction, Controller Aim Assist Strength\n• Visuals (ESP): Enable ESP, Box ESP, Skeleton ESP, Player Names, Distance, Health Bar, Visible / Invisible Colors, AI / Player Filter\n• Radar: Enable Radar, Adjustable Scale, Opacity, Enemy + Teammate Display, Direction Sync, Mobile Shared Radar (QR Code)\n• Misc: No Recoil, No Spread, Triggerbot, Auto Reload, Hold Breath Assist, FPS Display\n• Config: Save, Load, Delete, Auto Load Config\n• Account: Username, Subscription Status, Remaining Time, HWID Status, Auth Server Status\n• Settings: Menu Toggle Key, Language Switch, Theme Switch, Menu Opacity",
+    "image": "/static/progress.png",
+    "category": "cod",
+    "type": "product",
+    "featured": true,
+    "features": ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1056099, "name": "DAY KEY", "price": 7.0 },
+        { "id": 1056100, "name": "WEEK KEY", "price": 24.0 },
+        { "id": 1056101, "name": "MONTH KEY", "price": 44.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v9.1.0",
+      "downloadUrl": "/download/progress.exe",
+      "fileSize": "25.8 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 667998,
+    "slug": "ancient-arc-raiders-cheat",
+    "name": "Ancient ARC Raiders Cheat",
+    "detailedDescription": "• Aimbot: Enable, Aim Key, Mouse / Memory Aim Type, Adjustable Smoothness, Draw FOV, FOV Radius Slider, Prediction, Prediction Dot, Target Line\n• Targeting: Target Lock, Visibility Check, Max Aim Distance Slider, Target Bone Selection\n• Visuals: Name, Box, Skeleton, Squad, Distance (Visible + Invisible Colors), Health, Armor, Adjustable Max Distance\n• Arrows: Enable Direction Arrows + Adjustable Range\n• Radar: Enable Radar, Radar Scale Slider, Max Show Distance Slider\n• Other: Battle Mode Key + Enable Battle Mode\n• World ESP: Crates, Drones, Dropped Items, Corpse, Salvage, Carryable, Supply Station — Fully Customizable with Dot, Icon, Name, Color, Distance, Max Distance, Battle Mode Visibility\n• Configs: Add, Load, Share",
+    "image": "/static/arc.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Aimbot", "ESP/Wallhack", "Undetectable", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1056089, "name": "DAY KEY", "price": 5.0 },
+        { "id": 1056090, "name": "WEEK KEY", "price": 20.0 },
+        { "id": 1056091, "name": "MONTH KEY", "price": 40.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v1.7.3",
+      "downloadUrl": "/download/arc.exe",
+      "fileSize": "45.5 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 667978,
+    "slug": "ambani-fivem-chair",
+    "name": "Ambani FiveM Chair",
+    "detailedDescription": "• Aimbot: Enable Key, FOV Circle, Radius Slider, Smoothing, Max Distance, Hitbox Selection, Smart Prioritization, Randomized Hitboxes, Prediction, Visibility Checks, Legitbot Mode, Softlock, Adaptive Aim Speed\n• Silent Aim / Magic Bullet: Magic Bullet, Bullet TP, Rage Silent, Silent FOV Ring, Bullet Curving, Auto Penetration, Backtrack, Lag Compensation, Silent Melee\n• Triggerbot: Adjustable Reaction Time, Distance, Minimum Health, Custom Target Filters\n• ESP / Visuals: Player, Loot, Container, Cash, Vehicle, Weapon, Inventory, Bomb, Drone, Footprint, Spectator List, Admin Alerts, Tracers, Arrows, Skeleton, Glow Boxes, Health / Armor Bars\n• Movement / Self: Fly, Walk on Air, Noclip, Speed Modifier, Stealth Mode, Auto Revive, Super Jump, No Fall Damage, Desync, Rewind Position, Outfit Switcher\n• Weapon Mods: Infinite Ammo, Explosive / Flame / Freeze Bullets, No Recoil, No Spread, One Tap, Fire Rate Modifier, Infinite Throwables, Scope Zoom Editor\n• Vehicle Control: Drive on Water, Hover, Fly Mode, Nitro Boost, Spawn Vehicle, Invincible Vehicle, Auto Repair, Freeze, Lock / Unlock, Vehicle Gun, Remote Control\n• Player Interaction: Spectate, Cage, Freeze, Push, Teleport Players, Clone, Disable Controls, Remove Vehicle\n• Vehicle List Tools: Teleport, Flip, Freeze, Gravity Toggle, Damage Sync, Traffic Jam Spawn\n• Teleportation: TP to Waypoint, Player, Vehicle, Loot, Saved Position, Safe TP, Escape TP\n• Server Tools: Global Ragdoll, Remove Objects, Spawn Zones, Force Disconnect, Change Time, Event Logger\n• World Mods: Weather Control, Time Lock, No Fog, Clear Skies, Infinite Daylight, Freeze Time, Disable World Events\n• Settings / UI: Keybind Editor, Config Save / Load, Custom Themes, FPS + Ping Counter, Menu Scaling, Search Settings, Unload",
+    "image": "/static/ambani.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Vehicle Controls", "Injector", "Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1056047, "name": "DAY KEY", "price": 6.50 },
+        { "id": 1056048, "name": "WEEK KEY", "price": 13.0 },
+        { "id": 1056049, "name": "MONTH KEY", "price": 35.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v1.1.1",
+      "downloadUrl": "/download/ambani.exe",
+      "fileSize": "9.4 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 667967,
+    "slug": "temp-spoofer",
+    "name": "Temp Spoofer",
+    "detailedDescription": "• Azure Attestation / Ranked Bypass (Works Only on Select Motherboards)\n• Spoofs: Disk Drives, Motherboard, TPM Endorsement Keys, Network MAC Addresses\n• Confirmed Compatibility: COD, BF6, Fortnite, FiveM\n• Note: Other games may also be supported, but compatibility has not yet been fully tested",
+    "image": "/static/temp.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Undetectable", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1056018, "name": "DAY KEY", "price": 3.0 },
+        { "id": 1056019, "name": "WEEK KEY", "price": 10.0 },
+        { "id": 1056020, "name": "MONTH KEY", "price": 20.0 },
+        { "id": 1056021, "name": "LIFETIME KEY", "price": 50.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v3.2.2",
+      "downloadUrl": "/download/temp.rar",
+      "fileSize": "40.3 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 667964,
+    "slug": "perm-spoofer",
+    "name": "Perm Spoofer",
+    "detailedDescription": "• Permanent HWID Spoofing (Universal)\n• Temporary TPM Spoofing\n• ASUS-Specific Spoofing Support\n• Full Trace File Cleaner (Logs + Detection Cleanup)\n• View Current HWID Information Before Spoofing\n• Compatible with Major Platforms and Loaders\n• Maintains Clean Sessions and Reduces Detection Risk\n• Requirements: Realtek / Intel LAN Only, WMIC Installed, Secure Boot Disabled\n• ASUS Boards Require spoof.exe Startup Entry Enabled\n• HP / Dell Motherboards Not Supported\n• Wireless Network Cards Not Supported (LAN Only)",
+    "image": "/static/perm.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Undetectable", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1056012, "name": "SINGLE USE KEY", "price": 16.0 },
+        { "id": 1056013, "name": "LIFETIME KEY", "price": 45.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v4.0.0",
+      "downloadUrl": "/download/perm.rar",
+      "fileSize": "27.5 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  }
+]
