@@ -109,7 +109,6 @@ CSP_POLICY = (
     "frame-ancestors 'none';"
 )
 
-
 # -----------------------------------------------------------------------------
 # Helpers
 # -----------------------------------------------------------------------------
@@ -137,13 +136,74 @@ def load_products() -> list:
         return []
 
 
+def is_enabled_section(product: dict, section_name: str) -> bool:
+    """Check whether a product section is enabled."""
+    if not isinstance(product, dict):
+        return False
+
+    section = product.get(section_name, {})
+    return isinstance(section, dict) and section.get("enabled") is True
+
+
+def is_store_product(product: dict) -> bool:
+    """Paid/store products only."""
+    return is_enabled_section(product, "store")
+
+
+def is_download_product(product: dict) -> bool:
+    """Products shown on downloads page, including free products."""
+    return is_enabled_section(product, "downloads")
+
+
+def is_status_product(product: dict) -> bool:
+    """Products shown on status page, including free products."""
+    return is_enabled_section(product, "status")
+
+
 def filter_products(section_name: str) -> list:
     """Return products where a given section is enabled."""
+    products = load_products()
+
+    if section_name == "store":
+        return [product for product in products if is_store_product(product)]
+
+    if section_name == "downloads":
+        return [product for product in products if is_download_product(product)]
+
+    if section_name == "status":
+        return [product for product in products if is_status_product(product)]
+
     return [
         product
-        for product in load_products()
+        for product in products
         if isinstance(product, dict) and product.get(section_name, {}).get("enabled") is True
     ]
+
+
+def get_allowed_download_files() -> set[str]:
+    """
+    Build a whitelist of downloadable filenames from products.json.
+    This lets free products and paid products share the same secure download system.
+    """
+    allowed_files = set()
+
+    for product in load_products():
+        if not is_download_product(product):
+            continue
+
+        downloads = product.get("downloads", {})
+        if not isinstance(downloads, dict):
+            continue
+
+        download_url = str(downloads.get("downloadUrl", "")).strip()
+        if not download_url.startswith("/download/"):
+            continue
+
+        filename = download_url.replace("/download/", "", 1).strip("/")
+        if filename:
+            allowed_files.add(filename)
+
+    return allowed_files
 
 
 def is_maintenance_mode() -> bool:
@@ -194,8 +254,6 @@ def apply_security_headers(response):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-
-    # Old header; mostly legacy, but harmless if you want it
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["X-Download-Options"] = "noopen"
 
@@ -334,6 +392,12 @@ def download_file(filename):
     if not safe_path:
         abort(404)
 
+    allowed_files = get_allowed_download_files()
+    normalized_filename = filename.strip("/")
+
+    if normalized_filename not in allowed_files:
+        abort(404)
+
     file_path = Path(safe_path)
 
     if not file_path.exists() or not file_path.is_file():
@@ -341,7 +405,7 @@ def download_file(filename):
 
     return send_from_directory(
         directory=str(FILES_DIR),
-        path=filename,
+        path=normalized_filename,
         as_attachment=True,
         conditional=True,
     )
@@ -385,7 +449,6 @@ if __name__ == "__main__":
 
     if IS_PRODUCTION:
         from waitress import serve
-
         serve(app, host="0.0.0.0", port=port, threads=8)
     else:
         app.run(

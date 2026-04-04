@@ -4,7 +4,7 @@
 {% block extra_head %}
 <style>
   .status-page {
-    padding: 64px 0 80px;
+    padding: 64px 0 84px;
   }
 
   .status-hero {
@@ -24,6 +24,63 @@
     color: var(--purple);
   }
 
+  .status-shell {
+    display: grid;
+    gap: 18px;
+  }
+
+  .status-overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .overview-card {
+    position: relative;
+    overflow: hidden;
+    padding: 20px 20px 18px;
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(18,18,30,0.96), rgba(9,9,17,0.96));
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+      0 16px 38px rgba(0,0,0,0.28),
+      0 0 0 1px rgba(255,255,255,0.015) inset;
+  }
+
+  .overview-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at top center, rgba(139,44,255,0.10), transparent 42%);
+  }
+
+  .overview-label {
+    color: #aeb0c7;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .overview-value {
+    color: #fff;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .overview-sub {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
   .status-panel {
     background: linear-gradient(180deg, rgba(17,17,28,0.98), rgba(10,10,18,0.98));
     border: 1px solid rgba(255,255,255,0.06);
@@ -34,12 +91,16 @@
       0 0 0 1px rgba(255,255,255,0.02) inset;
   }
 
-  /* NEW cleaner standout header box */
   .status-header {
     padding: 24px 28px;
-    background: rgba(255,255,255,0.02);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.015));
     border-bottom: 1px solid rgba(255,255,255,0.06);
     box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
   }
 
   .status-header h2 {
@@ -50,6 +111,20 @@
     letter-spacing: -0.03em;
   }
 
+  .status-header-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 999px;
+    color: #d8d9eb;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
   .status-list {
     padding: 14px;
     display: flex;
@@ -57,12 +132,11 @@
     gap: 12px;
   }
 
-  /* Cleaner boxed rows */
   .status-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 18px;
+    gap: 16px;
     padding: 18px 20px;
     border-radius: 18px;
     background: rgba(255,255,255,0.025);
@@ -75,23 +149,50 @@
     transform: translateY(-1px);
   }
 
+  .status-main {
+    min-width: 0;
+  }
+
   .status-name {
     color: #fff;
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+
+  .status-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #cfd1e6;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
   }
 
   .status-pill {
     display: inline-flex;
     align-items: center;
-    padding: 8px 14px;
+    justify-content: center;
+    padding: 9px 14px;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 900;
     white-space: nowrap;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    min-width: 106px;
   }
 
   .status-pill.operational {
@@ -113,7 +214,7 @@
   }
 
   .status-empty {
-    padding: 40px 24px;
+    padding: 44px 24px;
     text-align: center;
     color: var(--muted);
   }
@@ -124,9 +225,20 @@
     font-size: 22px;
   }
 
+  @media (max-width: 980px) {
+    .status-overview {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (max-width: 760px) {
-    .status-row {
+    .status-header {
       flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .status-row {
+      grid-template-columns: 1fr;
       align-items: flex-start;
     }
   }
@@ -140,12 +252,36 @@
       <h1>Service <span class="accent">status</span></h1>
     </section>
 
-    <section class="status-panel">
-      <div class="status-header">
-        <h2>Product Status</h2>
+    <section class="status-shell">
+      <div class="status-overview" id="status-overview">
+        <div class="overview-card">
+          <div class="overview-label">Products tracked</div>
+          <div class="overview-value" id="overview-total">0</div>
+          <div class="overview-sub">Items currently listed on the status page.</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">Operational</div>
+          <div class="overview-value" id="overview-operational">0</div>
+          <div class="overview-sub">Products currently running normally.</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">Issues</div>
+          <div class="overview-value" id="overview-issues">0</div>
+          <div class="overview-sub">Products with degraded or offline states.</div>
+        </div>
       </div>
 
-      <div class="status-list" id="status-list"></div>
+      <section class="status-panel">
+        <div class="status-header">
+          <h2>Product Status</h2>
+          <div class="status-header-note">
+            <i class="fas fa-wave-square"></i>
+            Live product availability snapshot
+          </div>
+        </div>
+
+        <div class="status-list" id="status-list"></div>
+      </section>
     </section>
   </div>
 </div>
@@ -154,6 +290,9 @@
 {% block extra_scripts %}
 <script>
   const statusList = document.getElementById("status-list");
+  const overviewTotal = document.getElementById("overview-total");
+  const overviewOperational = document.getElementById("overview-operational");
+  const overviewIssues = document.getElementById("overview-issues");
 
   function getStatusClass(state) {
     const value = String(state || "").toLowerCase();
@@ -163,8 +302,30 @@
     return "operational";
   }
 
+  function formatDate(value) {
+    if (!value) return "Recently updated";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  }
+
+  function renderOverview(items) {
+    const total = items.length;
+    const operational = items.filter(item => String(item.status?.state || "").toLowerCase() === "operational").length;
+    const issues = total - operational;
+
+    overviewTotal.textContent = total;
+    overviewOperational.textContent = operational;
+    overviewIssues.textContent = issues;
+  }
+
   function renderStatus(items) {
     statusList.innerHTML = "";
+    renderOverview(items);
 
     if (!items.length) {
       statusList.innerHTML = `
@@ -179,13 +340,28 @@
     items.forEach(item => {
       const state = item.status?.state || "Operational";
       const label = item.status?.label || state;
+      const version = item.downloads?.version || "Latest";
+      const updated = formatDate(item.status?.lastUpdated);
 
       const row = document.createElement("div");
       row.className = "status-row";
       row.innerHTML = `
-        <div class="status-name">${item.name}</div>
+        <div class="status-main">
+          <div class="status-name">${item.name}</div>
+          <div class="status-meta">
+            <div class="status-chip">
+              <i class="fas fa-code-branch"></i>
+              ${version}
+            </div>
+            <div class="status-chip">
+              <i class="fas fa-clock"></i>
+              ${updated}
+            </div>
+          </div>
+        </div>
         <div class="status-pill ${getStatusClass(state)}">${label}</div>
       `;
+
       statusList.appendChild(row);
     });
   }

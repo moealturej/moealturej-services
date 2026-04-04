@@ -7,7 +7,7 @@
 {% block extra_head %}
 <style>
   .downloads-page {
-    padding: 56px 0 60px;
+    padding: 56px 0 74px;
   }
 
   .hero {
@@ -45,12 +45,13 @@
   .search-input {
     width: 100%;
     height: 54px;
-    background: rgba(18,18,30,0.78);
+    background: rgba(18,18,30,0.82);
     border: 1px solid rgba(255,255,255,0.08);
     color: #fff;
     padding: 0 16px 0 44px;
     outline: none;
     border-radius: 18px;
+    transition: 0.18s ease;
   }
 
   .search-input::placeholder {
@@ -60,6 +61,7 @@
   .search-input:focus {
     border-color: rgba(139,44,255,0.5);
     box-shadow: 0 0 0 4px rgba(139,44,255,0.08);
+    background: rgba(22,22,36,0.95);
   }
 
   .hero-actions {
@@ -83,135 +85,159 @@
     font-weight: 800;
     transition: 0.18s ease;
     border-radius: 16px;
+    text-decoration: none;
   }
 
   .hero-btn:hover {
     background: rgba(139,44,255,0.08);
     box-shadow: 0 0 14px rgba(139,44,255,0.10);
+    transform: translateY(-1px);
   }
 
   .downloads-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    gap: 18px;
   }
 
   .download-card {
-    background: linear-gradient(180deg, rgba(12,12,22,0.88), rgba(8,8,16,0.94));
-    border: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     min-height: 100%;
-    position: relative;
-    overflow: hidden;
     border-radius: 24px;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+    background:
+      linear-gradient(180deg, rgba(18,18,30,0.98), rgba(9,9,17,0.98));
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+      0 14px 34px rgba(0,0,0,0.28),
+      0 0 0 1px rgba(255,255,255,0.015) inset;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .download-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(139,44,255,0.24);
+    box-shadow:
+      0 20px 42px rgba(0,0,0,0.34),
+      0 0 26px rgba(139,44,255,0.10);
   }
 
   .download-card::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(139,44,255,0.04), transparent 45%);
+    background:
+      radial-gradient(circle at top center, rgba(139,44,255,0.10), transparent 38%),
+      linear-gradient(180deg, rgba(255,255,255,0.02), transparent 34%);
     pointer-events: none;
   }
+
   .card-top {
-    padding: 16px 16px 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    padding: 18px 18px 10px;
   }
 
   .download-title {
     text-align: center;
     font-size: 17px;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: -0.02em;
     color: #f4f4fb;
-    min-height: 42px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
+    line-height: 1.15;
   }
 
   .card-image-wrap {
-    padding: 14px 16px 10px;
+    padding: 8px 18px 14px;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 230px;
+    min-height: 225px;
+  }
+
+  .download-image-frame {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 14px;
+    border-radius: 20px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
+      rgba(8,8,16,0.84);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+      0 14px 28px rgba(0,0,0,0.30),
+      0 0 18px rgba(139,44,255,0.06);
   }
 
   .download-image {
-    width: 110px;
-    height: 154px;
+    width: 112px;
+    height: 156px;
     object-fit: cover;
     border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.38), 0 0 20px rgba(139,44,255,0.08);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.38);
     background: linear-gradient(180deg, #1a0f2d, #08080f);
     border-radius: 14px;
   }
 
-  .download-description {
-    padding: 0 16px 10px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.5;
-    min-height: 44px;
-    text-align: center;
-  }
-
   .card-meta {
-    padding: 10px 16px 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 0 18px 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    color: var(--purple-2);
-    font-weight: 800;
-    font-size: 14px;
   }
 
-  .card-meta .right {
-    color: #bfbfd1;
-    font-weight: 500;
-    white-space: nowrap;
-    display: flex;
+  .meta-chip {
+    min-height: 42px;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 12px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    color: #d9daeb;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
   }
 
-  .card-meta .dot {
-    color: var(--purple);
-    font-size: 16px;
+  .meta-chip i {
+    color: var(--purple-2);
   }
 
   .card-bottom {
     margin-top: auto;
-    padding: 10px 16px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    padding: 10px 18px 18px;
   }
 
   .download-btn {
-    height: 44px;
-    border: 1px solid var(--purple);
-    background: rgba(139,44,255,0.04);
-    color: var(--purple-2);
+    height: 46px;
+    border: 1px solid rgba(139,44,255,0.50);
+    background: linear-gradient(180deg, rgba(139,44,255,0.18), rgba(139,44,255,0.08));
+    color: #f6f1ff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
     cursor: pointer;
-    font-weight: 800;
+    font-weight: 900;
     transition: 0.18s ease;
     text-decoration: none;
     border-radius: 16px;
     width: 100%;
+    box-shadow: 0 10px 22px rgba(139,44,255,0.08);
   }
 
   .download-btn:hover {
-    background: rgba(139,44,255,0.09);
-    box-shadow: 0 0 14px rgba(139,44,255,0.10);
+    background: linear-gradient(180deg, rgba(139,44,255,0.24), rgba(139,44,255,0.12));
+    box-shadow: 0 0 16px rgba(139,44,255,0.12);
+    transform: translateY(-1px);
   }
 
   .no-downloads {
@@ -243,6 +269,10 @@
     }
 
     .downloads-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card-meta {
       grid-template-columns: 1fr;
     }
   }
@@ -290,7 +320,7 @@
 
     const filtered = downloads.filter(item => {
       const name = String(item.name || "").toLowerCase();
-      const description = String(item.description || "").toLowerCase();
+      const description = String(item.detailedDescription || item.description || "").toLowerCase();
       const category = String(item.category || "").toLowerCase();
 
       return (
@@ -313,40 +343,54 @@
     }
 
     filtered.forEach(item => {
-      const version = item.downloads?.version || "";
-      const status = item.downloads?.status || "Ready";
+      const version = item.downloads?.version || "Latest";
+      const fileSize = item.downloads?.fileSize || "Unknown size";
+      const status = item.status?.label || item.downloads?.status || "Ready";
       const url = item.downloads?.downloadUrl || "#";
 
       const card = document.createElement("article");
       card.className = "download-card";
 
       card.innerHTML = `
-  <div class="card-top">
-    <div class="download-title">${item.name}</div>
-  </div>
+        <div class="card-top">
+          <div class="download-title">${item.name || "Untitled Download"}</div>
+        </div>
 
-  <div class="card-image-wrap">
-    <img
-      class="download-image"
-      src="${item.image || 'https://placehold.co/260x380/13071f/8b2cff?text=Download'}"
-      alt="${item.name}"
-    >
-  </div>
+        <div class="card-image-wrap">
+          <div class="download-image-frame">
+            <img
+              class="download-image"
+              src="${item.image || 'https://placehold.co/260x380/13071f/8b2cff?text=Download'}"
+              alt="${item.name || 'Download'}"
+            >
+          </div>
+        </div>
 
-  <div class="card-meta">
-    <div class="left">${version}</div>
-    <div class="right">
-      <span class="dot">∞</span> ${status}
-    </div>
-  </div>
+        <div class="card-meta">
+          <div class="meta-chip">
+            <i class="fas fa-code-branch"></i>
+            ${version}
+          </div>
+          <div class="meta-chip">
+            <i class="fas fa-hard-drive"></i>
+            ${fileSize}
+          </div>
+        </div>
 
-  <div class="card-bottom">
-    <a class="download-btn" href="${url}">
-      Download
-      <i class="fas fa-arrow-right"></i>
-    </a>
-  </div>
-`;
+        <div class="card-meta" style="padding-top:0;">
+          <div class="meta-chip" style="grid-column:1 / -1;">
+            <i class="fas fa-circle"></i>
+            ${status}
+          </div>
+        </div>
+
+        <div class="card-bottom">
+          <a class="download-btn" href="${url}">
+            Download
+            <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+      `;
 
       downloadGrid.appendChild(card);
     });

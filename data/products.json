@@ -23,13 +23,13 @@
       "enabled": true,
       "version": "v6.8.4",
       "downloadUrl": "/download/mw19.exe",
-      "fileSize": "45.7 MB"
+      "fileSize": "53.7 MB"
     },
     "status": {
       "enabled": true,
       "state": "Operational",
       "label": "Online",
-      "lastUpdated": "2026-03-31"
+      "lastUpdated": "2026-4-4"
     }
   },
   {
@@ -251,6 +251,84 @@
       "state": "Operational",
       "label": "Online",
       "lastUpdated": "2026-03-31"
+    }
+  },
+  {
+    "id": 1,
+    "slug": "adobe-pr",
+    "name": "Adobe Premiere Pro",
+    "detailedDescription": "video editor",
+    "image": "/static/pr.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Full Support"],
+    "store": {
+      "enabled": false,
+      "stockStatus": "free"
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v25.0",
+      "downloadUrl": "https://drive.google.com/uc?export=download&id=1Rqn4ewYKwpNmXvas8KmTwyTCxHi0_rXh",
+      "fileSize": "2.1 GB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-04-4"
+    }
+  },
+  {
+    "id": 2,
+    "slug": "adobe-ps",
+    "name": "Adobe Photoshop",
+    "detailedDescription": "image editor",
+    "image": "/static/ps.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Full Support"],
+    "store": {
+      "enabled": false,
+      "stockStatus": "free"
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v26.2.0",
+      "downloadUrl": "https://drive.google.com/uc?export=download&id=1gjONiyKh-abuva82ceV0F2YC-DZIl5-A",
+      "fileSize": "4.8 GB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-04-4"
+    }
+  },
+  {
+    "id": 3,
+    "slug": "wallpaper-engine",
+    "name": "Wallpaper Engine",
+    "detailedDescription": "Paid wallpaper software",
+    "image": "/static/wallpaper.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Full Support"],
+    "store": {
+      "enabled": false,
+      "stockStatus": "free"
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v6.0.2",
+      "downloadUrl": "https://mega.nz/file/kCsxzSBL#4XqRPLwjXX-U00S8jdzDmUqCAx8HUwVgMmM844FQ9wo",
+      "fileSize": "306.6 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-04-4"
     }
   }
 ]
