@@ -192,6 +192,38 @@
     }
   },
   {
+    "id": 683961,
+    "slug": "valorant-unlock-all",
+    "name": "Valorant Unlock All",
+    "detailedDescription": "• Unlock All / Skins, Finishers, On Last Kill Finishers\n• Use Buddy Changer",
+    "image": "/static/val.png",
+    "type": "product",
+    "featured": true,
+    "features": ["Skins", "Finishers", "Buddy Changer", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1084337, "name": "THREE DAY KEY", "price": 10.0 },
+        { "id": 1084338, "name": "WEEK KEY", "price": 16.0 },
+        { "id": 1084339, "name": "MONTH KEY", "price": 30.0 },
+        { "id": 1084340, "name": "LIFETIME KEY", "price": 50.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v1.1.3",
+      "downloadUrl": "/download/val.exe",
+      "fileSize": "9.3 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-03-31"
+    }
+  },
+  {
     "id": 667967,
     "slug": "temp-spoofer",
     "name": "Temp Spoofer",
