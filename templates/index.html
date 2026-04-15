@@ -1,487 +1,175 @@
 {% extends "base.html" %}
 {% block title %}Home | moealturej{% endblock %}
+{% block meta_description %}Premium cheats, tools, loaders, and instant-access software from moealturej.{% endblock %}
+
+{% block extra_head %}
+<style>
+  .home-page { padding-top: 24px; }
+  .home-hero { padding: 26px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 22px; align-items: stretch; }
+  .hero-copy h1 { font-size: clamp(54px, 7vw, 92px); margin: 18px 0 16px; }
+  .hero-copy p { max-width: 640px; font-size: 15px; }
+  .hero-pills { display: flex; gap: 10px; flex-wrap: wrap; margin: 22px 0 24px; }
+  .hero-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; align-content: start; }
+  .hero-card { padding: 18px; border-radius: 22px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
+  .hero-card h3 { margin: 0 0 8px; font-size: 16px; }
+  .hero-card p { margin: 0; font-size: 13px; }
+  .hero-stat { display: block; font-size: 28px; font-weight: 900; margin-bottom: 8px; letter-spacing: -0.04em; }
+
+  .home-section { margin-top: 18px; }
+  .strip-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .strip-card { padding: 18px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+  .strip-card strong { display: block; font-size: 22px; margin-bottom: 6px; }
+  .strip-card span { color: var(--muted); font-size: 13px; }
+
+  .section-top { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 0 0 16px; }
+  .section-top h2 { margin: 8px 0 0; font-size: clamp(28px, 4vw, 42px); }
+  .home-products { padding: 24px; }
+  .home-products-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .home-product-card { position: relative; overflow: hidden; border-radius: 22px; background: linear-gradient(180deg, rgba(18,18,30,0.96), rgba(9,9,16,0.98)); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
+  .home-product-image-wrap { padding: 14px; }
+  .home-product-image { width: 100%; aspect-ratio: 1.22 / 1; object-fit: cover; border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); background: linear-gradient(180deg, #1a0f2d, #09090f); }
+  .home-product-body { padding: 0 16px 16px; }
+  .home-product-name { font-size: 16px; font-weight: 900; margin-bottom: 10px; }
+  .home-product-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .home-product-actions { display: flex; gap: 10px; }
+  .home-link-btn { flex: 1; min-height: 44px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  .home-link-btn.primary { background: linear-gradient(180deg, rgba(139,44,255,0.95), rgba(93,23,186,0.95)); border-color: rgba(139,44,255,0.28); }
+
+  .empty-home { padding: 26px; text-align: center; color: var(--muted); border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+
+  @media (max-width: 1100px) {
+    .home-hero { grid-template-columns: 1fr; }
+    .home-products-grid, .strip-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  }
+  @media (max-width: 720px) {
+    .home-hero, .home-products { padding: 18px; }
+    .hero-copy h1 { font-size: clamp(42px, 14vw, 68px); }
+    .hero-grid, .home-products-grid, .strip-grid { grid-template-columns: 1fr; }
+    .section-top { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="page-section home-page">
   <div class="container">
+    <section class="hero-shell home-hero">
+      <div class="hero-copy">
+        <div class="eyebrow">moealturej</div>
+        <h1>Premium cheats & tools</h1>
+        <p>Instant access software, loaders, unlock tools, and product downloads.</p>
 
-    <section class="hero home-hero">
-      <div class="eyebrow">clean digital products</div>
-
-      <h1>
-        Premium tools with a
-        <span class="accent">clean experience</span>
-      </h1>
-
-      <p class="hero-copy">
-        Modern products, polished delivery, and a premium storefront built to feel fast,
-        simple, and professional from the first click to the final download.
-      </p>
-
-      <div class="hero-actions">
-        <a href="/products" class="primary-cta">Browse Products</a>
-        <a href="/downloads" class="secondary-cta">View Downloads</a>
-      </div>
-
-      <div class="hero-proof">
-        <div class="proof-item">
-          <strong>4.9/5</strong>
-          <span>average rating</span>
-        </div>
-        <div class="proof-item">
-          <strong>250+</strong>
-          <span>satisfied customers</span>
-        </div>
-        <div class="proof-item">
-          <strong>99.9%</strong>
-          <span>delivery reliability</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="stats-strip">
-      <div class="stat-card">
-        <span class="stat-value">24/7</span>
-        <span class="stat-label">store access</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">Fast</span>
-        <span class="stat-label">instant digital delivery</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">Clean</span>
-        <span class="stat-label">modern user experience</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">Trusted</span>
-        <span class="stat-label">premium-quality products</span>
-      </div>
-    </section>
-
-    <section class="home-showcase page-card">
-      <div class="showcase-header">
-        <div>
-          <div class="section-kicker">why choose us</div>
-          <h2>Built to look premium and feel effortless</h2>
-        </div>
-        <p>
-          Everything is designed to stay simple, smooth, and polished without making the site
-          feel busy or overloaded.
-        </p>
-      </div>
-
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="feature-icon"><i class="fas fa-gem"></i></div>
-          <h3>Premium quality</h3>
-          <p>Carefully presented products with a polished and modern storefront feel.</p>
+        <div class="hero-pills">
+          <div class="chip is-green"><i class="fas fa-circle"></i> online products</div>
+          <div class="chip"><i class="fas fa-bolt"></i> instant access</div>
+          <div class="chip"><i class="fas fa-shield-halved"></i> moealturej branding</div>
         </div>
 
-        <div class="feature-card">
-          <div class="feature-icon"><i class="fas fa-bolt"></i></div>
-          <h3>Fast delivery</h3>
-          <p>Quick access to products and downloads with a smooth buying experience.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
-          <h3>Reliable system</h3>
-          <p>Clear status visibility, dependable access, and a setup that feels trustworthy.</p>
+        <div class="btn-row">
+          <a href="/products" class="primary-cta"><i class="fas fa-bag-shopping"></i> Open Store</a>
+          <a href="/downloads" class="secondary-cta"><i class="fas fa-download"></i> View Downloads</a>
         </div>
       </div>
-    </section>
 
-    <section class="grid-3 refined-cards">
-      <div class="mini-card refined-mini-card">
-        <div class="mini-top">
-          <span class="mini-badge">Store</span>
-          <h3>Products</h3>
+      <div class="hero-grid">
+        <div class="hero-card">
+          <span class="hero-stat">24/7</span>
+          <h3>Store</h3>
+          <p>Browse featured products and open the full store in one click.</p>
         </div>
-        <p>
-          Browse premium tools through a cleaner product experience built for clarity,
-          speed, and conversion.
-        </p>
-        <a href="/products" class="mini-link">Explore products <i class="fas fa-arrow-right"></i></a>
-      </div>
-
-      <div class="mini-card refined-mini-card">
-        <div class="mini-top">
-          <span class="mini-badge">Access</span>
+        <div class="hero-card">
+          <span class="hero-stat">Fast</span>
           <h3>Downloads</h3>
+          <p>Open available files, builds, and versions from one place.</p>
         </div>
-        <p>
-          Give customers a smooth place to access their content with the same polished
-          brand style across the site.
-        </p>
-        <a href="/downloads" class="mini-link">Open downloads <i class="fas fa-arrow-right"></i></a>
-      </div>
-
-      <div class="mini-card refined-mini-card">
-        <div class="mini-top">
-          <span class="mini-badge">Live</span>
+        <div class="hero-card">
+          <span class="hero-stat">Live</span>
           <h3>Status</h3>
+          <p>Track product availability and current operational state.</p>
         </div>
-        <p>
-          Keep everything transparent with a clean status page that shows availability,
-          service health, and updates.
-        </p>
-        <a href="/status" class="mini-link">View status <i class="fas fa-arrow-right"></i></a>
+        <div class="hero-card">
+          <span class="hero-stat">24/7</span>
+          <h3>Support</h3>
+          <p>Get product help and order support through Discord.</p>
+        </div>
       </div>
     </section>
 
-    <section class="cta-panel">
-      <div class="cta-content">
-        <div class="section-kicker">ready to start?</div>
-        <h2>Browse the store and keep it simple</h2>
-        <p>
-          Discover premium products, clean design, and a storefront experience that feels
-          modern without the clutter.
-        </p>
-      </div>
-
-      <div class="cta-actions">
-        <a href="/products" class="primary-cta">Shop Now</a>
-        <a href="/support" class="secondary-cta">Get Support</a>
-      </div>
+    <section class="home-section strip-grid">
+      <div class="strip-card"><strong>Store</strong><span>Product-first layout</span></div>
+      <div class="strip-card"><strong>Downloads</strong><span>Available files and current versions</span></div>
+      <div class="strip-card"><strong>Status</strong><span>Live product availability</span></div>
+      <div class="strip-card"><strong>Discord</strong><span>Support handled in one place</span></div>
     </section>
 
+    <section class="home-section panel home-products">
+      <div class="section-top">
+        <div>
+          <div class="eyebrow">moealturej store</div>
+          <h2>Featured products</h2>
+        </div>
+        <a href="/products" class="ghost-cta">See all products</a>
+      </div>
+      <div id="home-products-grid" class="home-products-grid"></div>
+    </section>
   </div>
 </section>
 {% endblock %}
 
-{% block extra_head %}
-<style>
-  .home-hero {
-    max-width: 940px;
-    margin: 0 auto;
-    padding: 34px 0 30px;
+{% block extra_scripts %}
+<script>
+  const homeGrid = document.getElementById('home-products-grid');
+
+  function priceLabel(product) {
+    const options = product?.store?.options || [];
+    if (!options.length) return 'View options';
+    const prices = options.map(opt => Number(opt.price)).filter(n => !Number.isNaN(n));
+    if (!prices.length) return 'View options';
+    return `$${Math.min(...prices).toFixed(2)}`;
   }
 
-  .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(139, 44, 255, 0.10);
-    border: 1px solid rgba(139, 44, 255, 0.24);
-    color: #f3e9ff;
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 18px;
+  function stateChip(item) {
+    const state = String(item?.status?.state || item?.status?.label || '').toLowerCase();
+    if (state.includes('operational') || state.includes('online') || state.includes('ready')) return '<div class="chip is-green"><i class="fas fa-circle"></i> Online</div>';
+    if (state.includes('degraded')) return '<div class="chip is-yellow"><i class="fas fa-triangle-exclamation"></i> Degraded</div>';
+    if (state.includes('offline')) return '<div class="chip is-red"><i class="fas fa-circle-xmark"></i> Offline</div>';
+    return '<div class="chip"><i class="fas fa-circle"></i> Live</div>';
   }
 
-  .home-hero h1 {
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-  }
+  async function loadHomeProducts() {
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Failed');
+      const items = await response.json();
+      const featured = items.filter(item => item?.store?.enabled).slice(0, 4);
+      if (!featured.length) {
+        homeGrid.innerHTML = '<div class="empty-home" style="grid-column:1/-1;">No featured products are available right now.</div>';
+        return;
+      }
 
-  .hero-copy {
-    max-width: 760px;
-  }
-
-  .hero-actions {
-    margin-top: 28px;
-    display: flex;
-    justify-content: center;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-
-  .primary-cta,
-  .secondary-cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 170px;
-    padding: 14px 20px;
-    border-radius: 16px;
-    font-size: 14px;
-    font-weight: 800;
-    transition: 0.2s ease;
-    border: 1px solid transparent;
-  }
-
-  .primary-cta {
-    background: linear-gradient(135deg, var(--purple), var(--purple-2));
-    color: #fff;
-    box-shadow: 0 12px 30px rgba(139, 44, 255, 0.24);
-  }
-
-  .primary-cta:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 38px rgba(139, 44, 255, 0.30);
-  }
-
-  .secondary-cta {
-    background: rgba(255,255,255,0.03);
-    border-color: rgba(255,255,255,0.08);
-    color: #fff;
-  }
-
-  .secondary-cta:hover {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.12);
-    transform: translateY(-2px);
-  }
-
-  .hero-proof {
-    margin-top: 34px;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  .proof-item {
-    padding: 18px 18px;
-    border-radius: 20px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-  }
-
-  .proof-item strong {
-    display: block;
-    font-size: 24px;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    margin-bottom: 6px;
-  }
-
-  .proof-item span {
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .stats-strip {
-    margin-top: 18px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  .stat-card {
-    padding: 20px;
-    border-radius: 20px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
-    border: 1px solid rgba(255,255,255,0.06);
-    text-align: center;
-  }
-
-  .stat-value {
-    display: block;
-    font-size: 22px;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    margin-bottom: 6px;
-  }
-
-  .stat-label {
-    display: block;
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.6;
-  }
-
-  .home-showcase {
-    margin-top: 18px;
-    padding: 28px;
-  }
-
-  .showcase-header {
-    display: flex;
-    justify-content: space-between;
-    gap: 24px;
-    align-items: flex-end;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-
-  .section-kicker {
-    color: var(--purple-2);
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 10px;
-  }
-
-  .showcase-header h2,
-  .cta-content h2 {
-    margin: 0;
-    font-size: clamp(28px, 4vw, 40px);
-    line-height: 1.02;
-    letter-spacing: -0.03em;
-  }
-
-  .showcase-header p,
-  .cta-content p {
-    max-width: 520px;
-    margin: 0;
-    color: var(--muted);
-    line-height: 1.75;
-    font-size: 14px;
-  }
-
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  .feature-card {
-    padding: 24px;
-    border-radius: 22px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-  }
-
-  .feature-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(139, 44, 255, 0.12);
-    border: 1px solid rgba(139, 44, 255, 0.24);
-    color: #f6ecff;
-    margin-bottom: 16px;
-    font-size: 18px;
-  }
-
-  .feature-card h3 {
-    margin: 0 0 8px;
-    font-size: 18px;
-  }
-
-  .feature-card p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.7;
-  }
-
-  .refined-cards {
-    margin-top: 18px;
-  }
-
-  .refined-mini-card {
-    padding: 24px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
-  }
-
-  .mini-top {
-    margin-bottom: 12px;
-  }
-
-  .mini-badge {
-    display: inline-flex;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(139, 44, 255, 0.10);
-    border: 1px solid rgba(139, 44, 255, 0.20);
-    color: #efe3ff;
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 12px;
-  }
-
-  .refined-mini-card h3 {
-    margin: 0;
-    font-size: 22px;
-    letter-spacing: -0.02em;
-  }
-
-  .refined-mini-card p {
-    margin-top: 10px;
-    margin-bottom: 18px;
-    font-size: 14px;
-    line-height: 1.75;
-  }
-
-  .mini-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
-  .mini-link i {
-    font-size: 12px;
-    transition: transform 0.18s ease;
-  }
-
-  .mini-link:hover i {
-    transform: translateX(3px);
-  }
-
-  .cta-panel {
-    margin-top: 18px;
-    padding: 30px;
-    border-radius: var(--radius-xl);
-    background:
-      linear-gradient(180deg, rgba(13,13,24,0.92), rgba(8,8,16,0.98));
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.28);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 22px;
-    flex-wrap: wrap;
-  }
-
-  .cta-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  @media (max-width: 920px) {
-    .hero-proof,
-    .stats-strip,
-    .feature-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .showcase-header,
-    .cta-panel {
-      flex-direction: column;
-      align-items: flex-start;
+      homeGrid.innerHTML = featured.map(item => `
+        <article class="home-product-card">
+          <div class="home-product-image-wrap">
+            <img class="home-product-image" src="${item.image || 'https://placehold.co/500x410/10091b/8b2cff?text=Product'}" alt="${item.name || 'Product'}">
+          </div>
+          <div class="home-product-body">
+            <div class="home-product-name">${item.name || 'Untitled Product'}</div>
+            <div class="home-product-meta">
+              ${stateChip(item)}
+              <div class="chip"><i class="fas fa-tag"></i> ${priceLabel(item)}</div>
+            </div>
+            <div class="home-product-actions">
+              <a href="/products" class="home-link-btn primary">Store</a>
+              <a href="/status" class="home-link-btn">Status</a>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    } catch (error) {
+      homeGrid.innerHTML = '<div class="empty-home" style="grid-column:1/-1;">Could not load products right now.</div>';
     }
   }
 
-  @media (max-width: 640px) {
-    .home-hero {
-      padding-top: 20px;
-    }
-
-    .proof-item,
-    .stat-card,
-    .feature-card,
-    .refined-mini-card,
-    .cta-panel {
-      border-radius: 18px;
-    }
-
-    .primary-cta,
-    .secondary-cta {
-      width: 100%;
-    }
-
-    .hero-actions,
-    .cta-actions {
-      width: 100%;
-    }
-  }
-</style>
+  loadHomeProducts();
+</script>
 {% endblock %}

@@ -1,314 +1,180 @@
 {% extends "base.html" %}
 {% block title %}Support | moealturej{% endblock %}
 
-{% block content %}
-<section class="page-section support-page">
-  <div class="container">
-    <section class="support-hero">
-      <div class="support-eyebrow">support</div>
-      <h1>Need help?</h1>
-      <p>
-        Find quick answers below, and if you still need help, join the Discord server for further support.
-      </p>
-
-      <div class="support-actions">
-        <a href="https://discord.gg/YOURINVITE" target="_blank" rel="noopener noreferrer" class="primary-cta">
-          Join Discord
-        </a>
-        <a href="/legal" class="secondary-cta">Legal Center</a>
-      </div>
-    </section>
-
-    <section class="faq-panel">
-      <div class="section-head">
-        <div>
-          <div class="section-kicker">faqs</div>
-          <h2>Frequently asked questions</h2>
-        </div>
-        <p>Simple answers, clean layout, and an easy path to more help if needed.</p>
-      </div>
-
-      <div class="faq-grid">
-        <details class="faq-item" open>
-          <summary>How do I receive my product after purchase?</summary>
-          <div class="faq-answer">
-            After your purchase is completed, your product or access details will be delivered through the site flow you provide for your customers.
-          </div>
-        </details>
-
-        <details class="faq-item">
-          <summary>Where can I access my downloads?</summary>
-          <div class="faq-answer">
-            You can access available files and product-related downloads from the downloads page after purchase or account access is confirmed.
-          </div>
-        </details>
-
-        <details class="faq-item">
-          <summary>What if I have an issue with my order?</summary>
-          <div class="faq-answer">
-            If something is wrong with your order, join the Discord server and explain the issue clearly so support can help you faster.
-          </div>
-        </details>
-
-        <details class="faq-item">
-          <summary>Do you offer refunds?</summary>
-          <div class="faq-answer">
-            Refunds are handled according to the Refund Policy. Please review the policy before purchasing.
-          </div>
-        </details>
-
-        <details class="faq-item">
-          <summary>Can I share or redistribute purchased files?</summary>
-          <div class="faq-answer">
-            No. Usage rights are controlled by the License and Terms of Service. Redistribution, reselling, or sharing may not be allowed.
-          </div>
-        </details>
-
-        <details class="faq-item">
-          <summary>Where do I get more support?</summary>
-          <div class="faq-answer">
-            For further help, please join the Discord server. That is the main support location for questions, help requests, and updates.
-          </div>
-        </details>
-      </div>
-    </section>
-
-    <section class="support-cta">
-      <div class="support-cta-content">
-        <div class="section-kicker">still need help?</div>
-        <h2>Join the Discord server for support</h2>
-        <p>
-          For extra help, order issues, product questions, or general support, use the Discord server for the fastest response.
-        </p>
-      </div>
-
-      <a href="https://discord.gg/YOURINVITE" target="_blank" rel="noopener noreferrer" class="primary-cta">
-        Open Discord
-      </a>
-    </section>
-  </div>
-</section>
-{% endblock %}
-
 {% block extra_head %}
 <style>
   .support-page {
-    padding-top: 10px;
+    padding-top: 24px;
   }
 
-  .support-hero {
+  .support-shell {
+    padding: 34px;
     text-align: center;
-    max-width: 860px;
-    margin: 0 auto 20px;
-    padding: 34px 0 22px;
-  }
-
-  .support-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(139, 44, 255, 0.10);
-    border: 1px solid rgba(139, 44, 255, 0.24);
-    color: #f3e9ff;
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 18px;
-  }
-
-  .support-hero h1 {
-    margin: 0 0 14px;
-    font-size: clamp(42px, 6vw, 64px);
-    line-height: 0.96;
-    letter-spacing: -0.04em;
-  }
-
-  .support-hero p {
-    max-width: 700px;
+    max-width: 940px;
     margin: 0 auto;
-    color: var(--muted);
+    border: 1px solid rgba(88, 101, 242, 0.18);
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.35),
+      0 0 60px rgba(88, 101, 242, 0.08);
+  }
+
+  .support-shell h1 {
+    margin: 18px 0 14px;
+    font-size: clamp(44px, 7vw, 78px);
+  }
+
+  .support-shell p {
+    max-width: 660px;
+    margin: 0 auto 24px;
     font-size: 15px;
-    line-height: 1.8;
   }
 
-  .support-actions {
-    margin-top: 26px;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  .discord-card {
+    margin-top: 20px;
+    padding: 28px;
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at top center, rgba(88, 101, 242, 0.18), transparent 45%),
+      linear-gradient(180deg, rgba(20, 24, 42, 0.96), rgba(10, 12, 22, 0.98));
+    border: 1px solid rgba(88, 101, 242, 0.22);
+    display: grid;
+    gap: 18px;
+    justify-items: center;
+    box-shadow:
+      0 20px 50px rgba(0,0,0,0.30),
+      0 0 40px rgba(88, 101, 242, 0.10);
   }
 
-  .primary-cta,
-  .secondary-cta {
+  .discord-icon {
+    width: 84px;
+    height: 84px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    color: #fff;
+    background: linear-gradient(180deg, #5865F2, #4752C4);
+    box-shadow: 0 18px 40px rgba(88, 101, 242, 0.35);
+  }
+
+  .discord-link {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    min-width: 170px;
-    padding: 14px 20px;
-    border-radius: 16px;
-    font-size: 14px;
-    font-weight: 800;
-    transition: 0.2s ease;
-    border: 1px solid transparent;
-  }
-
-  .primary-cta {
-    background: linear-gradient(135deg, var(--purple), var(--purple-2));
-    color: #fff;
-    box-shadow: 0 12px 30px rgba(139, 44, 255, 0.24);
-  }
-
-  .primary-cta:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 38px rgba(139, 44, 255, 0.30);
-  }
-
-  .secondary-cta {
-    background: rgba(255,255,255,0.03);
-    border-color: rgba(255,255,255,0.08);
-    color: #fff;
-  }
-
-  .secondary-cta:hover {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.12);
-    transform: translateY(-2px);
-  }
-
-  .faq-panel {
-    margin-top: 18px;
-    padding: 28px;
-    border-radius: var(--radius-xl);
-    background: linear-gradient(180deg, rgba(12,12,22,0.88), rgba(8,8,16,0.94));
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.30);
-  }
-
-  .section-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 24px;
-    align-items: flex-end;
-    margin-bottom: 22px;
-    flex-wrap: wrap;
-  }
-
-  .section-kicker {
-    color: var(--purple-2);
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 10px;
-  }
-
-  .section-head h2,
-  .support-cta-content h2 {
-    margin: 0;
-    font-size: clamp(28px, 4vw, 40px);
-    line-height: 1.02;
-    letter-spacing: -0.03em;
-  }
-
-  .section-head p,
-  .support-cta-content p {
-    max-width: 520px;
-    margin: 0;
-    color: var(--muted);
-    line-height: 1.75;
-    font-size: 14px;
-  }
-
-  .faq-grid {
-    display: grid;
-    gap: 14px;
-  }
-
-  .faq-item {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 20px;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .faq-item summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 18px 20px;
+    gap: 10px;
+    padding: 14px 22px;
+    border-radius: 18px;
     font-size: 15px;
-    font-weight: 800;
-    color: #fff;
-    position: relative;
-  }
-
-  .faq-item summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .faq-item summary::after {
-    content: "+";
-    position: absolute;
-    right: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--purple-2);
-    font-size: 20px;
     font-weight: 900;
+    background: linear-gradient(180deg, #5865F2, #4752C4);
+    color: white;
+    box-shadow: 0 14px 32px rgba(88, 101, 242, 0.30);
   }
 
-  .faq-item[open] summary::after {
-    content: "–";
+  .discord-link:hover {
+    transform: translateY(-2px);
   }
 
-  .faq-answer {
-    padding: 0 20px 20px;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.8;
+  .discord-note {
+    color: #b8c0ff;
+    font-size: 13px;
+    font-weight: 700;
   }
 
-  .support-cta {
-    margin-top: 18px;
-    padding: 30px;
-    border-radius: var(--radius-xl);
-    background: linear-gradient(180deg, rgba(13,13,24,0.92), rgba(8,8,16,0.98));
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.28);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
+  .support-mini {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 14px;
+    margin-top: 20px;
   }
 
-  @media (max-width: 860px) {
-    .section-head,
-    .support-cta {
-      flex-direction: column;
-      align-items: flex-start;
+  .support-mini-card {
+    padding: 20px;
+    border-radius: 20px;
+    background: rgba(88, 101, 242, 0.06);
+    border: 1px solid rgba(88, 101, 242, 0.14);
+  }
+
+  .support-mini-card h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #ffffff;
+  }
+
+  .support-mini-card p {
+    margin: 0;
+    font-size: 13px;
+    color: #c6cbff;
+  }
+
+  @media (max-width: 720px) {
+    .support-shell {
+      padding: 22px 18px;
     }
-  }
 
-  @media (max-width: 640px) {
-    .primary-cta,
-    .secondary-cta {
-      width: 100%;
-    }
-
-    .support-actions {
-      width: 100%;
-    }
-
-    .faq-panel,
-    .support-cta,
-    .faq-item {
-      border-radius: 18px;
+    .support-mini {
+      grid-template-columns: 1fr;
     }
   }
 </style>
+{% endblock %}
+
+{% block content %}
+<section class="page-section support-page">
+  <div class="container">
+    <section class="hero-shell support-shell">
+      <div class="eyebrow">moealturej support</div>
+
+      <h1>Support via <span style="color:#5865F2;">Discord</span></h1>
+
+      <p>
+        All customer support, purchase help, setup assistance,
+        and product troubleshooting is handled through Discord.
+      </p>
+
+      <div class="discord-card">
+        <div class="discord-icon">
+          <i class="fab fa-discord"></i>
+        </div>
+
+        <div>
+          <h2 style="margin:0 0 10px;font-size:clamp(26px,4vw,40px);">
+            Join the support server
+          </h2>
+          <p style="margin:0;">
+            Open a ticket, ask questions, or get direct assistance from the team.
+          </p>
+        </div>
+
+        <a href="https://discord.gg/moealturej"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="discord-link">
+          <i class="fab fa-discord"></i>
+          discord.gg/moealturej
+        </a>
+
+        <div class="discord-note">
+          Fastest response times and all support handled directly in server.
+        </div>
+      </div>
+
+      <div class="support-mini">
+        <div class="support-mini-card">
+          <h3>Order Help</h3>
+          <p>Purchase issues, account access, and checkout support.</p>
+        </div>
+
+        <div class="support-mini-card">
+          <h3>Product Help</h3>
+          <p>Loader setup, usage questions, and troubleshooting.</p>
+        </div>
+
+        <div class="support-mini-card">
+          <h3>Announcements</h3>
+          <p>Updates, outages, maintenance, and release notes.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
 {% endblock %}

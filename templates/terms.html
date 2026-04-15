@@ -1,99 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Terms of Service | moealturej{% endblock %}
+{% block extra_head %}
+<style>
+  .legal-doc-page { padding-top: 24px; }
+  .doc-shell { max-width: 980px; margin: 0 auto; padding: 28px; }
+  .doc-kicker { display:inline-flex; padding:9px 14px; border-radius:999px; background: rgba(139,44,255,0.10); border:1px solid rgba(139,44,255,0.22); color:#f3e9ff; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
+  .doc-shell h1 { margin: 18px 0 14px; font-size: clamp(40px, 6vw, 68px); }
+  .doc-intro { margin: 0 0 24px; max-width: 760px; font-size: 15px; }
+  .doc-content h2 { margin: 24px 0 10px; font-size: 22px; }
+  .doc-content p { margin: 0; }
+  @media (max-width: 720px) { .doc-shell { padding: 20px 18px; } }
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="page-section legal-doc-page">
   <div class="container">
-    <div class="legal-doc">
+    <div class="doc-shell">
       <div class="doc-kicker">legal</div>
       <h1>Terms of Service</h1>
-      <p class="doc-intro">
-        These Terms of Service govern access to and use of moealturej solutions, including the website, products, downloads, and related services.
-      </p>
-
+      <p class="doc-intro">These Terms of Service govern access to and use of moealturej, including the website, products, downloads, and related services.</p>
       <div class="doc-content">
         <h2>1. Acceptance of Terms</h2>
         <p>By accessing or purchasing from this site, you agree to these terms.</p>
-
         <h2>2. Products and Access</h2>
         <p>Products, downloads, and services may be updated, changed, limited, or removed at any time without notice.</p>
-
         <h2>3. User Responsibilities</h2>
         <p>You agree not to misuse the site, attempt unauthorized access, interfere with services, or redistribute products in violation of the license.</p>
-
         <h2>4. Payments</h2>
         <p>All purchases must be completed through approved checkout methods. You are responsible for providing accurate purchase information.</p>
-
         <h2>5. Refunds</h2>
         <p>Refunds are subject to the Refund Policy. Purchasing a product means you agree to that policy.</p>
-
         <h2>6. Intellectual Property</h2>
-        <p>All site content, branding, design, and products remain the property of moealturej solutions unless otherwise stated.</p>
-
+        <p>All site content, branding, design, and products remain the property of moealturej unless otherwise stated.</p>
         <h2>7. Limitation of Liability</h2>
         <p>Services and products may be provided as-is, without guarantees of uninterrupted availability or compatibility in all environments.</p>
-
         <h2>8. Changes</h2>
         <p>These terms may be updated at any time. Continued use of the site means you accept the updated version.</p>
       </div>
     </div>
   </div>
 </section>
-{% endblock %}
-
-{% block extra_head %}
-<style>
-  .legal-doc {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 32px;
-    border-radius: var(--radius-xl);
-    background: linear-gradient(180deg, rgba(12,12,22,0.88), rgba(8,8,16,0.94));
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.30);
-  }
-
-  .doc-kicker {
-    color: var(--purple-2);
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 10px;
-  }
-
-  .legal-doc h1 {
-    margin: 0 0 14px;
-    font-size: clamp(38px, 5vw, 54px);
-    line-height: 0.98;
-    letter-spacing: -0.04em;
-  }
-
-  .doc-intro {
-    margin: 0 0 26px;
-    color: var(--muted);
-    font-size: 15px;
-    line-height: 1.8;
-  }
-
-  .doc-content h2 {
-    margin: 26px 0 10px;
-    font-size: 22px;
-    letter-spacing: -0.02em;
-  }
-
-  .doc-content p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.85;
-  }
-
-  @media (max-width: 640px) {
-    .legal-doc {
-      padding: 22px;
-      border-radius: 18px;
-    }
-  }
-</style>
 {% endblock %}

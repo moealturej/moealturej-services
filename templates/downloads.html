@@ -1,429 +1,93 @@
 {% extends "base.html" %}
-
 {% block title %}Downloads | moealturej{% endblock %}
-{% block meta_description %}Access your downloads from moealturej in a clean modern layout.{% endblock %}
-{% block meta_keywords %}moealturej downloads, premium tools, files, launcher{% endblock %}
-
 {% block extra_head %}
 <style>
-  .downloads-page {
-    padding: 56px 0 74px;
-  }
-
-  .hero {
-    text-align: center;
-    padding: 42px 0 54px;
-  }
-
-  .hero h1 {
-    margin: 0 0 24px;
-    font-size: clamp(42px, 6vw, 68px);
-    line-height: 0.97;
-    font-weight: 900;
-    letter-spacing: -0.04em;
-  }
-
-  .hero .accent {
-    color: var(--purple);
-  }
-
-  .search-wrap {
-    max-width: 560px;
-    margin: 0 auto 24px;
-    position: relative;
-  }
-
-  .search-wrap i {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255,255,255,0.66);
-    font-size: 15px;
-  }
-
-  .search-input {
-    width: 100%;
-    height: 54px;
-    background: rgba(18,18,30,0.82);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: #fff;
-    padding: 0 16px 0 44px;
-    outline: none;
-    border-radius: 18px;
-    transition: 0.18s ease;
-  }
-
-  .search-input::placeholder {
-    color: #8f8fa4;
-  }
-
-  .search-input:focus {
-    border-color: rgba(139,44,255,0.5);
-    box-shadow: 0 0 0 4px rgba(139,44,255,0.08);
-    background: rgba(22,22,36,0.95);
-  }
-
-  .hero-actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .hero-btn {
-    height: 44px;
-    padding: 0 24px;
-    border: 1px solid var(--purple);
-    background: rgba(139,44,255,0.04);
-    color: var(--purple-2);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 800;
-    transition: 0.18s ease;
-    border-radius: 16px;
-    text-decoration: none;
-  }
-
-  .hero-btn:hover {
-    background: rgba(139,44,255,0.08);
-    box-shadow: 0 0 14px rgba(139,44,255,0.10);
-    transform: translateY(-1px);
-  }
-
-  .downloads-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 18px;
-  }
-
-  .download-card {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-    border-radius: 24px;
-    background:
-      linear-gradient(180deg, rgba(18,18,30,0.98), rgba(9,9,17,0.98));
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow:
-      0 14px 34px rgba(0,0,0,0.28),
-      0 0 0 1px rgba(255,255,255,0.015) inset;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  }
-
-  .download-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(139,44,255,0.24);
-    box-shadow:
-      0 20px 42px rgba(0,0,0,0.34),
-      0 0 26px rgba(139,44,255,0.10);
-  }
-
-  .download-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at top center, rgba(139,44,255,0.10), transparent 38%),
-      linear-gradient(180deg, rgba(255,255,255,0.02), transparent 34%);
-    pointer-events: none;
-  }
-
-  .card-top {
-    padding: 18px 18px 10px;
-  }
-
-  .download-title {
-    text-align: center;
-    font-size: 17px;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    color: #f4f4fb;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1.15;
-  }
-
-  .card-image-wrap {
-    padding: 8px 18px 14px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 225px;
-  }
-
-  .download-image-frame {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    padding: 14px;
-    border-radius: 20px;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
-      rgba(8,8,16,0.84);
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow:
-      0 14px 28px rgba(0,0,0,0.30),
-      0 0 18px rgba(139,44,255,0.06);
-  }
-
-  .download-image {
-    width: 112px;
-    height: 156px;
-    object-fit: cover;
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.38);
-    background: linear-gradient(180deg, #1a0f2d, #08080f);
-    border-radius: 14px;
-  }
-
-  .card-meta {
-    padding: 0 18px 10px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .meta-chip {
-    min-height: 42px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 0 12px;
-    background: rgba(255,255,255,0.035);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
-    color: #d9daeb;
-    font-size: 12px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  .meta-chip i {
-    color: var(--purple-2);
-  }
-
-  .card-bottom {
-    margin-top: auto;
-    padding: 10px 18px 18px;
-  }
-
-  .download-btn {
-    height: 46px;
-    border: 1px solid rgba(139,44,255,0.50);
-    background: linear-gradient(180deg, rgba(139,44,255,0.18), rgba(139,44,255,0.08));
-    color: #f6f1ff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    cursor: pointer;
-    font-weight: 900;
-    transition: 0.18s ease;
-    text-decoration: none;
-    border-radius: 16px;
-    width: 100%;
-    box-shadow: 0 10px 22px rgba(139,44,255,0.08);
-  }
-
-  .download-btn:hover {
-    background: linear-gradient(180deg, rgba(139,44,255,0.24), rgba(139,44,255,0.12));
-    box-shadow: 0 0 16px rgba(139,44,255,0.12);
-    transform: translateY(-1px);
-  }
-
-  .no-downloads {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 60px 0;
-    color: var(--muted);
-  }
-
-  @media (max-width: 1100px) {
-    .downloads-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 860px) {
-    .downloads-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 560px) {
-    .downloads-page {
-      padding-top: 34px;
-    }
-
-    .hero {
-      padding: 26px 0 38px;
-    }
-
-    .downloads-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .card-meta {
-      grid-template-columns: 1fr;
-    }
-  }
+  .downloads-page { padding-top: 20px; }
+  .downloads-panel { padding: 24px; }
+  .downloads-grid { margin-top: 22px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+  .download-card { display: flex; flex-direction: column; border-radius: 24px; overflow: hidden; background: linear-gradient(180deg, rgba(18,18,30,0.98), rgba(8,8,14,0.98)); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
+  .download-image-wrap { padding: 14px; }
+  .download-image { width: 100%; aspect-ratio: 1.2 / 1; object-fit: cover; border-radius: 18px; border: 1px solid rgba(255,255,255,0.07); background: linear-gradient(180deg, #1a0f2d, #09090f); }
+  .download-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; height: 100%; }
+  .download-title { font-size: 16px; font-weight: 900; }
+  .download-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .download-btn { margin-top: auto; min-height: 46px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(180deg, rgba(139,44,255,0.96), rgba(93,23,186,0.96)); border: 1px solid rgba(139,44,255,0.28); color: #fff; font-size: 13px; font-weight: 900; }
+  .no-downloads { grid-column: 1 / -1; padding: 30px; text-align: center; border-radius: 22px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+  @media (max-width: 1100px) { .downloads-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 720px) { .downloads-panel { padding: 18px; } .downloads-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="downloads-page">
+<section class="page-section downloads-page">
   <div class="container">
-    <section class="hero">
-      <h1>
-        Welcome to <span class="accent">moealturej</span><br>
-        <span class="accent">downloads!</span>
-      </h1>
-
+    <section class="panel downloads-panel">
+      <div class="page-head">
+        <div class="eyebrow">moealturej downloads</div>
+        <h1>Software downloads</h1>
+        <p>Instant access downloads for all available products.</p>
+      </div>
       <div class="search-wrap">
-        <i class="fas fa-search"></i>
-        <input id="download-search" class="search-input" type="text" placeholder="Search for downloads...">
+        <i class="fas fa-magnifying-glass"></i>
+        <input id="download-search" class="search-input" type="text" placeholder="Search downloads...">
       </div>
-
-      <div class="hero-actions">
-        <a href="#downloads" class="hero-btn">
-          View Downloads
-          <i class="fas fa-download"></i>
-        </a>
-      </div>
-    </section>
-
-    <section id="downloads">
-      <div class="downloads-grid" id="downloads-grid"></div>
+      <div id="downloads-grid" class="downloads-grid"></div>
     </section>
   </div>
-</div>
+</section>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-  const downloadSearch = document.getElementById("download-search");
-  const downloadGrid = document.getElementById("downloads-grid");
-
+  const downloadSearch = document.getElementById('download-search');
+  const downloadGrid = document.getElementById('downloads-grid');
   let downloads = [];
 
-  function renderDownloads(query = "") {
-    downloadGrid.innerHTML = "";
+  function statusMarkup(item) {
+    const raw = String(item?.status?.label || item?.status?.state || item?.downloads?.status || 'Ready').toLowerCase();
+    if (raw.includes('ready') || raw.includes('online') || raw.includes('operational')) return '<div class="chip is-green"><i class="fas fa-circle"></i> Online</div>';
+    if (raw.includes('degraded')) return '<div class="chip is-yellow"><i class="fas fa-triangle-exclamation"></i> Degraded</div>';
+    if (raw.includes('offline')) return '<div class="chip is-red"><i class="fas fa-circle-xmark"></i> Offline</div>';
+    return `<div class="chip"><i class="fas fa-circle"></i> ${item?.status?.label || item?.downloads?.status || 'Ready'}</div>`;
+  }
 
-    const filtered = downloads.filter(item => {
-      const name = String(item.name || "").toLowerCase();
-      const description = String(item.detailedDescription || item.description || "").toLowerCase();
-      const category = String(item.category || "").toLowerCase();
-
-      return (
-        !query ||
-        name.includes(query) ||
-        description.includes(query) ||
-        category.includes(query)
-      );
-    });
-
+  function renderDownloads(query = '') {
+    const filtered = downloads.filter(item => [item.name, item.description, item.detailedDescription, item.category].join(' ').toLowerCase().includes(query || ''));
     if (!filtered.length) {
-      downloadGrid.innerHTML = `
-        <div class="no-downloads">
-          <i class="fas fa-search" style="font-size:48px;opacity:.35;margin-bottom:14px;"></i>
-          <h3 style="margin:0 0 8px;">No downloads found</h3>
-          <p style="margin:0;">Try a different search.</p>
-        </div>
-      `;
+      downloadGrid.innerHTML = '<div class="no-downloads"><h3>No downloads found</h3><p>Try a different search.</p></div>';
       return;
     }
 
-    filtered.forEach(item => {
-      const version = item.downloads?.version || "Latest";
-      const fileSize = item.downloads?.fileSize || "Unknown size";
-      const status = item.status?.label || item.downloads?.status || "Ready";
-      const url = item.downloads?.downloadUrl || "#";
-
-      const card = document.createElement("article");
-      card.className = "download-card";
-
-      card.innerHTML = `
-        <div class="card-top">
-          <div class="download-title">${item.name || "Untitled Download"}</div>
+    downloadGrid.innerHTML = filtered.map(item => `
+      <article class="download-card">
+        <div class="download-image-wrap">
+          <img class="download-image" src="${item.image || 'https://placehold.co/500x420/10091b/8b2cff?text=Download'}" alt="${item.name || 'Download'}">
         </div>
-
-        <div class="card-image-wrap">
-          <div class="download-image-frame">
-            <img
-              class="download-image"
-              src="${item.image || 'https://placehold.co/260x380/13071f/8b2cff?text=Download'}"
-              alt="${item.name || 'Download'}"
-            >
+        <div class="download-body">
+          <div class="download-title">${item.name || 'Untitled Download'}</div>
+          <div class="download-meta">
+            ${statusMarkup(item)}
+            <div class="chip"><i class="fas fa-code-branch"></i> ${item?.downloads?.version || 'Latest'}</div>
+            <div class="chip"><i class="fas fa-hard-drive"></i> ${item?.downloads?.fileSize || 'Unknown size'}</div>
           </div>
+          <a class="download-btn" href="${item?.downloads?.downloadUrl || '#'}"><i class="fas fa-download"></i> Download</a>
         </div>
-
-        <div class="card-meta">
-          <div class="meta-chip">
-            <i class="fas fa-code-branch"></i>
-            ${version}
-          </div>
-          <div class="meta-chip">
-            <i class="fas fa-hard-drive"></i>
-            ${fileSize}
-          </div>
-        </div>
-
-        <div class="card-meta" style="padding-top:0;">
-          <div class="meta-chip" style="grid-column:1 / -1;">
-            <i class="fas fa-circle"></i>
-            ${status}
-          </div>
-        </div>
-
-        <div class="card-bottom">
-          <a class="download-btn" href="${url}">
-            Download
-            <i class="fas fa-arrow-right"></i>
-          </a>
-        </div>
-      `;
-
-      downloadGrid.appendChild(card);
-    });
+      </article>
+    `).join('');
   }
 
   async function loadDownloads() {
     try {
-      const response = await fetch("/api/downloads");
-
-      if (!response.ok) {
-        throw new Error("Failed to load downloads");
-      }
-
+      const response = await fetch('/api/downloads');
+      if (!response.ok) throw new Error('Failed to load downloads');
       downloads = await response.json();
       renderDownloads();
-
     } catch (error) {
-      console.error(error);
-
-      downloadGrid.innerHTML = `
-        <div class="no-downloads">
-          <i class="fas fa-triangle-exclamation" style="font-size:48px;opacity:.35;margin-bottom:14px;"></i>
-          <h3 style="margin:0 0 8px;">Failed to load downloads</h3>
-          <p style="margin:0;">Please try again later.</p>
-        </div>
-      `;
+      downloadGrid.innerHTML = '<div class="no-downloads"><h3>Failed to load downloads</h3><p>Please try again later.</p></div>';
     }
   }
 
-  downloadSearch.addEventListener("input", function () {
-    renderDownloads(this.value.trim().toLowerCase());
-  });
-
+  downloadSearch.addEventListener('input', function () { renderDownloads(this.value.trim().toLowerCase()); });
   loadDownloads();
 </script>
 {% endblock %}

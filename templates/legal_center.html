@@ -1,131 +1,39 @@
 {% extends "base.html" %}
 {% block title %}Legal Center | moealturej{% endblock %}
+{% block extra_head %}
+<style>
+  .legal-page { padding-top: 24px; }
+  .legal-shell { padding: 24px; }
+  .legal-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 22px; }
+  .legal-card { display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 22px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); transition: .18s ease; }
+  .legal-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.05); }
+  .legal-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: rgba(139,44,255,0.14); border: 1px solid rgba(139,44,255,0.22); color: #fff; }
+  .legal-card h3 { margin: 0; font-size: 17px; }
+  .legal-card p { margin: 0; font-size: 13px; }
+  @media (max-width: 1100px) { .legal-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 720px) { .legal-shell { padding: 18px; } .legal-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="page-section legal-page">
   <div class="container">
-    <section class="legal-hero">
-      <div class="legal-eyebrow">legal center</div>
-      <h1>Legal information</h1>
-      <p>
-        Review the core policies and legal documents for moealturej solutions in one clean place.
-      </p>
-    </section>
+    <section class="panel legal-shell">
+      <div class="page-head">
+        <div class="eyebrow">moealturej legal</div>
+        <h1>Legal Center</h1>
+        <p>Terms, privacy, refunds, licensing, and policy information.</p>
+      </div>
 
-    <section class="legal-grid">
-      <a href="/terms" class="legal-card">
-        <h3>Terms of Service</h3>
-        <p>Rules, acceptable use, purchases, and general terms for using the site and products.</p>
-      </a>
-
-      <a href="/privacy" class="legal-card">
-        <h3>Privacy Policy</h3>
-        <p>How information may be collected, used, stored, and protected.</p>
-      </a>
-
-      <a href="/refund-policy" class="legal-card">
-        <h3>Refund Policy</h3>
-        <p>Refund eligibility, limits, and how refund requests are handled.</p>
-      </a>
-
-      <a href="/cookie-policy" class="legal-card">
-        <h3>Cookie Policy</h3>
-        <p>How cookies and similar technologies may be used on the site.</p>
-      </a>
-
-      <a href="/license" class="legal-card">
-        <h3>License</h3>
-        <p>The usage rights and restrictions related to purchased or downloaded products.</p>
-      </a>
-
-      <a href="/support" class="legal-card">
-        <h3>Support</h3>
-        <p>Need help beyond policy details? Visit support and join the Discord server.</p>
-      </a>
+      <div class="legal-grid">
+        <a href="/terms" class="legal-card"><div class="legal-icon"><i class="fas fa-file-contract"></i></div><h3>Terms of Service</h3><p>General use, payments, and access rules for the site and products.</p></a>
+        <a href="/privacy" class="legal-card"><div class="legal-icon"><i class="fas fa-user-shield"></i></div><h3>Privacy Policy</h3><p>How site and service information may be collected, used, and protected.</p></a>
+        <a href="/refund-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-rotate-left"></i></div><h3>Refund Policy</h3><p>How digital refund requests are reviewed and handled.</p></a>
+        <a href="/cookie-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-cookie-bite"></i></div><h3>Cookie Policy</h3><p>How cookies and related site technologies may be used.</p></a>
+        <a href="/license" class="legal-card"><div class="legal-icon"><i class="fas fa-key"></i></div><h3>License</h3><p>Rules around use, sharing, and redistribution of products.</p></a>
+        <a href="/support" class="legal-card"><div class="legal-icon"><i class="fab fa-discord"></i></div><h3>Discord Support</h3><p>Customer support and product assistance through Discord.</p></a>
+      </div>
     </section>
   </div>
 </section>
-{% endblock %}
-
-{% block extra_head %}
-<style>
-  .legal-hero {
-    text-align: center;
-    max-width: 860px;
-    margin: 0 auto 20px;
-    padding: 34px 0 22px;
-  }
-
-  .legal-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(139, 44, 255, 0.10);
-    border: 1px solid rgba(139, 44, 255, 0.24);
-    color: #f3e9ff;
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 18px;
-  }
-
-  .legal-hero h1 {
-    margin: 0 0 14px;
-    font-size: clamp(42px, 6vw, 64px);
-    line-height: 0.96;
-    letter-spacing: -0.04em;
-  }
-
-  .legal-hero p {
-    max-width: 700px;
-    margin: 0 auto;
-    color: var(--muted);
-    font-size: 15px;
-    line-height: 1.8;
-  }
-
-  .legal-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    margin-top: 12px;
-  }
-
-  .legal-card {
-    display: block;
-    padding: 24px;
-    border-radius: 22px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
-    border: 1px solid rgba(255,255,255,0.06);
-    transition: 0.2s ease;
-  }
-
-  .legal-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(139, 44, 255, 0.22);
-    box-shadow: 0 14px 30px rgba(0,0,0,0.22);
-  }
-
-  .legal-card h3 {
-    margin: 0 0 10px;
-    font-size: 20px;
-    letter-spacing: -0.02em;
-  }
-
-  .legal-card p {
-    margin: 0;
-    color: var(--muted);
-    line-height: 1.75;
-    font-size: 14px;
-  }
-
-  @media (max-width: 920px) {
-    .legal-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}404 | Page not found{% endblock %}
+{% block title %}429 | Too many requests{% endblock %}
 {% block extra_head %}
 <style>
   .error-page { padding-top: 24px; }
@@ -13,9 +13,9 @@
 <section class="page-section error-page">
   <div class="container">
     <div class="hero-shell error-shell">
-      <div class="error-code">404</div>
-      <h1>Page not found</h1>
-      <p>The page you are looking for does not exist, may have moved, or the link may be incorrect.</p>
+      <div class="error-code">429</div>
+      <h1>Too many requests</h1>
+      <p>You are sending requests too quickly. Slow down for a moment and try again.</p>
       <div class="btn-row" style="justify-content:center;">
         <a href="/" class="primary-cta">Go Home</a>
         <a href="/products" class="secondary-cta">Browse Store</a>
