@@ -881,16 +881,15 @@
     if (existing) {
       existing.quantity += 1;
     } else {
-      cart.push({
-        productId: product.id,
-        productName: product.name,
-        image: product.image || PLACEHOLDER_IMAGE,
-        optionId: option.id,
-        uniqid: option.uniqid,
-        optionName: option.name,
-        price: Number(option.price || 0),
-        quantity: 1
-      });
+cart.push({
+  productId: product.id,
+  productName: product.name,
+  image: product.image || PLACEHOLDER_IMAGE,
+  optionId: option.id,
+  optionName: option.name,
+  price: Number(option.price || 0),
+  quantity: 1
+});
     }
 
     saveCartToStorage();
@@ -1140,29 +1139,30 @@
   });
 
   checkoutBtn?.addEventListener('click', () => {
-    if (!cart.length) return;
+    if (!cart.length) {
+      showNotification('Your cart is empty', 'error');
+      return;
+    }
 
-    if (!window.sellAuthEmbed?.checkout) {
+    if (!window.sellAuthEmbed || typeof window.sellAuthEmbed.checkout !== 'function') {
       showNotification('Checkout embed not available', 'error');
       return;
     }
 
-    const invoiceItems = cart.map(item => ({
-      uniqid: String(item.uniqid),
+    const sellAuthCart = cart.map(item => ({
+      productId: Number(item.productId),
+      variantId: Number(item.optionId),
       quantity: Number(item.quantity || 1)
     }));
-
-    if (!invoiceItems.every(item => item.uniqid)) {
-      showNotification('One or more cart items are missing SellAuth uniqids', 'error');
-      return;
-    }
 
     markCheckoutPending();
 
     try {
-      window.sellAuthEmbed.checkout({
-        shop_id: SELLAUTH_SHOP_ID,
-        invoice_items: invoiceItems
+      window.sellAuthEmbed.checkout(checkoutBtn, {
+        cart: sellAuthCart,
+        shopId: SELLAUTH_SHOP_ID,
+        modal: true,
+        scrollTop: true
       });
     } catch (error) {
       console.error(error);
