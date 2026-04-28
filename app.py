@@ -180,6 +180,23 @@ def filter_products(section_name: str) -> list:
     ]
 
 
+def find_store_product(identifier: str) -> dict | None:
+    """Find a store product by slug or id from products.json."""
+    identifier = str(identifier or "").strip().lower()
+
+    if not identifier:
+        return None
+
+    for product in filter_products("store"):
+        product_slug = str(product.get("slug", "")).strip().lower()
+        product_id = str(product.get("id", "")).strip().lower()
+
+        if identifier in {product_slug, product_id}:
+            return product
+
+    return None
+
+
 def get_allowed_download_files() -> set[str]:
     """
     Build a whitelist of downloadable filenames from products.json.
@@ -301,6 +318,16 @@ def store():
     return render_template("store.html", active_page="products")
 
 
+@app.route("/product/<slug>")
+@app.route("/store/<slug>")
+def product_detail(slug):
+    product = find_store_product(slug)
+
+    if not product:
+        abort(404)
+
+    return render_template("product_detail.html", product=product, active_page="products")
+
 @app.route("/downloads")
 def downloads():
     return render_template("downloads.html", active_page="downloads")
@@ -368,6 +395,16 @@ def api_products():
 def api_store_products():
     return jsonify(filter_products("store"))
 
+
+@app.route("/api/store-products/<slug>")
+@limiter.limit("120 per minute")
+def api_store_product(slug):
+    product = find_store_product(slug)
+
+    if not product:
+        abort(404)
+
+    return jsonify(product)
 
 @app.route("/api/downloads")
 @limiter.limit("120 per minute")

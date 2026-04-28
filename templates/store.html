@@ -384,6 +384,13 @@
     background: linear-gradient(180deg, rgba(150,62,255,0.98), rgba(97,26,180,0.98));
   }
 
+  .product-btn.details {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+  }
+
   .empty-state {
     grid-column: 1 / -1;
     padding: 30px;
@@ -882,14 +889,15 @@
       existing.quantity += 1;
     } else {
 cart.push({
-  productId: product.id,
-  productName: product.name,
-  image: product.image || PLACEHOLDER_IMAGE,
-  optionId: option.id,
-  optionName: option.name,
-  price: Number(option.price || 0),
-  quantity: 1
-});
+        uniqid: option.uniqid,
+        productId: product.id,
+        productName: product.name,
+        image: product.image || PLACEHOLDER_IMAGE,
+        optionId: option.id,
+        optionName: option.name,
+        price: Number(option.price || 0),
+        quantity: 1
+      });
     }
 
     saveCartToStorage();
@@ -1060,7 +1068,7 @@ cart.push({
 
           <div class="product-actions">
             <button class="product-btn buy">Add to cart</button>
-            <a href="/downloads" class="product-btn" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">Downloads</a>
+            <a href="/product/${encodeURIComponent(product.slug || product.id)}" class="product-btn details">View details</a>
           </div>
         </div>
       `;

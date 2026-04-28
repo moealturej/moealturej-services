@@ -1,5 +1,37 @@
 [
   {
+    "id": 700177,
+    "slug": "bo7-external-thunex-cheat",
+    "name": "BO7 External Thunex Cheat",
+    "detailedDescription": "• Aimbot: Enable Aimbot, Draw FOV, Aim Priority, Aim 360 [RAGE], Recoil Helper, Recoil Helper Slider, Aimbot Type, Aim Bone, Mouse Key, Aim Type, Controller Key, Visible Check, Auto Shoot, AutoShoot Distance, Ignore Knock, Ignore BOT/AI, Draw Crosshair, Lock Target, Smooth, FOV Value, Distance Aim\n• Visuals (ESP): Visual ESP, Player Boxes, HP Indicator, Name Tags, Kill Tags, Ping Tags, Distance Indicator, ESP Distance, Squad ID, Directional Arrows, Arrows FOV, Draw Team, Dynamic Arrows, Show Weapon Icon, Web Share Radar, Show UAV, Skeleton, Snaplines, Snaplines Type, Draw Radar\n• Radar: Enable Radar, Radar Distance, Radar Type, Direction Sync, Enemy + Teammate Display, Web Shared Radar\n• Misc: Recoil Helper, Draw Crosshair, Detect Cheaters (Notification), Unlock (Safe Mode)\n• Config: Save Profiles (1–10+), Load Profiles, Reset Config\n• Account: Username, Subscription Status, Remaining Time, HWID Status, Auth Server Status\n• Settings: Menu Toggle Key, Menu Color, Language Switch, Theme Switch, Menu Opacity, Web Radar Sharing",
+    "image": "/static/thunex.png",
+    "category": "cod",
+    "type": "product",
+    "featured": true,
+    "features": ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "store": {
+      "enabled": true,
+      "stockStatus": "In Stock",
+      "options": [
+        { "id": 1117859, "name": "DAY KEY", "price": 7.0 },
+        { "id": 1117860, "name": "WEEK KEY", "price": 20.0 },
+        { "id": 1117861, "name": "MONTH KEY", "price": 40.0 }
+      ]
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v3.1.0",
+      "downloadUrl": "/download/thunex.exe",
+      "fileSize": "27.4 MB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-04-28"
+    }
+  },
+  {
     "id": 667523,
     "slug": "mw19-ghost-internal",
     "name": "MW19 Ghost Internal",
