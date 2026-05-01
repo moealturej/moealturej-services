@@ -3,19 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>{% block title %}moealturej{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
-  <meta name="keywords" content="{% block meta_keywords %}moealturej, premium tools, digital downloads, software store{% endblock %}" />
+  <meta name="keywords" content="{% block meta_keywords %}moealturej, moealturej solutions, premium tools, digital downloads, software store, modern digital products{% endblock %}" />
   <meta name="author" content="moealturej" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <meta name="theme-color" content="#05020b" />
+  <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="theme-color" content="#070711" />
   <meta name="color-scheme" content="dark" />
+  <meta name="application-name" content="moealturej" />
+  <meta name="apple-mobile-web-app-title" content="moealturej" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no, address=no, email=no" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <link rel="canonical" href="{% block canonical %}https://moealturej.com{{ request.path }}{% endblock %}" />
+
+  <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='logo (2).png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='logo (3).png') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+
+  <!-- Open Graph -->
   <meta property="og:locale" content="en_US" />
   <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
   <meta property="og:site_name" content="moealturej" />
@@ -23,7 +37,23 @@
   <meta property="og:description" content="{% block og_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
   <meta property="og:url" content="{% block og_url %}https://moealturej.com{{ request.path }}{% endblock %}" />
   <meta property="og:image" content="{% block og_image %}https://i.postimg.cc/GtgYHP8w/standard-(1).gif{% endblock %}" />
+  <meta property="og:image:alt" content="{% block og_image_alt %}moealturej preview image{% endblock %}" />
+
+  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{% block twitter_title %}moealturej{% endblock %}" />
+  <meta name="twitter:description" content="{% block twitter_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
+  <meta name="twitter:image" content="{% block twitter_image %}https://i.postimg.cc/GtgYHP8w/standard-(1).gif{% endblock %}" />
+
+  <!-- Performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="//fonts.googleapis.com">
+  <link rel="dns-prefetch" href="//fonts.gstatic.com">
+  <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root{
       --bg:#020106; --bg2:#05020b; --panel:rgba(10,5,20,.72); --panel2:rgba(15,8,29,.84);
