@@ -347,6 +347,15 @@ def support():
 def maintenance():
     return render_template("maintenance.html", active_page=None), 503
 
+@app.route("/donate")
+def donate():
+    return render_template("donate.html", active_page="donate")
+
+
+@app.route("/discord")
+def discord():
+    return render_template("discord.html", active_page="discord")
+
 
 # -----------------------------------------------------------------------------
 # Legal pages

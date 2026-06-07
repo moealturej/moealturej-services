@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Discord | moealturej{% endblock %}
+
+{% block content %}
+<style>
+    .discord-page {
+        min-height: calc(100vh - 90px);
+        padding: 92px 22px 80px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .discord-wrap {
+        width: min(1120px, 100%);
+        margin: 0 auto;
+        position: relative;
+        z-index: 2;
+    }
+
+    .discord-hero {
+        display: grid;
+        grid-template-columns: 1.05fr .95fr;
+        gap: 52px;
+        align-items: center;
+    }
+
+    .page-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.05);
+        border-radius: 999px;
+        color: rgba(255,255,255,.72);
+        font-size: 14px;
+        margin-bottom: 22px;
+        backdrop-filter: blur(14px);
+    }
+
+    .page-pill span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 18px rgba(34,197,94,.9);
+    }
+
+    .discord-hero h1 {
+        font-size: clamp(38px, 6vw, 76px);
+        line-height: 1;
+        letter-spacing: -2.5px;
+        margin: 0;
+        font-weight: 950;
+    }
+
+    .gradient-text {
+        background: linear-gradient(90deg, #818cf8, #a78bfa, #f472b6);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .discord-hero p {
+        margin-top: 24px;
+        max-width: 690px;
+        color: rgba(255,255,255,.62);
+        font-size: 17px;
+        line-height: 1.8;
+    }
+
+    .page-actions {
+        margin-top: 34px;
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .page-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-height: 48px;
+        padding: 0 24px;
+        border-radius: 999px;
+        font-weight: 850;
+        font-size: 14px;
+        text-decoration: none;
+        transition: .22s ease;
+        border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .page-btn.primary {
+        background: #fff;
+        color: #09070d;
+    }
+
+    .page-btn.primary:hover {
+        transform: translateY(-2px);
+        background: #eef2ff;
+    }
+
+    .page-btn.ghost {
+        background: rgba(255,255,255,.055);
+        color: rgba(255,255,255,.82);
+        backdrop-filter: blur(14px);
+    }
+
+    .page-btn.ghost:hover {
+        transform: translateY(-2px);
+        border-color: rgba(168,85,247,.45);
+        background: rgba(168,85,247,.13);
+        color: #fff;
+    }
+
+    .discord-card {
+        border-radius: 34px;
+        border: 1px solid rgba(255,255,255,.1);
+        background:
+            radial-gradient(circle at top left, rgba(99,102,241,.18), transparent 42%),
+            rgba(255,255,255,.04);
+        backdrop-filter: blur(18px);
+        padding: 24px;
+        box-shadow: 0 25px 90px rgba(0,0,0,.28);
+    }
+
+    .discord-inner {
+        border-radius: 27px;
+        border: 1px solid rgba(255,255,255,.1);
+        background: rgba(0,0,0,.28);
+        padding: 26px;
+    }
+
+    .server-top {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .server-icon {
+        width: 66px;
+        height: 66px;
+        border-radius: 24px;
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        box-shadow: 0 16px 45px rgba(99,102,241,.28);
+    }
+
+    .server-top h2 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -.4px;
+    }
+
+    .server-top p {
+        margin: 5px 0 0;
+        color: rgba(255,255,255,.5);
+        font-size: 14px;
+    }
+
+    .server-list {
+        margin-top: 26px;
+        display: grid;
+        gap: 12px;
+    }
+
+    .server-row {
+        min-height: 52px;
+        padding: 0 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,.1);
+        background: rgba(255,255,255,.04);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: rgba(255,255,255,.62);
+        font-size: 14px;
+    }
+
+    .server-row strong {
+        color: #fff;
+    }
+
+    .online-tag {
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: rgba(34,197,94,.12);
+        color: #86efac;
+        font-weight: 900;
+        font-size: 12px;
+    }
+
+    .discord-main-link {
+        margin-top: 20px;
+        width: 100%;
+        min-height: 48px;
+        border-radius: 999px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        text-decoration: none;
+        color: #fff;
+        font-weight: 900;
+        background: linear-gradient(90deg, #6366f1, #a855f7);
+        transition: .22s ease;
+    }
+
+    .discord-main-link:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.08);
+    }
+
+    .discord-grid {
+        margin-top: 70px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+    }
+
+    .info-card {
+        padding: 28px;
+        border-radius: 30px;
+        border: 1px solid rgba(255,255,255,.1);
+        background:
+            radial-gradient(circle at top left, rgba(168,85,247,.12), transparent 38%),
+            rgba(255,255,255,.04);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 22px 70px rgba(0,0,0,.22);
+        transition: .22s ease;
+    }
+
+    .info-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(168,85,247,.38);
+        background:
+            radial-gradient(circle at top left, rgba(168,85,247,.18), transparent 40%),
+            rgba(255,255,255,.06);
+    }
+
+    .card-icon {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: rgba(168,85,247,.14);
+        font-size: 25px;
+        margin-bottom: 22px;
+    }
+
+    .info-card h2 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -.4px;
+    }
+
+    .info-card p {
+        color: rgba(255,255,255,.6);
+        line-height: 1.7;
+        font-size: 15px;
+        margin: 14px 0 0;
+    }
+
+    .rules-box {
+        margin-top: 20px;
+        border-radius: 30px;
+        border: 1px solid rgba(255,255,255,.1);
+        background: rgba(255,255,255,.04);
+        backdrop-filter: blur(18px);
+        padding: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+    }
+
+    .rules-box h2 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -.8px;
+    }
+
+    .rules-box p {
+        margin: 8px 0 0;
+        color: rgba(255,255,255,.58);
+        line-height: 1.7;
+        max-width: 720px;
+    }
+
+    @media (max-width: 900px) {
+        .discord-hero {
+            grid-template-columns: 1fr;
+        }
+
+        .discord-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .rules-box {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .rules-box .page-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="discord-page">
+    <div class="discord-wrap">
+        <div class="discord-hero">
+            <div>
+                <div class="page-pill"><span></span> Community online</div>
+
+                <h1>
+                    Join the <span class="gradient-text">moealturej</span> Discord.
+                </h1>
+
+                <p>
+                    Get updates, support, announcements, product info, community help,
+                    and a cleaner way to stay connected with everything moealturej.
+                </p>
+
+                <div class="page-actions">
+                    <a href="https://discord.gg/moealturej" target="_blank" class="page-btn primary">Join Discord →</a>
+                    <a href="/donate" class="page-btn ghost">Support us</a>
+                </div>
+            </div>
+
+            <div class="discord-card">
+                <div class="discord-inner">
+                    <div class="server-top">
+                        <div class="server-icon">💬</div>
+                        <div>
+                            <h2>moealturej Community</h2>
+                            <p>Support • Updates • Announcements</p>
+                        </div>
+                    </div>
+
+                    <div class="server-list">
+                        <div class="server-row">
+                            <span>Status</span>
+                            <span class="online-tag">Online</span>
+                        </div>
+
+                        <div class="server-row">
+                            <span>Support</span>
+                            <strong>Tickets</strong>
+                        </div>
+
+                        <div class="server-row">
+                            <span>Updates</span>
+                            <strong>Instant</strong>
+                        </div>
+                    </div>
+
+                    <a href="https://discord.gg/moealturej" target="_blank" class="discord-main-link">
+                        Open Discord
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="discord-grid">
+            <div class="info-card">
+                <div class="card-icon">📢</div>
+                <h2>Announcements</h2>
+                <p>Stay updated with new releases, product changes, site updates, and important notices.</p>
+            </div>
+
+            <div class="info-card">
+                <div class="card-icon">🎫</div>
+                <h2>Support Tickets</h2>
+                <p>Need help? Open a ticket and get cleaner, more organized support directly through Discord.</p>
+            </div>
+
+            <div class="info-card">
+                <div class="card-icon">🤝</div>
+                <h2>Community</h2>
+                <p>Connect with other members, ask questions, and stay closer to the moealturej brand.</p>
+            </div>
+        </div>
+
+        <div class="rules-box">
+            <div>
+                <h2>Before joining</h2>
+                <p>
+                    Keep it respectful, avoid spam, use the correct channels, and open a ticket
+                    when you need direct support.
+                </p>
+            </div>
+
+            <a href="https://discord.gg/moealturej" target="_blank" class="page-btn primary">Join now</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
