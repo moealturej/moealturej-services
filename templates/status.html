@@ -1,25 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Status | moealturej{% endblock %}
+
 {% block extra_head %}
 <style>
-  .status-page { padding-top: 20px; }
+  .status-page { padding-top: 10px; }
   .status-shell { padding: 24px; }
-  .overview-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
-  .overview-card { padding: 18px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
-  .overview-label { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
-  .overview-value { font-size: 28px; font-weight: 900; letter-spacing: -0.04em; }
-  .overview-sub { margin-top: 8px; font-size: 13px; color: var(--muted); }
-  .status-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 14px; }
-  .status-card { overflow: hidden; border-radius: 22px; background: linear-gradient(180deg, rgba(18,18,30,0.98), rgba(8,8,14,0.98)); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
-  .status-image-wrap { padding: 12px; }
-  .status-image { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); background: linear-gradient(180deg, #1a0f2d, #09090f); }
-  .status-body { padding: 0 14px 14px; }
-  .status-name { font-size: 14px; font-weight: 900; line-height: 1.2; min-height: 34px; margin-bottom: 10px; }
-  .status-meta { display: grid; gap: 8px; }
-  .status-empty { grid-column: 1 / -1; padding: 30px; text-align: center; border-radius: 22px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
-  @media (max-width: 1340px) { .status-grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
-  @media (max-width: 1100px) { .overview-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } .status-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
-  @media (max-width: 720px) { .status-shell { padding: 18px; } .overview-grid, .status-grid { grid-template-columns: 1fr; } }
+  .status-intro {
+    display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px; margin-bottom: 18px;
+  }
+  .status-banner {
+    padding: 22px; border-radius: 24px; border: 1px solid rgba(99,230,162,0.2);
+    background: linear-gradient(180deg, rgba(99,230,162,0.12), rgba(255,255,255,0.03));
+    box-shadow: var(--shadow-soft);
+  }
+  .status-banner strong { display: block; font-size: 24px; font-family: Sora, Inter, sans-serif; margin-bottom: 6px; }
+  .overview-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
+  .status-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+  .status-card { overflow: hidden; display: flex; flex-direction: column; }
+  .status-image-wrap { padding: 14px 14px 6px; }
+  .status-image { aspect-ratio: 1 / 1; }
+  .status-body { padding: 8px 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .status-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .status-summary { color: var(--muted); font-size: 14px; line-height: 1.65; }
+  @media (max-width: 1080px) { .status-intro, .status-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 780px) { .status-shell { padding: 18px; } .status-intro, .overview-grid, .status-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -27,27 +31,34 @@
 <section class="page-section status-page">
   <div class="container">
     <section class="panel status-shell">
-      <div class="page-head">
-        <div class="eyebrow">moealturej status</div>
-        <h1>Product status</h1>
-        <p>Live product service and operational status.</p>
+      <div class="status-intro">
+        <div class="page-head" style="margin-bottom:0;">
+          <div class="eyebrow">moealturej status</div>
+          <h1>Live service health, <span class="gradient-text">cleaner at a glance</span>.</h1>
+          <p>The status page now uses a softer green visual language for healthy products so operational items feel trustworthy instead of generic.</p>
+        </div>
+        <div class="status-banner">
+          <div class="chip is-green"><i class="fas fa-circle-check"></i> Live monitoring</div>
+          <strong id="status-banner-title">Checking current platform health...</strong>
+          <p id="status-banner-text" class="muted-note" style="margin:8px 0 0;">Status details update from the product feed.</p>
+        </div>
       </div>
 
       <div class="overview-grid">
         <div class="overview-card">
           <div class="overview-label">Tracked</div>
           <div id="overview-total" class="overview-value">0</div>
-          <div class="overview-sub">Products in status feed</div>
+          <div class="overview-sub">Products in the status feed</div>
         </div>
-        <div class="overview-card">
+        <div class="overview-card" style="border-color:rgba(99,230,162,0.18);">
           <div class="overview-label">Operational</div>
-          <div id="overview-operational" class="overview-value">0</div>
-          <div class="overview-sub">Currently online and working</div>
+          <div id="overview-operational" class="overview-value" style="color:#d9ffe9;">0</div>
+          <div class="overview-sub">Currently healthy and online</div>
         </div>
         <div class="overview-card">
-          <div class="overview-label">Issues</div>
+          <div class="overview-label">Needs attention</div>
           <div id="overview-issues" class="overview-value">0</div>
-          <div class="overview-sub">Need attention or are offline</div>
+          <div class="overview-sub">Degraded or offline services</div>
         </div>
       </div>
 
@@ -63,12 +74,14 @@
   const overviewTotal = document.getElementById('overview-total');
   const overviewOperational = document.getElementById('overview-operational');
   const overviewIssues = document.getElementById('overview-issues');
+  const bannerTitle = document.getElementById('status-banner-title');
+  const bannerText = document.getElementById('status-banner-text');
 
   function getStateInfo(item) {
     const raw = String(item?.status?.state || item?.status?.label || 'Operational').toLowerCase();
-    if (raw.includes('offline')) return { cls: 'is-red', label: item?.status?.label || 'Offline' };
-    if (raw.includes('degraded')) return { cls: 'is-yellow', label: item?.status?.label || 'Degraded' };
-    return { cls: 'is-green', label: item?.status?.label || 'Operational' };
+    if (raw.includes('offline')) return { cls: 'is-red', label: item?.status?.label || 'Offline', summary: 'This product is currently unavailable or experiencing issues.' };
+    if (raw.includes('degraded')) return { cls: 'is-yellow', label: item?.status?.label || 'Degraded', summary: 'This product is online but may be partially impacted.' };
+    return { cls: 'is-green', label: item?.status?.label || 'Operational', summary: 'This product is healthy and available right now.' };
   }
 
   function formatDate(value) {
@@ -81,15 +94,27 @@
   function renderOverview(items) {
     const total = items.length;
     const operational = items.filter(item => getStateInfo(item).cls === 'is-green').length;
+    const issues = total - operational;
     overviewTotal.textContent = total;
     overviewOperational.textContent = operational;
-    overviewIssues.textContent = total - operational;
+    overviewIssues.textContent = issues;
+
+    if (!total) {
+      bannerTitle.textContent = 'No products are currently being tracked.';
+      bannerText.textContent = 'Status information will appear here when products are available.';
+    } else if (issues === 0) {
+      bannerTitle.textContent = 'All tracked products currently look healthy.';
+      bannerText.textContent = 'Everything shown in the status feed is reporting as operational.';
+    } else {
+      bannerTitle.textContent = `${issues} item${issues === 1 ? '' : 's'} currently need attention.`;
+      bannerText.textContent = `${operational} product${operational === 1 ? '' : 's'} remain operational while the rest may be degraded or offline.`;
+    }
   }
 
   function renderStatus(items) {
     renderOverview(items);
     if (!items.length) {
-      statusGrid.innerHTML = '<div class="status-empty"><h3>No status items found</h3><p>No products are currently available.</p></div>';
+      statusGrid.innerHTML = '<div class="status-empty" style="grid-column:1/-1;"><h3>No status items found</h3><p>No products are currently available.</p></div>';
       return;
     }
 
@@ -97,11 +122,10 @@
       const info = getStateInfo(item);
       return `
         <article class="status-card">
-          <div class="status-image-wrap">
-            <img class="status-image" src="${item.image || 'https://placehold.co/400x400/10091b/8b2cff?text=Status'}" alt="${item.name || 'Status item'}">
-          </div>
+          <div class="status-image-wrap"><img class="status-image" src="${item.image || 'https://placehold.co/400x400/10091b/8b2cff?text=Status'}" alt="${item.name || 'Status item'}"></div>
           <div class="status-body">
             <div class="status-name">${item.name || 'Untitled Product'}</div>
+            <div class="status-summary">${info.summary}</div>
             <div class="status-meta">
               <div class="chip ${info.cls}"><i class="fas fa-circle"></i> ${info.label}</div>
               <div class="chip"><i class="fas fa-code-branch"></i> ${item?.downloads?.version || 'Latest'}</div>
@@ -120,7 +144,9 @@
       const items = await response.json();
       renderStatus(items);
     } catch (error) {
-      statusGrid.innerHTML = '<div class="status-empty"><h3>Status unavailable</h3><p>Could not load status right now.</p></div>';
+      statusGrid.innerHTML = '<div class="status-empty" style="grid-column:1/-1;"><h3>Status unavailable</h3><p>Could not load status right now.</p></div>';
+      bannerTitle.textContent = 'Status is temporarily unavailable.';
+      bannerText.textContent = 'Please check back in a moment.';
     }
   }
 

@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>{% block title %}moealturej{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}Premium digital products, downloads, status, and support from moealturej.{% endblock %}" />
   <meta name="keywords" content="{% block meta_keywords %}moealturej, digital products, downloads, premium store, software{% endblock %}" />
   <meta name="author" content="moealturej" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
-  <meta name="theme-color" content="#8b2cff" />
+  <meta name="theme-color" content="#8d63ff" />
   <meta name="color-scheme" content="dark" />
-
   <link rel="canonical" href="{% block canonical %}https://moealturej.com{{ request.path }}{% endblock %}" />
 
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
@@ -36,104 +34,106 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
   {% block extra_head %}{% endblock %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/purple-redesign.css') }}?v=3">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/purple-redesign.css') }}?v=4">
 </head>
 <body>
-  <div class="site-bg" aria-hidden="true">
-    <span class="orb orb-one"></span>
-    <span class="orb orb-two"></span>
-    <span class="orb orb-three"></span>
-  </div>
+  <div id="particles-js" class="particles-layer" aria-hidden="true"></div>
+  <div class="background-glow background-glow-one" aria-hidden="true"></div>
+  <div class="background-glow background-glow-two" aria-hidden="true"></div>
 
-  <div class="site-shell">
-    <header class="new-header" id="siteHeader">
-      <div class="container nav-container">
-        <a href="/" class="brand-mark" aria-label="moealturej home">
-          <span class="brand-logo-wrap"><img src="{{ url_for('static', filename='logo.png') }}" alt="moealturej logo"></span>
-          <span class="brand-copy">
-            <strong>moealturej</strong>
-            <small>Premium digital store</small>
-          </span>
-        </a>
+  <header class="site-header" id="siteHeader">
+    <div class="container header-shell">
+      <a href="/" class="brand-mark" aria-label="moealturej home">
+        <span class="brand-logo-wrap"><img src="{{ url_for('static', filename='logo.png') }}" alt="moealturej logo"></span>
+        <span class="brand-copy">
+          <strong>moealturej</strong>
+          <small>Premium digital products</small>
+        </span>
+      </a>
 
-        <button class="mobile-nav-toggle" id="mobileNavToggle" type="button" aria-label="Open navigation" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
+      <button class="mobile-nav-toggle" id="mobileNavToggle" type="button" aria-label="Open navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
 
-        <nav class="main-nav" id="mainNav" aria-label="Main navigation">
-          <a href="/" class="{% if active_page == 'home' %}active{% endif %}">Home</a>
-          <a href="/products" class="{% if active_page == 'products' %}active{% endif %}">Store</a>
-          <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a>
-          <a href="/status" class="{% if active_page == 'status' %}active{% endif %}">Status</a>
-          <a href="/support" class="{% if active_page == 'support' %}active{% endif %}">Support</a>
-          <a href="/legal" class="{% if active_page == 'legal' %}active{% endif %}">Legal</a>
-        </nav>
+      <nav class="main-nav" id="mainNav" aria-label="Main navigation">
+        <a href="/" class="{% if active_page == 'home' %}active{% endif %}">Home</a>
+        <a href="/products" class="{% if active_page == 'products' %}active{% endif %}">Store</a>
+        <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a>
+        <a href="/status" class="{% if active_page == 'status' %}active{% endif %}">Status</a>
+        <a href="/support" class="{% if active_page == 'support' %}active{% endif %}">Support</a>
+        <a href="/legal" class="{% if active_page == 'legal' %}active{% endif %}">Legal</a>
+      </nav>
 
-        <a href="/products" class="nav-cta"><i class="fas fa-bag-shopping"></i><span>Shop Now</span></a>
-      </div>
-    </header>
+      <a href="/products" class="nav-cta"><i class="fas fa-bag-shopping"></i><span>Open Store</span></a>
+    </div>
+  </header>
 
-    <main class="site-main">
-      {% block content %}{% endblock %}
-    </main>
+  <main class="site-main">
+    {% block content %}{% endblock %}
+  </main>
 
-    <footer class="new-footer">
-      <div class="container footer-container">
-        <div class="footer-main-card">
-          <div class="footer-brand-area">
-            <a href="/" class="brand-mark footer-brand">
-              <span class="brand-logo-wrap"><img src="{{ url_for('static', filename='logo.png') }}" alt="moealturej logo"></span>
-              <span class="brand-copy"><strong>moealturej</strong><small>Official platform</small></span>
-            </a>
-            <p>A clean hub for products, downloads, live status, and support — rebuilt with a sharper purple theme and clearer navigation.</p>
-            <div class="footer-badges">
-              <span><i class="fas fa-bolt"></i> Fast access</span>
-              <span><i class="fas fa-shield-halved"></i> Secure checkout</span>
-              <span><i class="fas fa-signal"></i> Live status</span>
-            </div>
-          </div>
-
-          <div class="footer-links-grid">
-            <div class="footer-col">
-              <h4>Store</h4>
-              <a href="/products">Browse Products</a>
-              <a href="/downloads">Downloads</a>
-              <a href="/status">Product Status</a>
-            </div>
-            <div class="footer-col">
-              <h4>Support</h4>
-              <a href="/support">Discord Support</a>
-              <a href="/discord">Community</a>
-              <a href="/donate">Old Donate Link</a>
-            </div>
-            <div class="footer-col">
-              <h4>Legal</h4>
-              <a href="/terms">Terms</a>
-              <a href="/privacy">Privacy</a>
-              <a href="/refund-policy">Refund Policy</a>
-              <a href="/cookie-policy">Cookie Policy</a>
-              <a href="/license">License</a>
-            </div>
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-main-card">
+        <div class="footer-brand-area">
+          <a href="/" class="brand-mark footer-brand">
+            <span class="brand-logo-wrap"><img src="{{ url_for('static', filename='logo.png') }}" alt="moealturej logo"></span>
+            <span class="brand-copy"><strong>moealturej</strong><small>Sharper. Cleaner. Clearer.</small></span>
+          </a>
+          <p>Built as a cleaner home for your store, product downloads, live status, and support. The layout is lighter, more premium, and easier to navigate across desktop and mobile.</p>
+          <div class="footer-badges">
+            <span><i class="fas fa-bolt"></i> Instant access</span>
+            <span><i class="fas fa-shield-halved"></i> Secure checkout</span>
+            <span><i class="fas fa-circle-check"></i> Clear product status</span>
           </div>
         </div>
 
-        <div class="footer-bottom-bar">
-          <span>© <span id="copyrightYear">2026</span> moealturej. All rights reserved.</span>
-          <span class="footer-mini-links"><a href="/legal">Legal Center</a><a href="/support">Support</a></span>
+        <div class="footer-links-grid">
+          <div class="footer-col">
+            <h4>Platform</h4>
+            <a href="/">Home</a>
+            <a href="/products">Store</a>
+            <a href="/downloads">Downloads</a>
+            <a href="/status">Status</a>
+          </div>
+          <div class="footer-col">
+            <h4>Support</h4>
+            <a href="/support">Support Hub</a>
+            <a href="/discord">Discord</a>
+            <a href="/donate">Links & Support</a>
+          </div>
+          <div class="footer-col">
+            <h4>Legal</h4>
+            <a href="/legal">Legal Center</a>
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/refund-policy">Refund Policy</a>
+            <a href="/cookie-policy">Cookie Policy</a>
+          </div>
         </div>
       </div>
-    </footer>
-  </div>
 
+      <div class="footer-bottom-bar">
+        <span>© <span id="copyrightYear">2026</span> moealturej. All rights reserved.</span>
+        <span class="footer-mini-links"><a href="/license">License</a><a href="/support">Support</a><a href="/legal">Legal Center</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script>
     const header = document.getElementById('siteHeader');
     const toggle = document.getElementById('mobileNavToggle');
     const nav = document.getElementById('mainNav');
-    const setHeader = () => header && header.classList.toggle('is-scrolled', window.scrollY > 10);
-    setHeader();
-    window.addEventListener('scroll', setHeader, { passive: true });
+
+    function setHeaderState() {
+      if (!header) return;
+      header.classList.toggle('is-scrolled', window.scrollY > 12);
+    }
+    setHeaderState();
+    window.addEventListener('scroll', setHeaderState, { passive: true });
+
     if (toggle && nav) {
       toggle.addEventListener('click', () => {
         const isOpen = document.body.classList.toggle('nav-open');
@@ -144,8 +144,29 @@
         toggle.setAttribute('aria-expanded', 'false');
       }));
     }
+
     const yearEl = document.getElementById('copyrightYear');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+    if (window.particlesJS) {
+      window.particlesJS('particles-js', {
+        particles: {
+          number: { value: 44, density: { enable: true, value_area: 1100 } },
+          color: { value: ['#ffffff', '#d8c8ff', '#b194ff', '#9df4c9'] },
+          shape: { type: 'circle' },
+          opacity: { value: 0.18, random: true },
+          size: { value: 2.6, random: true },
+          line_linked: { enable: true, distance: 135, color: '#b08dff', opacity: 0.12, width: 1 },
+          move: { enable: true, speed: 1.1, direction: 'none', random: false, straight: false, out_mode: 'out' }
+        },
+        interactivity: {
+          detect_on: 'canvas',
+          events: { onhover: { enable: true, mode: 'grab' }, onclick: { enable: false }, resize: true },
+          modes: { grab: { distance: 160, line_linked: { opacity: 0.25 } } }
+        },
+        retina_detect: true
+      });
+    }
   </script>
   {% block extra_scripts %}{% endblock %}
 </body>
