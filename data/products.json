@@ -28,7 +28,7 @@
       "enabled": true,
       "state": "Operational",
       "label": "Online",
-      "lastUpdated": "2026-04-28"
+      "lastUpdated": "2026-06-07"
     }
   },
   {
@@ -277,14 +277,14 @@
     "downloads": {
       "enabled": true,
       "version": "v3.2.2",
-      "downloadUrl": "/download/temp.rar",
-      "fileSize": "40.3 MB"
+      "downloadUrl": "/download/temp.exe",
+      "fileSize": "38 MB"
     },
     "status": {
       "enabled": true,
       "state": "Operational",
       "label": "Online",
-      "lastUpdated": "2026-03-31"
+      "lastUpdated": "2026-06-08"
     }
   },
   {
