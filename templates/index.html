@@ -56,59 +56,59 @@
     <section class="hero-shell home-hero">
       <div class="hero-copy">
         <div class="eyebrow">moealturej</div>
-        <h1>Premium cheats & tools</h1>
-        <p>Instant access software, loaders, unlock tools, and product downloads.</p>
+        <h1>Premium digital tools, built clean.</h1>
+        <p>A sharper storefront for trusted products, fast downloads, live status, and direct Discord support — all in one clear place.</p>
 
         <div class="hero-pills">
-          <div class="chip is-green"><i class="fas fa-circle"></i> online products</div>
-          <div class="chip"><i class="fas fa-bolt"></i> instant access</div>
-          <div class="chip"><i class="fas fa-shield-halved"></i> moealturej branding</div>
+          <div class="chip is-green"><i class="fas fa-circle"></i> live catalog</div>
+          <div class="chip"><i class="fas fa-bolt"></i> fast checkout</div>
+          <div class="chip"><i class="fas fa-shield-halved"></i> clear product status</div>
         </div>
 
         <div class="btn-row">
-          <a href="/products" class="primary-cta"><i class="fas fa-bag-shopping"></i> Open Store</a>
-          <a href="/downloads" class="secondary-cta"><i class="fas fa-download"></i> View Downloads</a>
+          <a href="/products" class="primary-cta"><i class="fas fa-bag-shopping"></i> Browse Store</a>
+          <a href="/downloads" class="secondary-cta"><i class="fas fa-download"></i> Get Downloads</a>
         </div>
       </div>
 
       <div class="hero-grid">
         <div class="hero-card">
-          <span class="hero-stat">24/7</span>
-          <h3>Store</h3>
-          <p>Browse featured products and open the full store in one click.</p>
+          <span class="hero-stat">01</span>
+          <h3>Shop cleaner</h3>
+          <p>Product cards now make pricing, status, and options easier to understand.</p>
         </div>
         <div class="hero-card">
-          <span class="hero-stat">Fast</span>
-          <h3>Downloads</h3>
-          <p>Open available files, builds, and versions from one place.</p>
+          <span class="hero-stat">02</span>
+          <h3>Access faster</h3>
+          <p>Downloads are grouped clearly with version and file details where available.</p>
         </div>
         <div class="hero-card">
-          <span class="hero-stat">Live</span>
-          <h3>Status</h3>
-          <p>Track product availability and current operational state.</p>
+          <span class="hero-stat">03</span>
+          <h3>Check confidence</h3>
+          <p>Status badges help buyers know what is online before they purchase.</p>
         </div>
         <div class="hero-card">
-          <span class="hero-stat">24/7</span>
-          <h3>Support</h3>
-          <p>Get product help and order support through Discord.</p>
+          <span class="hero-stat">04</span>
+          <h3>Get support</h3>
+          <p>Discord support stays easy to find from every important page.</p>
         </div>
       </div>
     </section>
 
     <section class="home-section strip-grid">
-      <div class="strip-card"><strong>Store</strong><span>Product-first layout</span></div>
-      <div class="strip-card"><strong>Downloads</strong><span>Available files and current versions</span></div>
-      <div class="strip-card"><strong>Status</strong><span>Live product availability</span></div>
-      <div class="strip-card"><strong>Discord</strong><span>Support handled in one place</span></div>
+      <div class="strip-card"><strong>Clean</strong><span>Less clutter, stronger spacing</span></div>
+      <div class="strip-card"><strong>Smart</strong><span>Search, filters, cart, and status cues</span></div>
+      <div class="strip-card"><strong>Fast</strong><span>Simple paths to checkout and downloads</span></div>
+      <div class="strip-card"><strong>Premium</strong><span>High-end dark interface and polished cards</span></div>
     </section>
 
     <section class="home-section panel home-products">
       <div class="section-top">
         <div>
           <div class="eyebrow">moealturej store</div>
-          <h2>Featured products</h2>
+          <h2>Featured from the catalog</h2>
         </div>
-        <a href="/products" class="ghost-cta">See all products</a>
+        <a href="/products" class="ghost-cta">View full catalog</a>
       </div>
       <div id="home-products-grid" class="home-products-grid"></div>
     </section>
@@ -159,8 +159,8 @@
               <div class="chip"><i class="fas fa-tag"></i> ${priceLabel(item)}</div>
             </div>
             <div class="home-product-actions">
-              <a href="/products" class="home-link-btn primary">Store</a>
-              <a href="/status" class="home-link-btn">Status</a>
+              <a href="/product/${encodeURIComponent(item.slug || item.id)}" class="home-link-btn primary">Details</a>
+              <a href="/products" class="home-link-btn">Store</a>
             </div>
           </div>
         </article>
