@@ -1,37 +1,47 @@
 {% extends "base.html" %}
 {% block title %}Legal Center | moealturej{% endblock %}
-{% block extra_head %}
-<style>
-  .legal-page { padding-top: 24px; }
-  .legal-shell { padding: 24px; }
-  .legal-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 22px; }
-  .legal-card { display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 22px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); transition: .18s ease; }
-  .legal-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.05); }
-  .legal-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: rgba(139,44,255,0.14); border: 1px solid rgba(139,44,255,0.22); color: #fff; }
-  .legal-card h3 { margin: 0; font-size: 17px; }
-  .legal-card p { margin: 0; font-size: 13px; }
-  @media (max-width: 1100px) { .legal-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-  @media (max-width: 720px) { .legal-shell { padding: 18px; } .legal-grid { grid-template-columns: 1fr; } }
-</style>
-{% endblock %}
 
 {% block content %}
 <section class="page-section legal-page">
   <div class="container">
-    <section class="panel legal-shell">
+    <section class="legal-shell">
       <div class="page-head">
-        <div class="eyebrow">moealturej legal</div>
-        <h1>Legal Center</h1>
-        <p>Terms, privacy, refunds, licensing, and policy information.</p>
+        <div class="eyebrow">Legal center</div>
+        <h1>Clear policies. Clean access.</h1>
+        <p>Review the rules, privacy details, refund process, license terms, and cookie information for moealturej in one place.</p>
       </div>
 
       <div class="legal-grid">
-        <a href="/terms" class="legal-card"><div class="legal-icon"><i class="fas fa-file-contract"></i></div><h3>Terms of Service</h3><p>General use, payments, and access rules for the site and products.</p></a>
-        <a href="/privacy" class="legal-card"><div class="legal-icon"><i class="fas fa-user-shield"></i></div><h3>Privacy Policy</h3><p>How site and service information may be collected, used, and protected.</p></a>
-        <a href="/refund-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-rotate-left"></i></div><h3>Refund Policy</h3><p>How digital refund requests are reviewed and handled.</p></a>
-        <a href="/cookie-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-cookie-bite"></i></div><h3>Cookie Policy</h3><p>How cookies and related site technologies may be used.</p></a>
-        <a href="/license" class="legal-card"><div class="legal-icon"><i class="fas fa-key"></i></div><h3>License</h3><p>Rules around use, sharing, and redistribution of products.</p></a>
-        <a href="/support" class="legal-card"><div class="legal-icon"><i class="fab fa-discord"></i></div><h3>Discord Support</h3><p>Customer support and product assistance through Discord.</p></a>
+        <a href="/terms" class="legal-card">
+          <div class="legal-icon"><i class="fas fa-file-contract"></i></div>
+          <h3>Terms of Service</h3>
+          <p>General rules for using the site, accessing products, payments, and account responsibilities.</p>
+        </a>
+        <a href="/privacy" class="legal-card">
+          <div class="legal-icon"><i class="fas fa-user-shield"></i></div>
+          <h3>Privacy Policy</h3>
+          <p>How information may be collected, used, protected, and handled across the platform.</p>
+        </a>
+        <a href="/refund-policy" class="legal-card">
+          <div class="legal-icon"><i class="fas fa-rotate-left"></i></div>
+          <h3>Refund Policy</h3>
+          <p>How digital-product refund requests are reviewed and what may or may not qualify.</p>
+        </a>
+        <a href="/cookie-policy" class="legal-card">
+          <div class="legal-icon"><i class="fas fa-cookie-bite"></i></div>
+          <h3>Cookie Policy</h3>
+          <p>How cookies and similar site technologies may be used for functionality and security.</p>
+        </a>
+        <a href="/license" class="legal-card">
+          <div class="legal-icon"><i class="fas fa-key"></i></div>
+          <h3>License</h3>
+          <p>Product usage rules, restrictions, redistribution limits, and access conditions.</p>
+        </a>
+        <a href="/support" class="legal-card">
+          <div class="legal-icon"><i class="fab fa-discord"></i></div>
+          <h3>Need Help?</h3>
+          <p>Use Discord support for order, access, download, or product questions.</p>
+        </a>
       </div>
     </section>
   </div>

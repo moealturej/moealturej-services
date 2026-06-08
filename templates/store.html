@@ -690,21 +690,21 @@
         <div class="store-topbar">
           <div class="store-headline">
             <div class="eyebrow">moealturej store</div>
-            <h1>Find the right product faster.</h1>
-            <p>Search, filter, compare options, and checkout with a cleaner cart experience.</p>
+            <h1>Software catalog</h1>
+            <p>Browse the full moealturej product catalog.</p>
           </div>
 
           <div class="store-kpis">
-            <div class="store-kpi"><span class="store-kpi-value">Smart</span><span class="store-kpi-label">filters</span></div>
-            <div class="store-kpi"><span class="store-kpi-value">Clear</span><span class="store-kpi-label">status</span></div>
             <div class="store-kpi"><span class="store-kpi-value">Fast</span><span class="store-kpi-label">checkout</span></div>
+            <div class="store-kpi"><span class="store-kpi-value">Live</span><span class="store-kpi-label">availability</span></div>
+            <div class="store-kpi"><span class="store-kpi-value">Secure</span><span class="store-kpi-label">cart</span></div>
           </div>
         </div>
 
         <div class="store-tools">
           <div class="search-wrap">
             <i class="fas fa-magnifying-glass"></i>
-            <input id="search-input" class="search-input" type="text" placeholder="Search by product, game, tool, or feature...">
+            <input id="search-input" class="search-input" type="text" placeholder="Search products...">
           </div>
 
           <div class="store-quick-actions">
@@ -733,7 +733,7 @@
       <div id="cart-items" class="cart-items"></div>
       <div class="cart-foot">
         <div class="cart-note">
-          Review your selected license, quantity, and total before opening secure embedded checkout.
+          Secure embedded checkout opens through SellAuth. The cart keeps the selected option, quantity, and image matched to the product the buyer chose.
         </div>
         <div class="cart-total-row"><span>Total</span><span id="cart-total">$0.00</span></div>
         <div class="cart-actions">
@@ -1068,7 +1068,7 @@ cart.push({
 
           <div class="product-actions">
             <button class="product-btn buy">Add to cart</button>
-            <a href="/product/${encodeURIComponent(product.slug || product.id)}" class="product-btn details">Details</a>
+            <a href="/product/${encodeURIComponent(product.slug || product.id)}" class="product-btn details">View details</a>
           </div>
         </div>
       `;
