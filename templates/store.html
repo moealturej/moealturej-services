@@ -62,8 +62,8 @@
       <div class="store-topbar">
         <div class="store-headline">
           <div class="eyebrow">moealturej store</div>
-          <h1>Cleaner product browsing, <span class="gradient-text">clearer choices</span>.</h1>
-          <p>The store layout is now more premium and easier to understand. Cards are cleaner, product options are easier to compare, and the cart flow stays simple.</p>
+          <h1>Premium catalog, <span class="gradient-text">cleaner cards</span>.</h1>
+          <p>A cleaner storefront with focused product cards, clear options, live availability, and a simple cart flow.</p>
           <div class="btn-row" style="margin-top:20px;">
             <a href="/downloads" class="secondary-cta"><i class="fas fa-download"></i> Downloads</a>
             <a href="/status" class="secondary-cta"><i class="fas fa-signal"></i> Live Status</a>
@@ -339,7 +339,6 @@
         <div class="product-image-wrap"><img class="product-image" src="${escapeHtml(product.image || PLACEHOLDER_IMAGE)}" alt="${escapeHtml(product.name || 'Product')}"></div>
         <div class="product-body">
           <div class="product-name">${escapeHtml(product.name || 'Untitled Product')}</div>
-          <div class="product-summary">${escapeHtml(product.description || product.detailedDescription || 'Product details are available on the full product page.')}</div>
           <div class="product-meta">${productStatusChip(product)}<div class="chip"><i class="fas fa-tag"></i> ${priceText(product)}</div></div>
           <div class="options">${options.length ? options.map((opt, idx) => `<button class="option ${idx === 0 ? 'selected' : ''}" data-option-uniqid="${escapeHtml(opt.uniqid)}"><span class="option-name">${escapeHtml(opt.name)}</span><span class="option-price">$${Number(opt.price || 0).toFixed(2)}</span></button>`).join('') : '<div class="chip">No purchase options available</div>'}</div>
           <div class="product-actions"><button class="product-btn buy">Add to cart</button><a href="/product/${encodeURIComponent(product.slug || product.id)}" class="product-btn details">View details</a></div>

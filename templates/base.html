@@ -35,7 +35,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   {% block extra_head %}{% endblock %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/purple-redesign.css') }}?v=4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/purple-redesign.css') }}?v=5">
 </head>
 <body>
   <div id="particles-js" class="particles-layer" aria-hidden="true"></div>
@@ -129,7 +129,7 @@
 
     function setHeaderState() {
       if (!header) return;
-      header.classList.toggle('is-scrolled', window.scrollY > 12);
+      header.classList.toggle('is-scrolled', window.scrollY > 4);
     }
     setHeaderState();
     window.addEventListener('scroll', setHeaderState, { passive: true });
