@@ -1,11 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Cookie Policy | moealturej{% endblock %}
+{% block extra_head %}
+<style>
+  .legal-doc-page { padding-top: 24px; }
+  .doc-shell { max-width: 980px; margin: 0 auto; padding: 28px; }
+  .doc-kicker { display:inline-flex; padding:9px 14px; border-radius:999px; background: rgba(139,44,255,0.10); border:1px solid rgba(139,44,255,0.22); color:#f3e9ff; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
+  .doc-shell h1 { margin: 18px 0 14px; font-size: clamp(40px, 6vw, 68px); }
+  .doc-intro { margin: 0 0 24px; max-width: 760px; font-size: 15px; }
+  .doc-content h2 { margin: 24px 0 10px; font-size: 22px; }
+  .doc-content p { margin: 0; }
+  @media (max-width: 720px) { .doc-shell { padding: 20px 18px; } }
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="page-section legal-doc-page">
   <div class="container">
-    <article class="panel doc-shell">
-      <div class="doc-kicker">Legal document</div>
+    <div class="doc-shell">
+      <div class="doc-kicker">legal</div>
       <h1>Cookie Policy</h1>
       <p class="doc-intro">This Cookie Policy explains how cookies and similar technologies may be used on the moealturej website.</p>
       <div class="doc-content">
@@ -20,11 +32,7 @@
         <h2>5. Changes</h2>
         <p>This policy may be updated as site tools or legal requirements change.</p>
       </div>
-      <div class="doc-actions">
-        <a href="/legal" class="secondary-cta"><i class="fas fa-arrow-left"></i> Back to Legal Center</a>
-        <a href="/support" class="primary-cta"><i class="fab fa-discord"></i> Contact Support</a>
-      </div>
-    </article>
+    </div>
   </div>
 </section>
 {% endblock %}

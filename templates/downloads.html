@@ -1,30 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Downloads | moealturej{% endblock %}
-
 {% block extra_head %}
 <style>
-  .downloads-page { padding-top: 10px; }
+  .downloads-page { padding-top: 20px; }
   .downloads-panel { padding: 24px; }
-  .downloads-hero {
-    display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px; margin-bottom: 20px;
-  }
-  .downloads-side { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
-  .downloads-grid { grid-template-columns: repeat(3, minmax(0,1fr)); margin-top: 18px; }
-  .download-card { display: flex; flex-direction: column; overflow: hidden; }
-  .download-image-wrap { padding: 16px 16px 8px; }
-  .download-image { aspect-ratio: 1.2 / 1; }
-  .download-body { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 12px; height: 100%; }
+  .downloads-grid { margin-top: 22px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+  .download-card { display: flex; flex-direction: column; border-radius: 24px; overflow: hidden; background: linear-gradient(180deg, rgba(18,18,30,0.98), rgba(8,8,14,0.98)); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
+  .download-image-wrap { padding: 14px; }
+  .download-image { width: 100%; aspect-ratio: 1.2 / 1; object-fit: cover; border-radius: 18px; border: 1px solid rgba(255,255,255,0.07); background: linear-gradient(180deg, #1a0f2d, #09090f); }
+  .download-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; height: 100%; }
+  .download-title { font-size: 16px; font-weight: 900; }
   .download-meta { display: flex; flex-wrap: wrap; gap: 8px; }
-  .download-description { color: var(--muted); font-size: 14px; line-height: 1.65; min-height: 44px; }
-  .download-btn { margin-top: auto; }
-  @media (max-width: 1080px) {
-    .downloads-hero { grid-template-columns: 1fr; }
-    .downloads-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  }
-  @media (max-width: 720px) {
-    .downloads-panel { padding: 18px; }
-    .downloads-side, .downloads-grid { grid-template-columns: 1fr; }
-  }
+  .download-btn { margin-top: auto; min-height: 46px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(180deg, rgba(139,44,255,0.96), rgba(93,23,186,0.96)); border: 1px solid rgba(139,44,255,0.28); color: #fff; font-size: 13px; font-weight: 900; }
+  .no-downloads { grid-column: 1 / -1; padding: 30px; text-align: center; border-radius: 22px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+  @media (max-width: 1100px) { .downloads-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 720px) { .downloads-panel { padding: 18px; } .downloads-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -32,25 +22,15 @@
 <section class="page-section downloads-page">
   <div class="container">
     <section class="panel downloads-panel">
-      <div class="downloads-hero">
-        <div class="page-head" style="margin-bottom:0;">
-          <div class="eyebrow">moealturej downloads</div>
-          <h1>Direct access to your <span class="gradient-text">files and builds</span>.</h1>
-          <p>Downloads now have a cleaner page with searchable cards, clearer version info, and better status visibility.</p>
-        </div>
-        <div class="downloads-side">
-          <div class="overview-card"><div class="overview-label">Fast access</div><div class="overview-value">Direct</div><div class="overview-sub">Download links are surfaced on the main card without extra clicks.</div></div>
-          <div class="overview-card"><div class="overview-label">Version clarity</div><div class="overview-value">Clear</div><div class="overview-sub">Current build, file size, and health are easier to scan before downloading.</div></div>
-          <div class="overview-card"><div class="overview-label">Live health</div><div class="overview-value">Tracked</div><div class="overview-sub">Operational status is shown using the same cleaner language as the status page.</div></div>
-          <div class="overview-card"><div class="overview-label">Cleaner page</div><div class="overview-value">Organized</div><div class="overview-sub">The page feels fuller and more structured instead of just being a plain grid.</div></div>
-        </div>
+      <div class="page-head">
+        <div class="eyebrow">moealturej downloads</div>
+        <h1>Software downloads</h1>
+        <p>Instant access downloads for all available products.</p>
       </div>
-
       <div class="search-wrap">
         <i class="fas fa-magnifying-glass"></i>
-        <input id="download-search" class="search-input" type="text" placeholder="Search downloads, products, categories, or versions...">
+        <input id="download-search" class="search-input" type="text" placeholder="Search downloads...">
       </div>
-
       <div id="downloads-grid" class="downloads-grid"></div>
     </section>
   </div>
@@ -65,16 +45,16 @@
 
   function statusMarkup(item) {
     const raw = String(item?.status?.label || item?.status?.state || item?.downloads?.status || 'Ready').toLowerCase();
-    if (raw.includes('ready') || raw.includes('online') || raw.includes('operational')) return '<div class="chip is-green"><i class="fas fa-circle"></i> Operational</div>';
+    if (raw.includes('ready') || raw.includes('online') || raw.includes('operational')) return '<div class="chip is-green"><i class="fas fa-circle"></i> Online</div>';
     if (raw.includes('degraded')) return '<div class="chip is-yellow"><i class="fas fa-triangle-exclamation"></i> Degraded</div>';
     if (raw.includes('offline')) return '<div class="chip is-red"><i class="fas fa-circle-xmark"></i> Offline</div>';
     return `<div class="chip"><i class="fas fa-circle"></i> ${item?.status?.label || item?.downloads?.status || 'Ready'}</div>`;
   }
 
   function renderDownloads(query = '') {
-    const filtered = downloads.filter(item => [item.name, item.description, item.detailedDescription, item.category, item?.downloads?.version].join(' ').toLowerCase().includes(query || ''));
+    const filtered = downloads.filter(item => [item.name, item.description, item.detailedDescription, item.category].join(' ').toLowerCase().includes(query || ''));
     if (!filtered.length) {
-      downloadGrid.innerHTML = '<div class="no-downloads" style="grid-column:1/-1;"><h3>No downloads found</h3><p>Try a different search.</p></div>';
+      downloadGrid.innerHTML = '<div class="no-downloads"><h3>No downloads found</h3><p>Try a different search.</p></div>';
       return;
     }
 
@@ -85,7 +65,6 @@
         </div>
         <div class="download-body">
           <div class="download-title">${item.name || 'Untitled Download'}</div>
-          <div class="download-description">${item.description || item.detailedDescription || 'Download details are available on the product page.'}</div>
           <div class="download-meta">
             ${statusMarkup(item)}
             <div class="chip"><i class="fas fa-code-branch"></i> ${item?.downloads?.version || 'Latest'}</div>
@@ -104,7 +83,7 @@
       downloads = await response.json();
       renderDownloads();
     } catch (error) {
-      downloadGrid.innerHTML = '<div class="no-downloads" style="grid-column:1/-1;"><h3>Failed to load downloads</h3><p>Please try again later.</p></div>';
+      downloadGrid.innerHTML = '<div class="no-downloads"><h3>Failed to load downloads</h3><p>Please try again later.</p></div>';
     }
   }
 

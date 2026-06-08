@@ -4,44 +4,46 @@
 
 {% block extra_head %}
 <style>
-  .home-page { padding-top: 10px; }
-  .home-hero {
-    padding: 28px;
-    display: grid;
-    grid-template-columns: 1.06fr 0.94fr;
-    gap: 18px;
-    align-items: stretch;
-  }
-  .hero-copy h1 { font-size: clamp(46px, 7vw, 82px); margin-bottom: 14px; }
-  .hero-copy p { max-width: 660px; font-size: 15px; }
-  .hero-pills { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0 24px; }
-  .hero-aside { display: grid; gap: 14px; }
-  .hero-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .feature-panel { padding: 22px; }
-  .feature-panel h3 { margin: 0 0 10px; font-size: 18px; }
-  .feature-panel p { margin: 0; font-size: 14px; }
-  .feature-list { display: grid; gap: 10px; margin-top: 14px; }
-  .feature-row { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); font-size: 14px; }
-  .feature-row i { margin-top: 4px; color: var(--green); }
-  .strip-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; }
-  .strip-card strong { display: block; font-size: 20px; margin-bottom: 6px; }
-  .home-products { margin-top: 18px; padding: 24px; }
-  .section-top { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 18px; }
-  .home-products-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
-  .home-product-card { overflow: hidden; display: flex; flex-direction: column; }
+  .home-page { padding-top: 24px; }
+  .home-hero { padding: 26px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 22px; align-items: stretch; }
+  .hero-copy h1 { font-size: clamp(54px, 7vw, 92px); margin: 18px 0 16px; }
+  .hero-copy p { max-width: 640px; font-size: 15px; }
+  .hero-pills { display: flex; gap: 10px; flex-wrap: wrap; margin: 22px 0 24px; }
+  .hero-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; align-content: start; }
+  .hero-card { padding: 18px; border-radius: 22px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
+  .hero-card h3 { margin: 0 0 8px; font-size: 16px; }
+  .hero-card p { margin: 0; font-size: 13px; }
+  .hero-stat { display: block; font-size: 28px; font-weight: 900; margin-bottom: 8px; letter-spacing: -0.04em; }
+
+  .home-section { margin-top: 18px; }
+  .strip-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .strip-card { padding: 18px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+  .strip-card strong { display: block; font-size: 22px; margin-bottom: 6px; }
+  .strip-card span { color: var(--muted); font-size: 13px; }
+
+  .section-top { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 0 0 16px; }
+  .section-top h2 { margin: 8px 0 0; font-size: clamp(28px, 4vw, 42px); }
+  .home-products { padding: 24px; }
+  .home-products-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .home-product-card { position: relative; overflow: hidden; border-radius: 22px; background: linear-gradient(180deg, rgba(18,18,30,0.96), rgba(9,9,16,0.98)); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
   .home-product-image-wrap { padding: 14px; }
-  .home-product-image { aspect-ratio: 1.18 / 1; }
-  .home-product-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; height: 100%; }
-  .home-product-meta { display: flex; flex-wrap: wrap; gap: 8px; }
-  .home-product-actions { margin-top: auto; }
-  .home-link-btn { flex: 1; }
-  .home-link-btn.primary { background: linear-gradient(135deg, rgba(141,99,255,0.92), rgba(186,154,255,0.82)); border-color: rgba(194,173,255,0.16); }
-  @media (max-width: 1080px) {
+  .home-product-image { width: 100%; aspect-ratio: 1.22 / 1; object-fit: cover; border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); background: linear-gradient(180deg, #1a0f2d, #09090f); }
+  .home-product-body { padding: 0 16px 16px; }
+  .home-product-name { font-size: 16px; font-weight: 900; margin-bottom: 10px; }
+  .home-product-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .home-product-actions { display: flex; gap: 10px; }
+  .home-link-btn { flex: 1; min-height: 44px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  .home-link-btn.primary { background: linear-gradient(180deg, rgba(139,44,255,0.95), rgba(93,23,186,0.95)); border-color: rgba(139,44,255,0.28); }
+
+  .empty-home { padding: 26px; text-align: center; color: var(--muted); border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+
+  @media (max-width: 1100px) {
     .home-hero { grid-template-columns: 1fr; }
     .home-products-grid, .strip-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   }
   @media (max-width: 720px) {
     .home-hero, .home-products { padding: 18px; }
+    .hero-copy h1 { font-size: clamp(42px, 14vw, 68px); }
     .hero-grid, .home-products-grid, .strip-grid { grid-template-columns: 1fr; }
     .section-top { flex-direction: column; align-items: flex-start; }
   }
@@ -53,51 +55,60 @@
   <div class="container">
     <section class="hero-shell home-hero">
       <div class="hero-copy">
-        <div class="eyebrow">Premium platform</div>
-        <h1>A cleaner, <span class="gradient-text">smarter</span> home for your products.</h1>
-        <p>moealturej is now designed to feel more like a real premium platform: clearer store browsing, faster access to downloads, cleaner product status, and simpler support navigation.</p>
+        <div class="eyebrow">moealturej</div>
+        <h1>Premium cheats & tools</h1>
+        <p>Instant access software, loaders, unlock tools, and product downloads.</p>
 
         <div class="hero-pills">
-          <div class="chip is-green"><i class="fas fa-circle"></i> live products</div>
+          <div class="chip is-green"><i class="fas fa-circle"></i> online products</div>
           <div class="chip"><i class="fas fa-bolt"></i> instant access</div>
-          <div class="chip"><i class="fas fa-shield-halved"></i> cleaner experience</div>
+          <div class="chip"><i class="fas fa-shield-halved"></i> moealturej branding</div>
         </div>
 
         <div class="btn-row">
           <a href="/products" class="primary-cta"><i class="fas fa-bag-shopping"></i> Open Store</a>
-          <a href="/downloads" class="secondary-cta"><i class="fas fa-download"></i> Browse Downloads</a>
+          <a href="/downloads" class="secondary-cta"><i class="fas fa-download"></i> View Downloads</a>
         </div>
       </div>
 
-      <div class="hero-aside">
-        <div class="feature-panel">
-          <span class="hero-stat">Built for clarity</span>
-          <h3>Everything important is easier to find</h3>
-          <p>The homepage now acts like a real landing page instead of a placeholder. Store, downloads, status, and support all have clear entry points.</p>
+      <div class="hero-grid">
+        <div class="hero-card">
+          <span class="hero-stat">24/7</span>
+          <h3>Store</h3>
+          <p>Browse featured products and open the full store in one click.</p>
         </div>
-        <div class="hero-grid">
-          <div class="hero-card"><span class="hero-stat">24/7</span><h3>Store</h3><p>Browse products with clearer cards and simpler choices.</p></div>
-          <div class="hero-card"><span class="hero-stat">Fast</span><h3>Downloads</h3><p>Search versions, file sizes, and direct download links.</p></div>
-          <div class="hero-card"><span class="hero-stat">Live</span><h3>Status</h3><p>See what is operational and what needs attention.</p></div>
-          <div class="hero-card"><span class="hero-stat">Clean</span><h3>Support</h3><p>One clean place for questions, community, and updates.</p></div>
+        <div class="hero-card">
+          <span class="hero-stat">Fast</span>
+          <h3>Downloads</h3>
+          <p>Open available files, builds, and versions from one place.</p>
+        </div>
+        <div class="hero-card">
+          <span class="hero-stat">Live</span>
+          <h3>Status</h3>
+          <p>Track product availability and current operational state.</p>
+        </div>
+        <div class="hero-card">
+          <span class="hero-stat">24/7</span>
+          <h3>Support</h3>
+          <p>Get product help and order support through Discord.</p>
         </div>
       </div>
     </section>
 
-    <section class="strip-grid">
-      <div class="strip-card"><strong>Refined UI</strong><span class="muted-note">Softer panels, cleaner spacing, and improved readability.</span></div>
-      <div class="strip-card"><strong>Smarter store</strong><span class="muted-note">Clear options, easier add-to-cart flow, and better product hierarchy.</span></div>
-      <div class="strip-card"><strong>Better status</strong><span class="muted-note">Operational items look healthy with green visual language.</span></div>
-      <div class="strip-card"><strong>Clear legal</strong><span class="muted-note">Updated legal center and document pages that actually match the site.</span></div>
+    <section class="home-section strip-grid">
+      <div class="strip-card"><strong>Store</strong><span>Product-first layout</span></div>
+      <div class="strip-card"><strong>Downloads</strong><span>Available files and current versions</span></div>
+      <div class="strip-card"><strong>Status</strong><span>Live product availability</span></div>
+      <div class="strip-card"><strong>Discord</strong><span>Support handled in one place</span></div>
     </section>
 
-    <section class="panel home-products">
+    <section class="home-section panel home-products">
       <div class="section-top">
         <div>
-          <div class="eyebrow">Featured</div>
-          <h2 class="section-title">Current products</h2>
+          <div class="eyebrow">moealturej store</div>
+          <h2>Featured products</h2>
         </div>
-        <a href="/products" class="ghost-cta">See full store</a>
+        <a href="/products" class="ghost-cta">See all products</a>
       </div>
       <div id="home-products-grid" class="home-products-grid"></div>
     </section>
@@ -119,7 +130,7 @@
 
   function stateChip(item) {
     const state = String(item?.status?.state || item?.status?.label || '').toLowerCase();
-    if (state.includes('operational') || state.includes('online') || state.includes('ready')) return '<div class="chip is-green"><i class="fas fa-circle"></i> Operational</div>';
+    if (state.includes('operational') || state.includes('online') || state.includes('ready')) return '<div class="chip is-green"><i class="fas fa-circle"></i> Online</div>';
     if (state.includes('degraded')) return '<div class="chip is-yellow"><i class="fas fa-triangle-exclamation"></i> Degraded</div>';
     if (state.includes('offline')) return '<div class="chip is-red"><i class="fas fa-circle-xmark"></i> Offline</div>';
     return '<div class="chip"><i class="fas fa-circle"></i> Live</div>';
@@ -148,7 +159,7 @@
               <div class="chip"><i class="fas fa-tag"></i> ${priceLabel(item)}</div>
             </div>
             <div class="home-product-actions">
-              <a href="/product/${encodeURIComponent(item.slug || item.id)}" class="home-link-btn primary">View Product</a>
+              <a href="/products" class="home-link-btn primary">Store</a>
               <a href="/status" class="home-link-btn">Status</a>
             </div>
           </div>

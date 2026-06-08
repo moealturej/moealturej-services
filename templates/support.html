@@ -1,22 +1,178 @@
 {% extends "base.html" %}
 {% block title %}Support | moealturej{% endblock %}
+
+{% block extra_head %}
+<style>
+  .support-page {
+    padding-top: 24px;
+  }
+
+  .support-shell {
+    padding: 34px;
+    text-align: center;
+    max-width: 940px;
+    margin: 0 auto;
+    border: 1px solid rgba(88, 101, 242, 0.18);
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.35),
+      0 0 60px rgba(88, 101, 242, 0.08);
+  }
+
+  .support-shell h1 {
+    margin: 18px 0 14px;
+    font-size: clamp(44px, 7vw, 78px);
+  }
+
+  .support-shell p {
+    max-width: 660px;
+    margin: 0 auto 24px;
+    font-size: 15px;
+  }
+
+  .discord-card {
+    margin-top: 20px;
+    padding: 28px;
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at top center, rgba(88, 101, 242, 0.18), transparent 45%),
+      linear-gradient(180deg, rgba(20, 24, 42, 0.96), rgba(10, 12, 22, 0.98));
+    border: 1px solid rgba(88, 101, 242, 0.22);
+    display: grid;
+    gap: 18px;
+    justify-items: center;
+    box-shadow:
+      0 20px 50px rgba(0,0,0,0.30),
+      0 0 40px rgba(88, 101, 242, 0.10);
+  }
+
+  .discord-icon {
+    width: 84px;
+    height: 84px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    color: #fff;
+    background: linear-gradient(180deg, #5865F2, #4752C4);
+    box-shadow: 0 18px 40px rgba(88, 101, 242, 0.35);
+  }
+
+  .discord-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 22px;
+    border-radius: 18px;
+    font-size: 15px;
+    font-weight: 900;
+    background: linear-gradient(180deg, #5865F2, #4752C4);
+    color: white;
+    box-shadow: 0 14px 32px rgba(88, 101, 242, 0.30);
+  }
+
+  .discord-link:hover {
+    transform: translateY(-2px);
+  }
+
+  .discord-note {
+    color: #b8c0ff;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .support-mini {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 14px;
+    margin-top: 20px;
+  }
+
+  .support-mini-card {
+    padding: 20px;
+    border-radius: 20px;
+    background: rgba(88, 101, 242, 0.06);
+    border: 1px solid rgba(88, 101, 242, 0.14);
+  }
+
+  .support-mini-card h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #ffffff;
+  }
+
+  .support-mini-card p {
+    margin: 0;
+    font-size: 13px;
+    color: #c6cbff;
+  }
+
+  @media (max-width: 720px) {
+    .support-shell {
+      padding: 22px 18px;
+    }
+
+    .support-mini {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="page-section support-page">
-  <div class="support-wrap">
-    <section class="hero-shell" style="padding:28px;">
-      <div class="page-head" style="text-align:center; max-width:820px; margin:0 auto 18px;">
-        <div class="eyebrow">Support hub</div>
-        <h1>Support that feels <span class="gradient-text">organized</span>.</h1>
-        <p>Use the support hub to point people in the right direction fast — support questions, community access, product guidance, and general site help.</p>
+  <div class="container">
+    <section class="hero-shell support-shell">
+      <div class="eyebrow">moealturej support</div>
+
+      <h1>Support via <span style="color:#5865F2;">Discord</span></h1>
+
+      <p>
+        All customer support, purchase help, setup assistance,
+        and product troubleshooting is handled through Discord.
+      </p>
+
+      <div class="discord-card">
+        <div class="discord-icon">
+          <i class="fab fa-discord"></i>
+        </div>
+
+        <div>
+          <h2 style="margin:0 0 10px;font-size:clamp(26px,4vw,40px);">
+            Join the support server
+          </h2>
+          <p style="margin:0;">
+            Open a ticket, ask questions, or get direct assistance from the team.
+          </p>
+        </div>
+
+        <a href="https://discord.gg/moealturej"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="discord-link">
+          <i class="fab fa-discord"></i>
+          discord.gg/moealturej
+        </a>
+
+        <div class="discord-note">
+          Fastest response times and all support handled directly in server.
+        </div>
       </div>
-      <div class="page-actions" style="justify-content:center; margin-bottom:18px;">
-        <a href="/discord" class="primary-cta"><i class="fab fa-discord"></i> Join Discord</a>
-        <a href="/products" class="secondary-cta"><i class="fas fa-bag-shopping"></i> View Store</a>
-      </div>
-      <div class="support-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
-        <div class="support-card"><div class="legal-icon"><i class="fab fa-discord"></i></div><h2>Discord support</h2><p>Best place for order help, setup questions, product issues, and announcements.</p></div>
-        <div class="support-card"><div class="legal-icon"><i class="fas fa-download"></i></div><h2>Downloads</h2><p>Need a file or current build? The downloads page is now cleaner and easier to search.</p></div>
-        <div class="support-card"><div class="legal-icon"><i class="fas fa-circle-check"></i></div><h2>Status</h2><p>Check service health before opening a ticket, especially if something looks unavailable.</p></div>
+
+      <div class="support-mini">
+        <div class="support-mini-card">
+          <h3>Order Help</h3>
+          <p>Purchase issues, account access, and checkout support.</p>
+        </div>
+
+        <div class="support-mini-card">
+          <h3>Product Help</h3>
+          <p>Loader setup, usage questions, and troubleshooting.</p>
+        </div>
+
+        <div class="support-mini-card">
+          <h3>Announcements</h3>
+          <p>Updates, outages, maintenance, and release notes.</p>
+        </div>
       </div>
     </section>
   </div>
