@@ -95,6 +95,8 @@ APP_NAME = os.getenv("APP_NAME", "moealturej").strip() or "moealturej"
 APP_URL = os.getenv("APP_URL", "https://moealturej.com").strip().rstrip("/")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", SMTP_EMAIL or OWNER_EMAIL).strip()
 BRAND_LOGO_URL = os.getenv("BRAND_LOGO_URL", "").strip()
+OWNER_ORDER_WEBHOOK_URL = env_first("OWNER_ORDER_WEBHOOK_URL", "ORDER_WEBHOOK_URL", "DISCORD_ORDER_WEBHOOK_URL")
+DELIVERY_DM_ENABLED = os.getenv("DELIVERY_DM_ENABLED", "true").lower() == "true"
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -597,6 +599,161 @@ def send_password_reset_email(to_email: str, reset_url: str) -> bool:
         return False
 
 
+
+def get_user_by_email(email: str | None) -> dict | None:
+    email = (email or "").strip().lower()
+    if not email or not using_mongo() or users_col is None:
+        return None
+    user = users_col.find_one({"email": email}, {"_id": 0})
+    return user
+
+
+def send_html_email(to_email: str, subject: str, text: str, html_body: str, sender_label: str = "Notifications") -> bool:
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logger.warning("SMTP is not configured; could not send %s email to %s", sender_label, to_email)
+        return False
+    try:
+        msg = EmailMessage()
+        msg["From"] = f"{APP_NAME} {sender_label} <{SMTP_EMAIL}>"
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.set_content(text)
+        msg.add_alternative(html_body, subtype="html")
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=15) as server:
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception:
+        logger.exception("Failed to send %s email to %s", sender_label, to_email)
+        return False
+
+
+def build_key_delivery_email(to_email: str, order: dict, item: dict, product_key: str, note: str = "") -> tuple[str, str, str]:
+    safe_app = html_escape.escape(APP_NAME)
+    safe_support = html_escape.escape(SUPPORT_EMAIL)
+    safe_order = html_escape.escape(str(order.get("order_id", "")))
+    safe_product = html_escape.escape(str(item.get("product_name", "Product")))
+    safe_option = html_escape.escape(str(item.get("option_name", "")))
+    safe_key = html_escape.escape(str(product_key))
+    safe_note = html_escape.escape(str(note or ""))
+    safe_url = html_escape.escape(APP_URL + "/account")
+    subject = f"Your {safe_product} key is ready"
+    text = (
+        f"Your {APP_NAME} product key is ready.\n\n"
+        f"Product: {item.get('product_name', 'Product')} — {item.get('option_name', '')}\n"
+        f"Order: {order.get('order_id', '')}\n"
+        f"Key: {product_key}\n\n"
+        f"View it in your account: {APP_URL}/account\n"
+        f"Need help? Contact {SUPPORT_EMAIL}."
+    )
+    html = f"""<!doctype html><html><body style='margin:0;background:#05020a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;'>
+<table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='background:radial-gradient(circle at top left,rgba(139,92,246,.28),transparent 34%),#05020a;padding:34px 14px;'><tr><td align='center'>
+<table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='max-width:650px;background:linear-gradient(180deg,#180c2c,#07030d);border:1px solid rgba(255,255,255,.12);border-radius:28px;overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,.55);'>
+<tr><td style='padding:26px 28px;border-bottom:1px solid rgba(255,255,255,.08);'><div style='font-size:22px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:#fff;'>{safe_app}</div><div style='color:#b9a8d8;font-size:13px;margin-top:6px;'>Digital product delivery</div></td></tr>
+<tr><td style='padding:34px 28px;text-align:center;'><div style='display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(57,229,140,.12);border:1px solid rgba(57,229,140,.24);color:#c8ffe0;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;'>Key ready</div><h1 style='margin:18px 0 10px;font-size:34px;line-height:1.08;letter-spacing:-.05em;'>Your product key is ready</h1><p style='margin:0 auto;color:#b9a8d8;line-height:1.65;max-width:460px;'>Thanks for your purchase. Your key is also saved securely inside your account order history.</p></td></tr>
+<tr><td style='padding:0 28px 28px;'><div style='border-radius:22px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);padding:20px;'><div style='font-size:13px;color:#a999c3;font-weight:800;text-transform:uppercase;letter-spacing:.08em;'>Product</div><div style='font-size:19px;font-weight:900;margin-top:6px;'>{safe_product} <span style='color:#b9a8d8;font-size:14px;'>— {safe_option}</span></div><div style='font-size:13px;color:#a999c3;margin-top:8px;'>Order {safe_order}</div><div style='margin-top:18px;padding:16px;border-radius:16px;background:#08040f;border:1px dashed rgba(216,180,254,.35);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:18px;font-weight:900;letter-spacing:.04em;word-break:break-all;color:#fff;'>{safe_key}</div>{('<p style="margin:14px 0 0;color:#d9c5ff;line-height:1.6;">' + safe_note + '</p>') if safe_note else ''}</div></td></tr>
+<tr><td style='padding:0 28px 34px;text-align:center;'><a href='{safe_url}' style='display:inline-block;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#db2777);padding:14px 22px;border-radius:14px;font-weight:950;'>Open account</a><p style='margin:20px 0 0;color:#8f80ad;font-size:12px;line-height:1.6;'>Need help? Contact <a href='mailto:{safe_support}' style='color:#e9d5ff;text-decoration:none;'>{safe_support}</a>.</p></td></tr>
+</table></td></tr></table></body></html>"""
+    return subject, text, html
+
+
+def discord_api_request(method: str, path: str, **kwargs):
+    if not DISCORD_BOT_TOKEN:
+        return None
+    headers = kwargs.pop("headers", {}) or {}
+    headers.setdefault("Authorization", f"Bot {DISCORD_BOT_TOKEN}")
+    headers.setdefault("Content-Type", "application/json")
+    try:
+        resp = requests.request(method, f"{DISCORD_API_BASE}{path}", headers=headers, timeout=15, **kwargs)
+        if resp.status_code == 429:
+            retry_after = 2
+            try:
+                retry_after = min(8, float(resp.json().get("retry_after", 2)))
+            except Exception:
+                pass
+            logger.warning("Discord rate limited request to %s; retry_after=%s", path, retry_after)
+        return resp
+    except Exception:
+        logger.exception("Discord API request failed: %s %s", method, path)
+        return None
+
+
+def send_discord_key_dm(discord_id: str | None, order: dict, item: dict, product_key: str, note: str = "") -> bool:
+    if not DELIVERY_DM_ENABLED or not DISCORD_BOT_TOKEN or not discord_id:
+        return False
+    channel_resp = discord_api_request("POST", "/users/@me/channels", json={"recipient_id": str(discord_id)})
+    if not channel_resp or channel_resp.status_code >= 300:
+        logger.warning("Could not create Discord DM channel for %s: %s", discord_id, getattr(channel_resp, 'text', '')[:180])
+        return False
+    channel_id = (channel_resp.json() or {}).get("id")
+    if not channel_id:
+        return False
+    product_name = str(item.get("product_name", "Product"))
+    option_name = str(item.get("option_name", ""))
+    embed = {
+        "title": "Your product key is ready",
+        "description": f"Thanks for your purchase from {APP_NAME}. Your key is also saved in your website account.",
+        "color": 0x9B5CFF,
+        "fields": [
+            {"name": "Product", "value": f"{product_name} — {option_name}"[:1024], "inline": False},
+            {"name": "Order", "value": str(order.get("order_id", ""))[:1024], "inline": True},
+            {"name": "Key", "value": f"```{str(product_key)[:900]}```", "inline": False},
+        ],
+        "footer": {"text": f"{APP_NAME} delivery"},
+        "timestamp": utc_now().isoformat(),
+    }
+    if note:
+        embed["fields"].append({"name": "Note", "value": str(note)[:1024], "inline": False})
+    send_resp = discord_api_request("POST", f"/channels/{channel_id}/messages", json={"embeds": [embed]})
+    if send_resp and send_resp.status_code < 300:
+        return True
+    logger.warning("Could not send Discord key DM to %s: %s", discord_id, getattr(send_resp, 'text', '')[:180])
+    return False
+
+
+def format_order_items_for_discord(cart: dict) -> str:
+    lines = []
+    for item in (cart or {}).get("items", [])[:10]:
+        lines.append(f"• {item.get('product_name','Product')} — {item.get('option_name','Option')} × {item.get('quantity',1)} — ${item.get('line_amount','0.00')}")
+    return "\n".join(lines) or "No items found."
+
+
+def send_owner_order_webhook(order: dict) -> bool:
+    if not OWNER_ORDER_WEBHOOK_URL or not str(order.get("status", "")).lower() == "paid":
+        return False
+    cart = order.get("cart") or {}
+    buyer = get_user_by_email(order.get("user_email")) or {}
+    fields = [
+        {"name": "Buyer", "value": str(order.get("user_email") or "Unknown")[:1024], "inline": True},
+        {"name": "Provider", "value": str(order.get("provider") or "payment").title()[:1024], "inline": True},
+        {"name": "Total", "value": f"{order.get('currency','USD')} ${cents_to_money(order.get('amount_cents', 0))}", "inline": True},
+        {"name": "Order ID", "value": f"`{order.get('order_id','')}`"[:1024], "inline": False},
+        {"name": "Items waiting for key", "value": format_order_items_for_discord(cart)[:1024], "inline": False},
+    ]
+    if buyer.get("discord_id"):
+        fields.append({"name": "Discord linked", "value": f"Yes — `{buyer.get('discord_id')}`", "inline": True})
+    payload = {
+        "username": f"{APP_NAME} Orders",
+        "content": "✅ New paid order needs manual key delivery.",
+        "embeds": [{
+            "title": "New paid order",
+            "description": f"Open the owner dashboard and send the product key for order `{order.get('order_id','')}`.",
+            "color": 0x9B5CFF,
+            "fields": fields,
+            "footer": {"text": f"{APP_NAME} owner notification"},
+            "timestamp": utc_now().isoformat(),
+        }],
+    }
+    try:
+        resp = requests.post(OWNER_ORDER_WEBHOOK_URL, json=payload, timeout=12)
+        if resp.status_code in {200, 204}:
+            return True
+        logger.warning("Owner order webhook failed: %s %s", resp.status_code, resp.text[:180])
+    except Exception:
+        logger.exception("Owner order webhook failed")
+    return False
+
 def discord_oauth_ready() -> bool:
     return bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET)
 
@@ -976,6 +1133,16 @@ def load_orders_for_user(email: str | None = None) -> list:
 
 
 
+
+def find_order_by_id(order_id: str) -> dict | None:
+    order_id = (order_id or "").strip()
+    if not order_id:
+        return None
+    if using_mongo() and orders_col is not None:
+        found = orders_col.find_one({"order_id": order_id}, {"_id": 0})
+        return found
+    return next((o for o in load_orders_for_user(None) if str(o.get("order_id", "")) == order_id), None)
+
 def find_order_by_provider_order(provider_order_id: str) -> dict | None:
     provider_order_id = (provider_order_id or "").strip()
     if not provider_order_id:
@@ -991,11 +1158,17 @@ def find_order_by_provider_order(provider_order_id: str) -> dict | None:
 def update_order_status(order_id: str, status: str, details: dict | None = None):
     orders = load_orders_for_user(None)
     existing = next((o for o in orders if o.get("order_id") == order_id), None) or {"order_id": order_id}
+    was_notified = bool(existing.get("owner_notified_at"))
     existing["status"] = status
     existing["updated_at"] = utc_now().isoformat()
     if details:
         existing.update(details)
+    should_notify_owner = str(status).lower() == "paid" and not was_notified
+    if should_notify_owner:
+        existing["owner_notified_at"] = utc_now().isoformat()
     save_order(existing)
+    if should_notify_owner:
+        send_owner_order_webhook(existing)
 
 
 def paypal_config_hint() -> str:
@@ -1657,6 +1830,7 @@ def admin_dashboard():
         "media": len(load_media()),
         "orders": len(load_orders_for_user(None)),
         "payments": ("Stripe " if STRIPE_SECRET_KEY else "") + ("PayPal" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "") or "not configured",
+        "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
     }
     return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
 
@@ -2132,6 +2306,65 @@ def stripe_webhook():
         return jsonify({"ok": False}), 400
 
 
+
+@app.route("/admin/order/<order_id>/deliver-key", methods=["POST"])
+@owner_required
+@limiter.limit("30 per minute")
+def admin_order_deliver_key(order_id):
+    order = find_order_by_id(order_id)
+    if not order:
+        flash("Order not found.", "danger")
+        return redirect(url_for("admin_dashboard") + "#orders")
+    if str(order.get("status", "")).lower() != "paid":
+        flash("Only paid orders can receive keys.", "danger")
+        return redirect(url_for("admin_dashboard") + "#orders")
+    try:
+        item_index = int(request.form.get("item_index", "0"))
+    except Exception:
+        item_index = 0
+    cart_items = (order.get("cart") or {}).get("items") or []
+    if item_index < 0 or item_index >= len(cart_items):
+        flash("Invalid order item.", "danger")
+        return redirect(url_for("admin_dashboard") + "#orders")
+    product_key = (request.form.get("product_key") or "").strip()
+    note = (request.form.get("delivery_note") or "").strip()[:1000]
+    if len(product_key) < 3:
+        flash("Enter a valid key before sending.", "danger")
+        return redirect(url_for("admin_dashboard") + "#orders")
+    item = cart_items[item_index]
+    deliveries = order.get("deliveries") or {}
+    delivery_id = str(item_index)
+    buyer = get_user_by_email(order.get("user_email")) or {}
+    email_sent = False
+    dm_sent = False
+    if order.get("user_email"):
+        subject, text, html_body = build_key_delivery_email(order.get("user_email"), order, item, product_key, note)
+        email_sent = send_html_email(order.get("user_email"), subject, text, html_body, "Delivery")
+    if buyer.get("discord_id"):
+        dm_sent = send_discord_key_dm(buyer.get("discord_id"), order, item, product_key, note)
+    deliveries[delivery_id] = {
+        "item_index": item_index,
+        "product_name": item.get("product_name"),
+        "option_name": item.get("option_name"),
+        "product_key": product_key,
+        "note": note,
+        "sent_at": utc_now().isoformat(),
+        "sent_by": (current_user() or {}).get("email"),
+        "email_sent": email_sent,
+        "discord_dm_sent": dm_sent,
+    }
+    order["deliveries"] = deliveries
+    order["delivery_status"] = "delivered"
+    order["updated_at"] = utc_now().isoformat()
+    save_order(order)
+    record_audit("order_key_delivered", order_id, {"item_index": item_index, "email_sent": email_sent, "discord_dm_sent": dm_sent})
+    msg = "Key saved to the customer's account"
+    msg += ", email sent" if email_sent else ", email not sent"
+    if buyer.get("discord_id"):
+        msg += ", Discord DM sent" if dm_sent else ", Discord DM failed"
+    flash(msg + ".", "success" if email_sent or dm_sent else "warning")
+    return redirect(url_for("admin_dashboard") + "#orders")
+
 @app.route("/admin/api/diagnostics")
 @owner_required
 def admin_api_diagnostics():
@@ -2143,6 +2376,8 @@ def admin_api_diagnostics():
         "paypal": bool(PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET),
         "discord_oauth": discord_oauth_ready(),
         "discord_bot": bool(DISCORD_BOT_TOKEN),
+        "owner_order_webhook": bool(OWNER_ORDER_WEBHOOK_URL),
+        "delivery_dm_enabled": bool(DELIVERY_DM_ENABLED and DISCORD_BOT_TOKEN),
         "email_codes": bool(SMTP_EMAIL and SMTP_PASSWORD and REQUIRE_EMAIL_CODES),
         "maintenance": is_maintenance_mode(),
         "store_enabled": bool(load_site_settings().get("store_enabled", True)),

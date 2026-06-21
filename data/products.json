@@ -510,6 +510,64 @@
   },
   {
     "id": 1,
+    "slug": "adobe-pr",
+    "name": "Adobe Premiere Pro",
+    "detailedDescription": "video editor",
+    "image": "/static/pr.png",
+    "type": "product",
+    "featured": true,
+    "features": [
+      "Full Support"
+    ],
+    "store": {
+      "enabled": false,
+      "stockStatus": "free"
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v25.0",
+      "downloadUrl": "https://drive.google.com/uc?export=download&id=1Rqn4ewYKwpNmXvas8KmTwyTCxHi0_rXh",
+      "fileSize": "2.1 GB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-04-4"
+    },
+    "category": "general"
+  },
+  {
+    "id": 2,
+    "slug": "adobe-ps",
+    "name": "Adobe Photoshop",
+    "detailedDescription": "image editor",
+    "image": "/static/ps.png",
+    "type": "product",
+    "featured": true,
+    "features": [
+      "Full Support"
+    ],
+    "store": {
+      "enabled": false,
+      "stockStatus": "free"
+    },
+    "downloads": {
+      "enabled": true,
+      "version": "v26.2.0",
+      "downloadUrl": "https://drive.google.com/uc?export=download&id=1gjONiyKh-abuva82ceV0F2YC-DZIl5-A",
+      "fileSize": "4.8 GB"
+    },
+    "status": {
+      "enabled": true,
+      "state": "Operational",
+      "label": "Online",
+      "lastUpdated": "2026-04-4"
+    },
+    "category": "general"
+  },
+  {
+    "id": 3,
     "slug": "wallpaper-engine",
     "name": "Wallpaper Engine",
     "detailedDescription": "Paid wallpaper software",
