@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Payment Complete | moealturej{% endblock %}
+{% block content %}
+<section class="page-section"><div class="container"><section class="panel" style="padding:34px;text-align:center;max-width:760px;margin:auto"><div class="eyebrow">payment complete</div><h1 style="font-size:clamp(42px,7vw,78px);line-height:.9;letter-spacing:-.07em;margin:12px 0">Order received</h1><p class="muted-copy">Your order was saved to your account. Order ID: <strong>{{ order_id or 'pending' }}</strong></p><div class="btn-row" style="justify-content:center"><a class="primary-cta" href="/account"><i class="fas fa-receipt"></i> View account</a><a class="secondary-cta" href="/store"><i class="fas fa-store"></i> Back to store</a></div></section></div></section>
+{% endblock %}
+{% block extra_scripts %}<script>localStorage.removeItem('moeCart'); window.dispatchEvent(new Event('moeCartUpdated'));</script>{% endblock %}

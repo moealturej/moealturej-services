@@ -8,14 +8,33 @@
     "category": "cod",
     "type": "product",
     "featured": true,
-    "features": ["TPM + Ranked Spoofer Included", "Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "features": [
+      "TPM + Ranked Spoofer Included",
+      "Aimbot",
+      "ESP/Wallhack",
+      "Crosshair",
+      "Undetectable",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1117859, "name": "DAY KEY", "price": 7.0 },
-        { "id": 1117860, "name": "WEEK KEY", "price": 20.0 },
-        { "id": 1117861, "name": "MONTH KEY", "price": 40.0 }
+        {
+          "id": 1117859,
+          "name": "DAY KEY",
+          "price": 7.0
+        },
+        {
+          "id": 1117860,
+          "name": "WEEK KEY",
+          "price": 20.0
+        },
+        {
+          "id": 1117861,
+          "name": "MONTH KEY",
+          "price": 40.0
+        }
       ]
     },
     "downloads": {
@@ -40,15 +59,38 @@
     "category": "cod",
     "type": "product",
     "featured": true,
-    "features": ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Unlock All", "Full Support"],
+    "features": [
+      "Aimbot",
+      "ESP/Wallhack",
+      "Crosshair",
+      "Undetectable",
+      "Unlock All",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1055147, "name": "DAY KEY", "price": 2.0 },
-        { "id": 1055148, "name": "WEEK KEY", "price": 4.50 },
-        { "id": 1055149, "name": "MONTH KEY", "price": 12.0 },
-        { "id": 1055150, "name": "LIFETIME KEY", "price": 35.0 }
+        {
+          "id": 1055147,
+          "name": "DAY KEY",
+          "price": 2.0
+        },
+        {
+          "id": 1055148,
+          "name": "WEEK KEY",
+          "price": 4.5
+        },
+        {
+          "id": 1055149,
+          "name": "MONTH KEY",
+          "price": 12.0
+        },
+        {
+          "id": 1055150,
+          "name": "LIFETIME KEY",
+          "price": 35.0
+        }
       ]
     },
     "downloads": {
@@ -73,15 +115,35 @@
     "category": "cod",
     "type": "product",
     "featured": true,
-    "features": ["Spoofer", "Reverse Camos", "Unlock All"],
+    "features": [
+      "Spoofer",
+      "Reverse Camos",
+      "Unlock All"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1056032, "name": "DAY KEY", "price": 1.0 },
-        { "id": 1056033, "name": "WEEK KEY", "price": 2.50 },
-        { "id": 1056034, "name": "MONTH KEY", "price": 5.0 },
-        { "id": 1056035, "name": "LIFETIME KEY", "price": 10.0 }
+        {
+          "id": 1056032,
+          "name": "DAY KEY",
+          "price": 1.0
+        },
+        {
+          "id": 1056033,
+          "name": "WEEK KEY",
+          "price": 2.5
+        },
+        {
+          "id": 1056034,
+          "name": "MONTH KEY",
+          "price": 5.0
+        },
+        {
+          "id": 1056035,
+          "name": "LIFETIME KEY",
+          "price": 10.0
+        }
       ]
     },
     "downloads": {
@@ -106,14 +168,32 @@
     "category": "cod",
     "type": "product",
     "featured": true,
-    "features": ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "features": [
+      "Aimbot",
+      "ESP/Wallhack",
+      "Crosshair",
+      "Undetectable",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1056076, "name": "DAY KEY", "price": 5.0 },
-        { "id": 1056077, "name": "WEEK KEY", "price": 10.0 },
-        { "id": 1056078, "name": "MONTH KEY", "price": 12.0 }
+        {
+          "id": 1056076,
+          "name": "DAY KEY",
+          "price": 5.0
+        },
+        {
+          "id": 1056077,
+          "name": "WEEK KEY",
+          "price": 10.0
+        },
+        {
+          "id": 1056078,
+          "name": "MONTH KEY",
+          "price": 12.0
+        }
       ]
     },
     "downloads": {
@@ -138,14 +218,32 @@
     "category": "cod",
     "type": "product",
     "featured": true,
-    "features": ["Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "features": [
+      "Aimbot",
+      "ESP/Wallhack",
+      "Crosshair",
+      "Undetectable",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1056099, "name": "DAY KEY", "price": 7.0 },
-        { "id": 1056100, "name": "WEEK KEY", "price": 24.0 },
-        { "id": 1056101, "name": "MONTH KEY", "price": 44.0 }
+        {
+          "id": 1056099,
+          "name": "DAY KEY",
+          "price": 7.0
+        },
+        {
+          "id": 1056100,
+          "name": "WEEK KEY",
+          "price": 24.0
+        },
+        {
+          "id": 1056101,
+          "name": "MONTH KEY",
+          "price": 44.0
+        }
       ]
     },
     "downloads": {
@@ -169,14 +267,31 @@
     "image": "/static/arc.png",
     "type": "product",
     "featured": true,
-    "features": ["Aimbot", "ESP/Wallhack", "Undetectable", "Full Support"],
+    "features": [
+      "Aimbot",
+      "ESP/Wallhack",
+      "Undetectable",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1056089, "name": "DAY KEY", "price": 5.0 },
-        { "id": 1056090, "name": "WEEK KEY", "price": 20.0 },
-        { "id": 1056091, "name": "MONTH KEY", "price": 40.0 }
+        {
+          "id": 1056089,
+          "name": "DAY KEY",
+          "price": 5.0
+        },
+        {
+          "id": 1056090,
+          "name": "WEEK KEY",
+          "price": 20.0
+        },
+        {
+          "id": 1056091,
+          "name": "MONTH KEY",
+          "price": 40.0
+        }
       ]
     },
     "downloads": {
@@ -190,7 +305,8 @@
       "state": "Operational",
       "label": "Online",
       "lastUpdated": "2026-03-31"
-    }
+    },
+    "category": "general"
   },
   {
     "id": 667978,
@@ -200,14 +316,34 @@
     "image": "/static/ambani.png",
     "type": "product",
     "featured": true,
-    "features": ["Vehicle Controls", "Injector", "Aimbot", "ESP/Wallhack", "Crosshair", "Undetectable", "Full Support"],
+    "features": [
+      "Vehicle Controls",
+      "Injector",
+      "Aimbot",
+      "ESP/Wallhack",
+      "Crosshair",
+      "Undetectable",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1056047, "name": "DAY KEY", "price": 6.50 },
-        { "id": 1056048, "name": "WEEK KEY", "price": 13.0 },
-        { "id": 1056049, "name": "MONTH KEY", "price": 35.0 }
+        {
+          "id": 1056047,
+          "name": "DAY KEY",
+          "price": 6.5
+        },
+        {
+          "id": 1056048,
+          "name": "WEEK KEY",
+          "price": 13.0
+        },
+        {
+          "id": 1056049,
+          "name": "MONTH KEY",
+          "price": 35.0
+        }
       ]
     },
     "downloads": {
@@ -221,7 +357,8 @@
       "state": "Operational",
       "label": "Online",
       "lastUpdated": "2026-03-31"
-    }
+    },
+    "category": "general"
   },
   {
     "id": 683961,
@@ -231,15 +368,36 @@
     "image": "/static/val.png",
     "type": "product",
     "featured": true,
-    "features": ["Skins", "Finishers", "Buddy Changer", "Full Support"],
+    "features": [
+      "Skins",
+      "Finishers",
+      "Buddy Changer",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1084337, "name": "THREE DAY KEY", "price": 10.0 },
-        { "id": 1084338, "name": "WEEK KEY", "price": 16.0 },
-        { "id": 1084339, "name": "MONTH KEY", "price": 30.0 },
-        { "id": 1084340, "name": "LIFETIME KEY", "price": 50.0 }
+        {
+          "id": 1084337,
+          "name": "THREE DAY KEY",
+          "price": 10.0
+        },
+        {
+          "id": 1084338,
+          "name": "WEEK KEY",
+          "price": 16.0
+        },
+        {
+          "id": 1084339,
+          "name": "MONTH KEY",
+          "price": 30.0
+        },
+        {
+          "id": 1084340,
+          "name": "LIFETIME KEY",
+          "price": 50.0
+        }
       ]
     },
     "downloads": {
@@ -253,7 +411,8 @@
       "state": "Operational",
       "label": "Online",
       "lastUpdated": "2026-03-31"
-    }
+    },
+    "category": "general"
   },
   {
     "id": 667967,
@@ -263,15 +422,34 @@
     "image": "/static/temp.png",
     "type": "product",
     "featured": true,
-    "features": ["Undetectable", "Full Support"],
+    "features": [
+      "Undetectable",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1056018, "name": "DAY KEY", "price": 3.0 },
-        { "id": 1056019, "name": "WEEK KEY", "price": 10.0 },
-        { "id": 1056020, "name": "MONTH KEY", "price": 20.0 },
-        { "id": 1056021, "name": "LIFETIME KEY", "price": 50.0 }
+        {
+          "id": 1056018,
+          "name": "DAY KEY",
+          "price": 3.0
+        },
+        {
+          "id": 1056019,
+          "name": "WEEK KEY",
+          "price": 10.0
+        },
+        {
+          "id": 1056020,
+          "name": "MONTH KEY",
+          "price": 20.0
+        },
+        {
+          "id": 1056021,
+          "name": "LIFETIME KEY",
+          "price": 50.0
+        }
       ]
     },
     "downloads": {
@@ -285,7 +463,8 @@
       "state": "Operational",
       "label": "Online",
       "lastUpdated": "2026-06-12"
-    }
+    },
+    "category": "general"
   },
   {
     "id": 667964,
@@ -295,13 +474,24 @@
     "image": "/static/perm.png",
     "type": "product",
     "featured": true,
-    "features": ["Undetectable", "Full Support"],
+    "features": [
+      "Undetectable",
+      "Full Support"
+    ],
     "store": {
       "enabled": true,
       "stockStatus": "In Stock",
       "options": [
-        { "id": 1056012, "name": "SINGLE USE KEY", "price": 16.0 },
-        { "id": 1056013, "name": "LIFETIME KEY", "price": 45.0 }
+        {
+          "id": 1056012,
+          "name": "SINGLE USE KEY",
+          "price": 16.0
+        },
+        {
+          "id": 1056013,
+          "name": "LIFETIME KEY",
+          "price": 45.0
+        }
       ]
     },
     "downloads": {
@@ -315,69 +505,20 @@
       "state": "Operational",
       "label": "Online",
       "lastUpdated": "2026-03-31"
-    }
+    },
+    "category": "general"
   },
   {
     "id": 1,
-    "slug": "adobe-pr",
-    "name": "Adobe Premiere Pro",
-    "detailedDescription": "video editor",
-    "image": "/static/pr.png",
-    "type": "product",
-    "featured": true,
-    "features": ["Full Support"],
-    "store": {
-      "enabled": false,
-      "stockStatus": "free"
-    },
-    "downloads": {
-      "enabled": true,
-      "version": "v25.0",
-      "downloadUrl": "https://drive.google.com/uc?export=download&id=1Rqn4ewYKwpNmXvas8KmTwyTCxHi0_rXh",
-      "fileSize": "2.1 GB"
-    },
-    "status": {
-      "enabled": true,
-      "state": "Operational",
-      "label": "Online",
-      "lastUpdated": "2026-04-4"
-    }
-  },
-  {
-    "id": 2,
-    "slug": "adobe-ps",
-    "name": "Adobe Photoshop",
-    "detailedDescription": "image editor",
-    "image": "/static/ps.png",
-    "type": "product",
-    "featured": true,
-    "features": ["Full Support"],
-    "store": {
-      "enabled": false,
-      "stockStatus": "free"
-    },
-    "downloads": {
-      "enabled": true,
-      "version": "v26.2.0",
-      "downloadUrl": "https://drive.google.com/uc?export=download&id=1gjONiyKh-abuva82ceV0F2YC-DZIl5-A",
-      "fileSize": "4.8 GB"
-    },
-    "status": {
-      "enabled": true,
-      "state": "Operational",
-      "label": "Online",
-      "lastUpdated": "2026-04-4"
-    }
-  },
-  {
-    "id": 3,
     "slug": "wallpaper-engine",
     "name": "Wallpaper Engine",
     "detailedDescription": "Paid wallpaper software",
     "image": "/static/wallpaper.png",
     "type": "product",
     "featured": true,
-    "features": ["Full Support"],
+    "features": [
+      "Full Support"
+    ],
     "store": {
       "enabled": false,
       "stockStatus": "free"
@@ -393,6 +534,7 @@
       "state": "Operational",
       "label": "Online",
       "lastUpdated": "2026-04-4"
-    }
+    },
+    "category": "general"
   }
 ]

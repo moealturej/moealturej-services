@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign Up | moealturej{% endblock %}
+{% block content %}
+<section class="page-section auth-page clean-auth-page">
+  <div class="container auth-wrap">
+    <form method="post" class="auth-card clean-auth-card" data-loading-form="true" data-loading-title="Creating account" data-loading-text="Saving your account and sending the signup verification code.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="auth-icon"><i class="fas fa-user-plus"></i></div>
+      <div class="eyebrow">Create account</div>
+      <h1>Join moealturej</h1>
+      <p class="auth-subtitle">Create a customer account for purchases, order history, and secure downloads.</p>
+      <label>Username<input name="username" required placeholder="moealturej" autocomplete="username"></label>
+      <label>Email<input name="email" type="email" required placeholder="you@example.com" autocomplete="email"></label>
+      <label>Password<input name="password" type="password" minlength="8" required placeholder="8+ characters" autocomplete="new-password"></label>
+      <button class="primary-cta auth-submit" type="submit" data-loading-text="Creating..."><span class="btn-spinner"></span><i class="fas fa-user-plus"></i><span class="btn-label">Create account</span></button>
+      <div class="auth-divider"><span>or sign up with</span></div>
+      <div class="oauth-grid">
+        {% if google_oauth_enabled %}<a class="oauth-btn google-login-btn" href="{{ url_for('google_login', next='/account') }}"><i class="fab fa-google"></i><span>Google</span></a>{% else %}<span class="oauth-btn disabled"><i class="fab fa-google"></i><span>Google missing</span></span>{% endif %}
+        {% if discord_oauth_enabled %}<a class="oauth-btn discord-login-btn" href="{{ url_for('discord_login', next='/account') }}"><i class="fab fa-discord"></i><span>Discord</span></a>{% else %}<span class="oauth-btn disabled"><i class="fab fa-discord"></i><span>Discord missing</span></span>{% endif %}
+      </div>
+      <a class="auth-link" href="/login">Already have an account? Login</a>
+    </form>
+  </div>
+</section>
+{% endblock %}

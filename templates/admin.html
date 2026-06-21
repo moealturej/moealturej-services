@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Owner Dashboard | moealturej{% endblock %}
+{% block extra_head %}
+<style>
+  .admin-page{--admin-line:rgba(213,156,255,.16);--admin-soft:rgba(255,255,255,.035)}
+  .admin-command{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:stretch;margin-bottom:18px}
+  .admin-hero{position:relative;overflow:hidden;min-height:240px}.admin-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% 12%,rgba(213,156,255,.22),transparent 34%),radial-gradient(circle at 8% 92%,rgba(169,53,255,.14),transparent 32%);pointer-events:none}.admin-hero>*{position:relative;z-index:1}.admin-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .admin-side-panel{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(13,7,27,.88),rgba(4,2,10,.94));border:1px solid var(--admin-line);box-shadow:0 24px 70px rgba(0,0,0,.34);display:grid;gap:12px;align-content:start}.admin-side-panel h2{margin:0}.admin-health{display:grid;gap:10px}.health-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075)}.health-item span{color:var(--muted);font-size:13px;font-weight:800}.health-pill{padding:7px 10px;border-radius:999px;background:rgba(57,255,159,.10);border:1px solid rgba(57,255,159,.18);color:#b9ffd9;font-weight:900;font-size:12px;white-space:nowrap}.health-pill.warn{background:rgba(255,200,87,.10);border-color:rgba(255,200,87,.24);color:#ffe7ad}.health-note{margin:2px 0 0;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;line-height:1.55;color:#b7abc9;word-break:break-word}
+  .admin-stats{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}.admin-stats div{min-height:96px;display:grid;align-content:center;background:linear-gradient(180deg,rgba(255,255,255,.058),rgba(255,255,255,.022))!important;border:1px solid rgba(213,156,255,.15)!important}.admin-stats strong{font-size:clamp(20px,2.2vw,30px)}.admin-stats span{line-height:1.25}
+  .admin-tabs{position:sticky;top:105px;z-index:20;display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;padding:9px;border-radius:24px;background:rgba(4,2,10,.82);border:1px solid rgba(213,156,255,.14);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.28)}.admin-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.14);color:#efe3ff;font-weight:950;text-decoration:none;transition:.18s ease}.admin-tab:hover{background:rgba(169,53,255,.14);border-color:rgba(213,156,255,.32);transform:translateY(-1px)}
+  .admin-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.admin-section{scroll-margin-top:190px}.admin-card{padding:24px!important;border-radius:30px!important;background:linear-gradient(180deg,rgba(11,6,23,.86),rgba(5,2,12,.92))!important;border:1px solid var(--admin-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.30)!important}.section-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}.section-top h2{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.04em}.muted{color:var(--muted);line-height:1.65}.admin-two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-form-grid .wide{grid-column:1/-1}.check-row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px}.check-row label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.11)}.check-row input{width:auto!important;min-height:auto!important}.admin-page label{color:#f1e7ff;font-weight:900;font-size:13px}.admin-page select,.admin-page input,.admin-page textarea{background:#0b0615!important;color:#fff!important;border-color:rgba(213,156,255,.22)!important}.admin-page select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#d59cff 50%),linear-gradient(135deg,#d59cff 50%,transparent 50%)!important;background-position:calc(100% - 18px) 22px,calc(100% - 12px) 22px!important;background-size:6px 6px,6px 6px!important;background-repeat:no-repeat!important;padding-right:38px!important}.admin-page select option{background:#0b0615!important;color:#f7efff!important}.admin-page select option:checked{background:#251036!important;color:#fff!important}
+  .media-grid,.users-grid,.product-list{display:grid;gap:12px}.media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media-item,.user-row,.admin-product{display:grid;gap:13px;padding:16px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.018));border:1px solid rgba(213,156,255,.12)}.media-top{display:flex;gap:14px;align-items:center;min-width:0}.media-preview,.media-file-icon{width:78px;height:78px;flex:0 0 auto;border-radius:20px;border:1px solid rgba(213,156,255,.18);background:#090411}.media-preview{object-fit:cover}.media-file-icon{display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,rgba(169,53,255,.24),rgba(255,68,188,.10))}.copy-field{display:flex;gap:8px}.copy-field input{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis}.copy-field button{white-space:nowrap}
+  .product-list{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-product-main{display:flex;gap:14px;align-items:center}.admin-product-main img{width:82px;height:82px;border-radius:21px;object-fit:cover;border:1px solid rgba(213,156,255,.18);background:#08040f}.admin-product-main h3{margin:0 0 5px}.admin-product-main p{margin:0}.admin-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.admin-tags span,.owner-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(169,53,255,.11);border:1px solid rgba(169,53,255,.18);font-size:12px;font-weight:900;color:#eadfff}.status-mini{display:grid;grid-template-columns:auto 170px 1fr auto;gap:10px;align-items:center}.status-mini input[type=checkbox]{width:auto!important;min-height:auto!important}.status-mini button,.small-btn,.danger-btn{border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.05);color:#fff;font-weight:900;cursor:pointer;transition:.18s ease}.small-btn:hover,.status-mini button:hover{background:rgba(169,53,255,.13);border-color:rgba(213,156,255,.28);transform:translateY(-1px)}.danger-btn{background:rgba(255,55,95,.10);border-color:rgba(255,55,95,.28);color:#ffd8df}.danger-btn:hover{background:rgba(255,55,95,.16);transform:translateY(-1px)}.danger-btn.compact{margin-top:0}.json-editor{margin-top:2px}.json-editor summary{cursor:pointer;color:#dca8ff;font-weight:900}.json-editor textarea{margin-top:12px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5}.admin-actions{margin-top:10px}
+  .user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}.user-email{font-weight:950;color:#fff}.user-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.owner-badge{background:rgba(255,198,75,.12);border-color:rgba(255,198,75,.25);color:#ffe3a3}.suspended-badge{background:rgba(255,70,101,.13);border-color:rgba(255,70,101,.32);color:#ffd3dc}.active-badge{background:rgba(57,255,159,.10);border-color:rgba(57,255,159,.22);color:#b8ffd8}.discord-badge{background:rgba(88,101,242,.14);border-color:rgba(88,101,242,.32);color:#dfe2ff}.user-forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.inline-form{display:flex;gap:8px;align-items:center;padding:10px;border-radius:18px;background:rgba(255,255,255,.026);border:1px solid rgba(213,156,255,.10)}.inline-form select,.inline-form input{flex:1 1 160px;min-width:0}.security-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.security-item{display:flex;gap:12px;align-items:flex-start;padding:15px;border-radius:20px;background:rgba(255,255,255,.034);border:1px solid rgba(213,156,255,.12)}.security-item i{color:#dca8ff;margin-top:2px;font-size:20px}.admin-page code{color:#e6c7ff;background:rgba(169,53,255,.12);border:1px solid rgba(213,156,255,.15);padding:2px 7px;border-radius:9px}.secondary-cta{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:0 16px;border-radius:999px;border:1px solid rgba(213,156,255,.22);background:rgba(255,255,255,.035);font-weight:900;color:#fff}.secondary-cta:hover{background:rgba(169,53,255,.12)}
+  @media(max-width:1100px){.admin-command,.admin-two-col{grid-template-columns:1fr}.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.product-list,.media-grid{grid-template-columns:1fr}.admin-tabs{top:96px}}
+  @media(max-width:760px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs{position:relative;top:auto}.admin-tab{flex:1;justify-content:center}.admin-form-grid,.user-forms,.security-grid{grid-template-columns:1fr}.inline-form,.copy-field,.status-mini{display:grid;grid-template-columns:1fr}.admin-product-main{align-items:flex-start}.admin-hero{min-height:auto}.admin-side-panel,.admin-card{border-radius:24px!important}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="page-section admin-page"><div class="container">
+  <div class="admin-command">
+    <section class="admin-hero">
+      <div>
+        <div class="eyebrow">owner control</div>
+        <h1>Site command center</h1>
+        <p>Clean control for products, downloads, uploads, live status, users, roles, security, and Discord login.</p>
+        <div class="admin-hero-actions">
+          <a class="primary-cta" href="#products"><i class="fas fa-box"></i> Manage products</a>
+          <a class="secondary-cta" href="/" target="_blank"><i class="fas fa-arrow-up-right-from-square"></i> View site</a>
+          <a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+        </div>
+      </div>
+    </section>
+    <aside class="admin-side-panel">
+      <div><div class="eyebrow">system health</div><h2>Setup status</h2><p class="muted">Use this to catch broken config before going public.</p></div>
+      <div class="admin-health">
+        <div class="health-item"><span>Storage</span><b class="health-pill {{ '' if using_mongo else 'warn' }}">{{ 'MongoDB connected' if using_mongo else 'Local JSON fallback' }}</b></div>
+        <p class="health-note">{{ mongo_status_reason }}</p>
+        <div class="health-item"><span>Email codes</span><b class="health-pill">Gmail SMTP ready if configured</b></div>
+        <div class="health-item"><span>Discord OAuth</span><b class="health-pill {{ '' if discord_oauth_enabled else 'warn' }}">{{ 'Enabled' if discord_oauth_enabled else 'Missing OAuth keys' }}</b></div>
+        <div class="health-item"><span>Discord server join</span><b class="health-pill {{ '' if discord_guild_join_enabled else 'warn' }}">{{ 'Enabled' if discord_guild_join_enabled else 'Not enabled' }}</b></div>
+        <p class="health-note">Guild ID: {{ discord_guild_id or 'not set' }}. Requires <code>guilds.join</code> OAuth scope and a bot already in that server.</p>
+        <div class="health-item"><span>Uploads</span><b class="health-pill">Limited + safe names</b></div>
+        <div class="health-item"><span>Payments</span><b class="health-pill {{ '' if stripe_enabled or paypal_enabled else 'warn' }}">{{ stats.payments }}</b></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="admin-stats">
+    <div><strong>{{ stats.products }}</strong><span>Total items</span></div>
+    <div><strong>{{ stats.store }}</strong><span>Store enabled</span></div>
+    <div><strong>{{ stats.downloads }}</strong><span>Downloads</span></div>
+    <div><strong>{{ stats.status }}</strong><span>Status tracked</span></div>
+    <div><strong>{{ stats.users }}</strong><span>Accounts</span></div>
+    <div><strong>{{ stats.media }}</strong><span>Uploads</span></div>
+    <div><strong>{{ stats.orders }}</strong><span>Orders</span></div>
+    <div><strong>{{ stats.storage }}</strong><span>Storage</span></div>
+  </section>
+
+  <nav class="admin-tabs" aria-label="Admin sections">
+    <a class="admin-tab" href="#owner"><i class="fas fa-sliders"></i> Owner</a>
+    <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Create</a>
+    <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
+    <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
+    <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
+    <a class="admin-tab" href="#orders"><i class="fas fa-receipt"></i> Orders</a>
+    <a class="admin-tab" href="#security"><i class="fas fa-shield-halved"></i> Security</a>
+  </nav>
+
+  <div class="admin-layout">
+
+    <section class="admin-card admin-section" id="owner">
+      <div class="section-top"><div><div class="eyebrow">production controls</div><h2>Owner site controls</h2><p class="muted">Turn features on/off without editing code, post a site-wide announcement, and quickly see payment/storage readiness.</p></div><a class="secondary-cta" href="/admin/api/diagnostics" target="_blank"><i class="fas fa-stethoscope"></i> Diagnostics JSON</a></div>
+      <form class="admin-form-grid" action="/admin/settings" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="wide">Announcement text<textarea name="announcement_text" rows="3" placeholder="Example: New product update is live.">{{ site_settings.announcement_text }}</textarea></label>
+        <label>Announcement type<select name="announcement_type"><option value="info" {% if site_settings.announcement_type == 'info' %}selected{% endif %}>Info purple</option><option value="warning" {% if site_settings.announcement_type == 'warning' %}selected{% endif %}>Warning gold</option><option value="danger" {% if site_settings.announcement_type == 'danger' %}selected{% endif %}>Danger red</option></select></label>
+        <label>Support URL<input name="support_url" value="{{ site_settings.support_url or '/support' }}" placeholder="/support"></label>
+        <label>Discord URL<input name="discord_url" value="{{ site_settings.discord_url or '' }}" placeholder="https://discord.gg/..."></label>
+        <div class="check-row">
+          <label><input type="checkbox" name="announcement_enabled" {% if site_settings.announcement_enabled %}checked{% endif %}> Show announcement</label>
+          <label><input type="checkbox" name="store_enabled" {% if site_settings.store_enabled %}checked{% endif %}> Store enabled</label>
+          <label><input type="checkbox" name="registration_enabled" {% if site_settings.registration_enabled %}checked{% endif %}> Signup enabled</label>
+          <label><input type="checkbox" name="maintenance_enabled" {% if site_settings.maintenance_enabled %}checked{% endif %}> Maintenance mode</label>
+        </div>
+        <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save site controls</button>
+      </form>
+      <div class="security-grid" style="margin-top:16px">
+        <div class="security-item"><i class="fas fa-database"></i><span><strong>Storage:</strong> {{ stats.storage }}<br><small>{{ mongo_status_reason if mongo_status_reason is defined else 'Open diagnostics for details.' }}</small></span></div>
+        <div class="security-item"><i class="fas fa-money-check-dollar"></i><span><strong>Payments:</strong> {{ stats.payments }}<br><small>Stripe/PayPal checkout is signed-in-only and server validated.</small></span></div>
+      </div>
+    </section>
+
+    <section class="admin-two-col admin-section" id="create">
+      <div class="admin-card">
+        <div class="section-top"><div><div class="eyebrow">quick add</div><h2>Add product</h2><p class="muted">Create an item once, then decide if it appears in Store, Downloads, and Status.</p></div></div>
+        <form class="admin-form-grid" action="/admin/product/new" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Name<input name="name" required placeholder="New product"></label>
+          <label>Slug<input name="slug" placeholder="new-product"></label>
+          <label>Category<input name="category" placeholder="cod"></label>
+          <label>Image URL<input name="image" placeholder="/media/your-image.png"></label>
+          <label class="wide">Short description<textarea name="description" rows="3" placeholder="Clean product details..."></textarea></label>
+          <label>Download URL<input name="download_url" placeholder="/download/file.zip"></label>
+          <label>File size<input name="file_size" placeholder="25 MB"></label>
+          <div class="check-row"><label><input type="checkbox" name="store_enabled" checked> Store</label><label><input type="checkbox" name="downloads_enabled"> Downloads</label><label><input type="checkbox" name="status_enabled" checked> Status</label><label><input type="checkbox" name="featured"> Featured</label></div>
+          <button class="primary-cta" type="submit"><i class="fas fa-plus"></i> Add item</button>
+        </form>
+      </div>
+
+      <div class="admin-card" id="uploads">
+        <div class="section-top"><div><div class="eyebrow">safe storage</div><h2>Upload files/images</h2><p class="muted">Images become <code>/media/...</code>. Download files become <code>/download/...</code> and only work publicly once attached to a product.</p></div></div>
+        <form class="admin-form-grid" action="/admin/media/upload" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Type<select name="upload_kind"><option value="image">Image / product art</option><option value="file">Download file</option></select></label>
+          <label>File<input type="file" name="upload" required></label>
+          <button class="primary-cta" type="submit"><i class="fas fa-cloud-arrow-up"></i> Upload</button>
+        </form>
+        <div class="media-grid" style="margin-top:16px;">
+          {% for item in media_items[:8] %}
+          <article class="media-item">
+            <div class="media-top">
+              {% if item.kind == 'image' %}<img class="media-preview" src="{{ item.url }}" alt="">{% else %}<div class="media-file-icon"><i class="fas fa-file-zipper"></i></div>{% endif %}
+              <div style="min-width:0"><h3>{{ item.original_name }}</h3><p class="muted">{{ item.kind }} · {{ (item.size_bytes // 1024) if item.size_bytes else 0 }} KB</p></div>
+            </div>
+            <div class="copy-field"><input readonly value="{{ item.url }}"><button class="small-btn" type="button" onclick="navigator.clipboard.writeText('{{ item.url }}')">Copy</button></div>
+            <form action="/admin/media/{{ item.filename }}/delete" method="post" onsubmit="return confirm('Delete this upload?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn compact" type="submit"><i class="fas fa-trash"></i> Delete upload</button></form>
+          </article>
+          {% else %}<p class="muted">No uploads yet.</p>{% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-card admin-section" id="products">
+      <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Edit quick status inline, or open JSON for full control.</p></div></div>
+      <div class="product-list">
+        {% for product in products %}
+        <article class="admin-product">
+          <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div></div>
+          <form class="status-mini" action="/admin/status/{{ product.slug }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label><input type="checkbox" name="enabled" {% if product.status.enabled %}checked{% endif %}> Track</label>
+            <select name="state"><option {% if product.status.state == 'Operational' %}selected{% endif %}>Operational</option><option {% if product.status.state == 'Degraded' %}selected{% endif %}>Degraded</option><option {% if product.status.state == 'Offline' %}selected{% endif %}>Offline</option><option {% if product.status.state == 'Updating' %}selected{% endif %}>Updating</option></select>
+            <input name="label" value="{{ product.status.label or 'Online' }}"><button type="submit">Update</button>
+          </form>
+          <details class="json-editor"><summary>Edit full product JSON</summary><form action="/admin/product/{{ product.slug }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="product_json" rows="18">{{ product|tojson(indent=2) }}</textarea><div class="admin-actions"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save JSON</button></div></form></details>
+          <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete item</button></form>
+        </article>
+        {% else %}<p class="muted">No products yet. Add your first item above.</p>{% endfor %}
+      </div>
+    </section>
+
+    <section class="admin-card admin-section" id="accounts">
+      <div class="section-top"><div><div class="eyebrow">account control</div><h2>Users & permissions</h2><p class="muted">Change roles, suspend accounts, reset passwords, or delete users. MongoDB is required for real account management.</p></div></div>
+      <div class="users-grid">
+        {% for user in users %}
+        <article class="user-row">
+          <div class="user-head"><div><div class="user-email">{{ user.email }}</div><p class="muted">@{{ user.username or user.discord_global_name or 'user' }} · role {{ user.role or 'user' }}</p><div class="user-meta">{% if user.is_owner %}<span class="owner-badge"><i class="fas fa-crown"></i> Owner</span>{% endif %}<span class="owner-badge {{ 'suspended-badge' if user.status == 'suspended' else 'active-badge' }}">{{ user.status or 'active' }}</span>{% if user.discord_id %}<span class="owner-badge discord-badge"><i class="fab fa-discord"></i> Discord linked</span>{% endif %}</div></div></div>
+          <div class="user-forms">
+            <form class="inline-form" action="{{ url_for('admin_user_role', email=user.email) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="role"><option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option><option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option><option value="owner" {% if user.role == 'owner' %}selected{% endif %}>Owner</option></select><button class="small-btn" type="submit">Save role</button></form>
+            <form class="inline-form" action="{{ url_for('admin_user_status', email=user.email) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status"><option value="active" {% if user.status != 'suspended' %}selected{% endif %}>Active</option><option value="suspended" {% if user.status == 'suspended' %}selected{% endif %}>Suspended</option></select><button class="small-btn" type="submit">Save status</button></form>
+            <form class="inline-form" action="{{ url_for('admin_user_password', email=user.email) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="password" type="password" minlength="8" placeholder="New password"><button class="small-btn" type="submit">Reset pass</button></form>
+            <form class="inline-form" action="{{ url_for('admin_user_delete', email=user.email) }}" method="post" onsubmit="return confirm('Delete {{ user.email }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn compact" type="submit"><i class="fas fa-user-slash"></i> Delete</button></form>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+
+    <section class="admin-card admin-section" id="orders">
+      <div class="section-top"><div><div class="eyebrow">payment center</div><h2>Orders</h2><p class="muted">Stripe and PayPal orders are saved here. Paid status is updated by Stripe webhook/success checks and PayPal capture.</p></div></div>
+      <div class="users-grid">
+        {% for order in orders[:20] %}
+        <article class="user-row">
+          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</p><div class="user-meta"><span class="owner-badge {{ 'active-badge' if order.status == 'paid' else 'suspended-badge' }}">{{ order.status|default('pending') }}</span></div></div></div>
+          <div class="order-items" style="margin-top:12px;display:grid;gap:8px">{% if order.cart and order.cart.get('items') %}{% for item in order.cart.get('items') %}<div style="display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}</span><strong>${{ item.line_amount }}</strong></div>{% endfor %}{% endif %}</div>
+        </article>
+        {% else %}<p class="muted">No orders yet.</p>{% endfor %}
+      </div>
+    </section>
+
+    <section class="admin-card admin-section" id="security">
+      <div class="section-top"><div><div class="eyebrow">security setup</div><h2>Sign-in protection</h2><p class="muted">Email codes use <strong>{{ config.SMTP_EMAIL if config.SMTP_EMAIL is defined else 'moealturej@gmail.com' }}</strong>. Discord OAuth is rate-limited and protected with state tokens. Bot token configured: <strong>{{ "yes" if discord_bot_enabled else "no" }}</strong>.</p></div></div>
+      <div class="security-grid">
+        <div class="security-item"><i class="fas fa-envelope-circle-check"></i><span>Login and signup can require 6-digit email codes with <code>REQUIRE_EMAIL_CODES=true</code>.</span></div>
+        <div class="security-item"><i class="fab fa-discord"></i><span>Discord login needs <code>DISCORD_CLIENT_ID</code> and <code>DISCORD_CLIENT_SECRET</code>. <code>DISCORD_BOT_TOKEN</code> is detected separately and is only for server/bot actions.</span></div>
+        <div class="security-item"><i class="fas fa-gauge-high"></i><span>Auth routes and upload routes are rate-limited to avoid spam and Discord OAuth abuse.</span></div>
+        <div class="security-item"><i class="fas fa-cloud"></i><span>Your MongoDB log means your URI is still a placeholder. Paste the real Atlas hostname instead of <code>cluster.mongodb.net</code>.</span></div>
+      </div>
+    </section>
+  </div>
+</div></section>
+{% endblock %}

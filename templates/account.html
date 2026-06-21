@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Account | moealturej{% endblock %}
+{% block extra_head %}
+<style>
+  .account-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}.account-card{padding:24px;border-radius:28px;background:linear-gradient(180deg,rgba(18,9,33,.72),rgba(7,3,15,.62));border:1px solid rgba(213,156,255,.14);box-shadow:var(--shadow-md)}.account-title{font-size:clamp(42px,7vw,78px);line-height:.9;letter-spacing:-.075em;margin:10px 0 12px}.order-list{display:grid;gap:12px}.order-card{padding:15px;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}.order-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.order-id{font-size:13px;font-weight:950;color:#fff}.order-meta{color:var(--muted2);font-size:12px;font-weight:800}.status-badge{border-radius:999px;padding:7px 10px;font-size:11px;font-weight:950;text-transform:uppercase;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}.status-paid{color:#bff8d7;background:rgba(57,229,140,.10);border-color:rgba(57,229,140,.22)}.status-pending{color:#ffe6a8;background:rgba(255,200,87,.10);border-color:rgba(255,200,87,.22)}.order-items{margin-top:12px;display:grid;gap:8px}.order-item{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px}.empty-orders{padding:22px;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);color:var(--muted);text-align:center}@media(max-width:900px){.account-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="page-section"><div class="container"><div class="account-grid">
+  <section class="account-card">
+    <div class="eyebrow">account</div><h1 class="account-title">Welcome, {{ current_user.username }}</h1>
+    <p class="muted-copy">You are logged in as {{ current_user.email }}. Purchases are signed-in-only, and paid orders will appear here.</p>
+    <div class="btn-row">
+      {% if current_user.is_owner %}<a class="primary-cta" href="/admin"><i class="fas fa-crown"></i> Owner dashboard</a>{% endif %}
+      <a class="secondary-cta" href="/cart"><i class="fas fa-cart-shopping"></i> Cart</a>
+      <a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+    </div>
+  </section>
+  <aside class="account-card"><div class="eyebrow">orders</div><h2 style="font-size:28px;margin:8px 0 16px;letter-spacing:-.04em">Order history</h2>
+    <div class="order-list">
+    {% if orders %}
+      {% for order in orders %}
+      <div class="order-card"><div class="order-top"><div><div class="order-id">{{ order.order_id }}</div><div class="order-meta">{{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</div></div><span class="status-badge status-{{ order.status|default('pending') }}">{{ order.status|default('pending') }}</span></div>
+        <div class="order-items">{% if order.cart and order.cart.get('items') %}{% for item in order.cart.get('items') %}<div class="order-item"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}</span><strong>${{ item.line_amount }}</strong></div>{% endfor %}{% endif %}</div>
+      </div>
+      {% endfor %}
+    {% else %}<div class="empty-orders">No orders yet. <br><br><a class="primary-cta" href="/store">Browse store</a></div>{% endif %}
+    </div>
+  </aside>
+</div></div></section>
+{% endblock %}

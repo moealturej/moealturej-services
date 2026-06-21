@@ -1,129 +1,95 @@
 {% extends "base.html" %}
 {% block title %}Status | moealturej{% endblock %}
+{% block meta_description %}Live product status and availability for moealturej products.{% endblock %}
+
 {% block extra_head %}
 <style>
-  .status-page { padding-top: 20px; }
-  .status-shell { padding: 24px; }
-  .overview-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
-  .overview-card { padding: 18px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
-  .overview-label { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
-  .overview-value { font-size: 28px; font-weight: 900; letter-spacing: -0.04em; }
-  .overview-sub { margin-top: 8px; font-size: 13px; color: var(--muted); }
-  .status-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 14px; }
-  .status-card { overflow: hidden; border-radius: 22px; background: linear-gradient(180deg, rgba(18,18,30,0.98), rgba(8,8,14,0.98)); border: 1px solid rgba(255,255,255,0.07); box-shadow: var(--shadow-md); }
-  .status-image-wrap { padding: 12px; }
-  .status-image { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); background: linear-gradient(180deg, #1a0f2d, #09090f); }
-  .status-body { padding: 0 14px 14px; }
-  .status-name { font-size: 14px; font-weight: 900; line-height: 1.2; min-height: 34px; margin-bottom: 10px; }
-  .status-meta { display: grid; gap: 8px; }
-  .status-empty { grid-column: 1 / -1; padding: 30px; text-align: center; border-radius: 22px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
-  @media (max-width: 1340px) { .status-grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
-  @media (max-width: 1100px) { .overview-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } .status-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
-  @media (max-width: 720px) { .status-shell { padding: 18px; } .overview-grid, .status-grid { grid-template-columns: 1fr; } }
+  .status-page { padding-top:22px; }
+  .status-layout { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:18px; align-items:start; }
+  .status-head { grid-column:1 / -1; padding:26px; border-radius:28px; background:linear-gradient(180deg, rgba(22,16,36,.94), rgba(9,8,15,.98)); border:1px solid rgba(255,255,255,.08); }
+  .status-head h1 { margin:8px 0 8px; font-size:clamp(34px,5vw,56px); letter-spacing:-.06em; }
+  .status-head p { color:var(--muted); margin:0; max-width:700px; line-height:1.65; }
+  .status-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:18px; }
+  .summary-card { padding:15px; border-radius:18px; background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.075); }
+  .summary-card span { display:block; color:var(--muted); font-size:11px; font-weight:850; letter-spacing:.11em; text-transform:uppercase; margin-bottom:5px; }
+  .summary-card strong { font-size:26px; letter-spacing:-.05em; }
+  .status-main,.status-side { padding:18px; border-radius:24px; background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.075); }
+  .status-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .status-toolbar h2 { margin:0; font-size:22px; letter-spacing:-.04em; }
+  .status-list { display:grid; gap:10px; }
+  .status-row { display:grid; grid-template-columns:58px minmax(0,1fr) auto; gap:13px; align-items:center; padding:12px; border-radius:18px; background:rgba(0,0,0,.16); border:1px solid rgba(255,255,255,.07); transition:.16s ease; }
+  .status-row:hover { border-color:rgba(139,44,255,.28); background:rgba(255,255,255,.045); }
+  .status-img { width:58px; height:58px; object-fit:cover; border-radius:14px; background:#10091b; border:1px solid rgba(255,255,255,.075); }
+  .status-name { font-weight:950; margin-bottom:7px; line-height:1.25; }
+  .status-meta { display:flex; gap:8px; flex-wrap:wrap; }
+  .status-dot { width:11px; height:11px; border-radius:50%; background:#39e58c; box-shadow:0 0 18px rgba(57,229,140,.38); }
+  .status-dot.issue { background:#ffc857; box-shadow:0 0 18px rgba(255,200,87,.35); }
+  .status-dot.offline { background:#ff627d; box-shadow:0 0 18px rgba(255,98,125,.35); }
+  .side-title { margin:0 0 12px; font-size:15px; }
+  .status-note { color:var(--muted); font-size:13px; line-height:1.7; margin:0; }
+  .mini-events { margin-top:14px; display:grid; gap:9px; }
+  .mini-event { display:flex; gap:10px; align-items:flex-start; padding:11px; border-radius:15px; background:rgba(0,0,0,.14); border:1px solid rgba(255,255,255,.06); }
+  .mini-event p { margin:0; color:var(--muted); font-size:12px; line-height:1.5; }
+  .empty-state,.skeleton-status { padding:26px; border-radius:20px; background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.075); text-align:center; color:var(--muted); }
+  .skeleton-status { min-height:86px; background:linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,.065), rgba(255,255,255,.03)); background-size:240% 100%; animation:shimmer 1.1s infinite linear; }
+  @keyframes shimmer { to { background-position:-240% 0; } }
+  @media (max-width: 960px){ .status-layout{grid-template-columns:1fr;} }
+  @media (max-width: 650px){ .status-head,.status-main,.status-side{padding:18px;border-radius:22px;} .status-summary{grid-template-columns:1fr;} .status-row{grid-template-columns:48px minmax(0,1fr);} .status-img{width:48px;height:48px;} .status-row > .chip{grid-column:1 / -1; justify-self:start;} .status-toolbar{align-items:flex-start; flex-direction:column;} }
 </style>
 {% endblock %}
 
 {% block content %}
 <section class="page-section status-page">
   <div class="container">
-    <section class="panel status-shell">
-      <div class="page-head">
-        <div class="eyebrow">moealturej status</div>
+    <div class="status-layout">
+      <section class="status-head">
+        <div class="eyebrow">system health</div>
         <h1>Product status</h1>
-        <p>Live product service and operational status.</p>
-      </div>
+        <p>Track product availability, versions, and latest owner-updated status. This page loads fast and handles missing data cleanly.</p>
+        <div class="status-summary">
+          <div class="summary-card"><span>Tracked</span><strong id="overview-total">0</strong></div>
+          <div class="summary-card"><span>Operational</span><strong id="overview-operational">0</strong></div>
+          <div class="summary-card"><span>Issues</span><strong id="overview-issues">0</strong></div>
+        </div>
+      </section>
 
-      <div class="overview-grid">
-        <div class="overview-card">
-          <div class="overview-label">Tracked</div>
-          <div id="overview-total" class="overview-value">0</div>
-          <div class="overview-sub">Products in status feed</div>
+      <main class="status-main">
+        <div class="status-toolbar">
+          <h2>Live services</h2>
+          <span id="last-refresh" class="chip"><i class="fas fa-rotate"></i> Loading</span>
         </div>
-        <div class="overview-card">
-          <div class="overview-label">Operational</div>
-          <div id="overview-operational" class="overview-value">0</div>
-          <div class="overview-sub">Currently online and working</div>
+        <div id="status-grid" class="status-list" aria-live="polite">
+          <div class="skeleton-status"></div><div class="skeleton-status"></div><div class="skeleton-status"></div>
         </div>
-        <div class="overview-card">
-          <div class="overview-label">Issues</div>
-          <div id="overview-issues" class="overview-value">0</div>
-          <div class="overview-sub">Need attention or are offline</div>
-        </div>
-      </div>
+      </main>
 
-      <div id="status-grid" class="status-grid"></div>
-    </section>
+      <aside class="status-side">
+        <h3 class="side-title">Status guide</h3>
+        <p class="status-note">Operational means the product is currently marked online. Degraded means there may be issues. Offline means the item should not be treated as available.</p>
+        <div class="mini-events">
+          <div class="mini-event"><span class="status-dot"></span><p><strong>Operational</strong><br>Product is live or ready.</p></div>
+          <div class="mini-event"><span class="status-dot issue"></span><p><strong>Degraded</strong><br>May have partial issues.</p></div>
+          <div class="mini-event"><span class="status-dot offline"></span><p><strong>Offline</strong><br>Unavailable or paused.</p></div>
+        </div>
+      </aside>
+    </div>
   </div>
 </section>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-  const statusGrid = document.getElementById('status-grid');
-  const overviewTotal = document.getElementById('overview-total');
-  const overviewOperational = document.getElementById('overview-operational');
-  const overviewIssues = document.getElementById('overview-issues');
-
-  function getStateInfo(item) {
-    const raw = String(item?.status?.state || item?.status?.label || 'Operational').toLowerCase();
-    if (raw.includes('offline')) return { cls: 'is-red', label: item?.status?.label || 'Offline' };
-    if (raw.includes('degraded')) return { cls: 'is-yellow', label: item?.status?.label || 'Degraded' };
-    return { cls: 'is-green', label: item?.status?.label || 'Operational' };
-  }
-
-  function formatDate(value) {
-    if (!value) return 'Recently updated';
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  }
-
-  function renderOverview(items) {
-    const total = items.length;
-    const operational = items.filter(item => getStateInfo(item).cls === 'is-green').length;
-    overviewTotal.textContent = total;
-    overviewOperational.textContent = operational;
-    overviewIssues.textContent = total - operational;
-  }
-
-  function renderStatus(items) {
-    renderOverview(items);
-    if (!items.length) {
-      statusGrid.innerHTML = '<div class="status-empty"><h3>No status items found</h3><p>No products are currently available.</p></div>';
-      return;
-    }
-
-    statusGrid.innerHTML = items.map(item => {
-      const info = getStateInfo(item);
-      return `
-        <article class="status-card">
-          <div class="status-image-wrap">
-            <img class="status-image" src="${item.image || 'https://placehold.co/400x400/10091b/8b2cff?text=Status'}" alt="${item.name || 'Status item'}">
-          </div>
-          <div class="status-body">
-            <div class="status-name">${item.name || 'Untitled Product'}</div>
-            <div class="status-meta">
-              <div class="chip ${info.cls}"><i class="fas fa-circle"></i> ${info.label}</div>
-              <div class="chip"><i class="fas fa-code-branch"></i> ${item?.downloads?.version || 'Latest'}</div>
-              <div class="chip"><i class="fas fa-clock"></i> ${formatDate(item?.status?.lastUpdated)}</div>
-            </div>
-          </div>
-        </article>
-      `;
-    }).join('');
-  }
-
-  async function loadStatus() {
-    try {
-      const response = await fetch('/api/status');
-      if (!response.ok) throw new Error('Failed to load status');
-      const items = await response.json();
-      renderStatus(items);
-    } catch (error) {
-      statusGrid.innerHTML = '<div class="status-empty"><h3>Status unavailable</h3><p>Could not load status right now.</p></div>';
-    }
-  }
-
+  const grid = document.getElementById('status-grid');
+  const totalEl = document.getElementById('overview-total');
+  const opEl = document.getElementById('overview-operational');
+  const issueEl = document.getElementById('overview-issues');
+  const refreshEl = document.getElementById('last-refresh');
+  const PLACEHOLDER = 'https://placehold.co/220x220/10091b/8b2cff?text=Status';
+  function esc(v){return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+  function stateInfo(item){ const raw=String(item?.status?.state || item?.status?.label || 'Operational').toLowerCase(); if(raw.includes('offline')) return {cls:'is-red', dot:'offline', label:item?.status?.label || 'Offline'}; if(raw.includes('degraded')) return {cls:'is-yellow', dot:'issue', label:item?.status?.label || 'Degraded'}; return {cls:'is-green', dot:'', label:item?.status?.label || 'Operational'}; }
+  function formatDate(v){ if(!v) return 'Recently'; const d=new Date(v); return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+  function render(items){ const total=items.length; const operational=items.filter(i=>stateInfo(i).cls==='is-green').length; totalEl.textContent=total; opEl.textContent=operational; issueEl.textContent=total-operational; refreshEl.innerHTML='<i class="fas fa-clock"></i> Updated now'; if(!items.length){ grid.innerHTML='<div class="empty-state"><h3>No status items</h3><p>No products are currently in the status feed.</p></div>'; return; } grid.innerHTML=items.map(item=>{ const info=stateInfo(item); return `<article class="status-row"><img class="status-img" src="${esc(item.image || PLACEHOLDER)}" alt="${esc(item.name || 'Status')}" loading="lazy" decoding="async"><div><div class="status-name">${esc(item.name || 'Untitled Product')}</div><div class="status-meta"><span class="chip"><i class="fas fa-code-branch"></i> ${esc(item?.downloads?.version || 'Latest')}</span><span class="chip"><i class="fas fa-clock"></i> ${esc(formatDate(item?.status?.lastUpdated))}</span></div></div><span class="chip ${info.cls}"><span class="status-dot ${info.dot}"></span>${esc(info.label)}</span></article>`; }).join(''); }
+  async function loadStatus(){ try{ const cached=sessionStorage.getItem('moe_status'); if(cached) render(JSON.parse(cached)); const res=await fetch('/api/status',{headers:{'Accept':'application/json'}}); if(!res.ok) throw new Error('failed'); const items=await res.json(); sessionStorage.setItem('moe_status', JSON.stringify(items)); render(items); }catch(e){ grid.innerHTML='<div class="empty-state"><h3>Status unavailable</h3><p>Could not load the status feed right now.</p></div>'; refreshEl.textContent='Unavailable'; } }
   loadStatus();
 </script>
 {% endblock %}
