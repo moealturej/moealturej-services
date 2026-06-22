@@ -49,7 +49,7 @@ http://127.0.0.1:10000/admin
 The app sends 6-digit login/signup codes, password resets, and key delivery emails through Resend when this is enabled:
 
 ```env
-EMAIL_FROM_EMAIL=moealturej@gmail.com
+EMAIL_FROM_EMAIL=security@moealturej.com
 RESEND_API_KEY=re_your_resend_api_key
 EMAIL_PROVIDER=resend
 EMAIL_FROM_NAME=moealturej Security
@@ -96,7 +96,7 @@ Add these environment variables in Render:
 - `OWNER_EMAIL`
 - `OWNER_USERNAME`
 - `OWNER_PASSWORD`
-- `EMAIL_FROM_EMAIL=moealturej@gmail.com`
+- `EMAIL_FROM_EMAIL=security@moealturej.com`
 - `RESEND_API_KEY`
 - `EMAIL_PROVIDER=resend`
 - `EMAIL_FROM_NAME=moealturej Security`

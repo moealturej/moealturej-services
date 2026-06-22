@@ -36,7 +36,7 @@ Forgot password uses MongoDB and your existing Resend email delivery app passwor
 Required values:
 
 ```env
-EMAIL_FROM_EMAIL=moealturej@gmail.com
+EMAIL_FROM_EMAIL=security@moealturej.com
 RESEND_API_KEY=re_your_resend_api_key
 EMAIL_PROVIDER=resend
 EMAIL_FROM_NAME=moealturej Security

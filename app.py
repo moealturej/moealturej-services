@@ -56,16 +56,45 @@ OWNER_EMAIL = os.getenv("OWNER_EMAIL", "owner@moealturej.com").strip().lower()
 OWNER_USERNAME = os.getenv("OWNER_USERNAME", "owner").strip() or "owner"
 OWNER_PASSWORD = os.getenv("OWNER_PASSWORD", "changeme-owner-password")
 # Email delivery
-# Resend is the recommended production email provider for Render because it uses HTTPS
-# instead of SMTP ports. SMTP remains as a local/dev fallback only.
-SMTP_EMAIL = os.getenv("SMTP_EMAIL", "moealturej@gmail.com").strip()
+# Production email is sent through Resend over HTTPS. The sender MUST be a
+# verified moealturej.com address. Gmail is only used as Reply-To.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "resend").strip().lower() or "resend"
+RESEND_REPLY_TO = os.getenv("RESEND_REPLY_TO", os.getenv("EMAIL_REPLY_TO", "moealturej@gmail.com")).strip()
+EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", f"{os.getenv('APP_NAME', 'moealturej')} Security").strip()
+
+# Backwards-compatible main sender. If your old env has EMAIL_FROM_EMAIL it will
+# still work, but the default is now a verified domain sender instead of Gmail.
+EMAIL_FROM_EMAIL = os.getenv("EMAIL_FROM_EMAIL", os.getenv("RESEND_FROM_EMAIL", "security@moealturej.com")).strip()
+SECURITY_FROM_EMAIL = os.getenv("SECURITY_FROM_EMAIL", "Moealturej Security <security@moealturej.com>").strip()
+ORDERS_FROM_EMAIL = os.getenv("ORDERS_FROM_EMAIL", "Moealturej Orders <orders@moealturej.com>").strip()
+SUPPORT_FROM_EMAIL = os.getenv("SUPPORT_FROM_EMAIL", "Moealturej Support <support@moealturej.com>").strip()
+DOWNLOADS_FROM_EMAIL = os.getenv("DOWNLOADS_FROM_EMAIL", "Moealturej Downloads <downloads@moealturej.com>").strip()
+NOTIFICATIONS_FROM_EMAIL = os.getenv("NOTIFICATIONS_FROM_EMAIL", "Moealturej <no-reply@moealturej.com>").strip()
+
+def _sender_address_from_config(value: str) -> str:
+    match = re.search(r"<([^>]+)>", value or "")
+    return (match.group(1) if match else value or "").strip().lower()
+
+def _force_domain_sender(value: str, fallback: str) -> str:
+    address = _sender_address_from_config(value)
+    if address.endswith("@gmail.com") or (address and not address.endswith("@moealturej.com")):
+        return fallback
+    return value or fallback
+
+EMAIL_FROM_EMAIL = _force_domain_sender(EMAIL_FROM_EMAIL, "security@moealturej.com")
+SECURITY_FROM_EMAIL = _force_domain_sender(SECURITY_FROM_EMAIL, "Moealturej Security <security@moealturej.com>")
+ORDERS_FROM_EMAIL = _force_domain_sender(ORDERS_FROM_EMAIL, "Moealturej Orders <orders@moealturej.com>")
+SUPPORT_FROM_EMAIL = _force_domain_sender(SUPPORT_FROM_EMAIL, "Moealturej Support <support@moealturej.com>")
+DOWNLOADS_FROM_EMAIL = _force_domain_sender(DOWNLOADS_FROM_EMAIL, "Moealturej Downloads <downloads@moealturej.com>")
+NOTIFICATIONS_FROM_EMAIL = _force_domain_sender(NOTIFICATIONS_FROM_EMAIL, "Moealturej <no-reply@moealturej.com>")
+
+# Optional SMTP is disabled unless you explicitly set EMAIL_PROVIDER=smtp. Render
+# should use Resend, not SMTP ports.
+SMTP_EMAIL = os.getenv("SMTP_EMAIL", "").strip()
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
-EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "resend").strip().lower() or "resend"
-EMAIL_FROM_EMAIL = os.getenv("EMAIL_FROM_EMAIL", os.getenv("RESEND_FROM_EMAIL", SMTP_EMAIL or "moealturej@gmail.com")).strip()
-EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", f"{os.getenv('APP_NAME', 'moealturej')} Security").strip()
 REQUIRE_EMAIL_CODES = os.getenv("REQUIRE_EMAIL_CODES", "true").lower() == "true"
 def env_first(*names: str, default: str = "") -> str:
     for name in names:
@@ -100,7 +129,7 @@ PROCESSING_FEE_PERCENT = max(0, min(100, int(os.getenv("PROCESSING_FEE_PERCENT",
 CHECKOUT_REQUIRE_LOGIN = os.getenv("CHECKOUT_REQUIRE_LOGIN", "true").lower() == "true"
 APP_NAME = os.getenv("APP_NAME", "moealturej").strip() or "moealturej"
 APP_URL = os.getenv("APP_URL", "https://moealturej.com").strip().rstrip("/")
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", EMAIL_FROM_EMAIL or OWNER_EMAIL).strip()
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", RESEND_REPLY_TO or OWNER_EMAIL).strip()
 BRAND_LOGO_URL = os.getenv("BRAND_LOGO_URL", "").strip()
 OWNER_ORDER_WEBHOOK_URL = env_first("OWNER_ORDER_WEBHOOK_URL", "ORDER_WEBHOOK_URL", "DISCORD_ORDER_WEBHOOK_URL")
 DELIVERY_DM_ENABLED = os.getenv("DELIVERY_DM_ENABLED", "true").lower() == "true"
@@ -306,6 +335,11 @@ app.config.update(
     SMTP_EMAIL=SMTP_EMAIL,
     EMAIL_PROVIDER=EMAIL_PROVIDER,
     EMAIL_FROM_EMAIL=EMAIL_FROM_EMAIL,
+    RESEND_REPLY_TO=RESEND_REPLY_TO,
+    SECURITY_FROM_EMAIL=SECURITY_FROM_EMAIL,
+    ORDERS_FROM_EMAIL=ORDERS_FROM_EMAIL,
+    DOWNLOADS_FROM_EMAIL=DOWNLOADS_FROM_EMAIL,
+    SUPPORT_FROM_EMAIL=SUPPORT_FROM_EMAIL,
     RESEND_ENABLED=bool(RESEND_API_KEY),
 )
 
@@ -368,63 +402,67 @@ def verify_csrf() -> bool:
 
 
 def email_delivery_ready() -> bool:
-    if EMAIL_PROVIDER == "resend":
-        return bool(RESEND_API_KEY and EMAIL_FROM_EMAIL)
     if EMAIL_PROVIDER == "smtp":
         return bool(SMTP_EMAIL and SMTP_PASSWORD)
-    return bool(RESEND_API_KEY and EMAIL_FROM_EMAIL) or bool(SMTP_EMAIL and SMTP_PASSWORD)
+    return bool(RESEND_API_KEY)
+
+
+def _extract_email_address(sender: str) -> str:
+    match = re.search(r"<([^>]+)>", sender or "")
+    return (match.group(1) if match else sender or "").strip().lower()
+
+
+def _format_sender(sender: str, fallback_name: str) -> str:
+    sender = (sender or "").strip()
+    if not sender:
+        sender = EMAIL_FROM_EMAIL
+    if "<" in sender and ">" in sender:
+        return sender
+    return f"{fallback_name} <{sender}>"
 
 
 def email_from(sender_label: str = "Security") -> str:
-    label = (sender_label or "Security").strip()
-    name = EMAIL_FROM_NAME or f"{APP_NAME} {label}"
-    # Keep the friendly name branded while using the verified sender address from .env.
-    return f"{name} <{EMAIL_FROM_EMAIL}>"
+    label = (sender_label or "Security").strip().lower()
+    if label in {"security", "login", "signup", "password", "password reset"}:
+        return _format_sender(SECURITY_FROM_EMAIL, f"{APP_NAME} Security")
+    if label in {"order", "orders", "receipt", "payment"}:
+        return _format_sender(ORDERS_FROM_EMAIL, f"{APP_NAME} Orders")
+    if label in {"delivery", "download", "downloads", "key", "keys"}:
+        return _format_sender(DOWNLOADS_FROM_EMAIL, f"{APP_NAME} Downloads")
+    if label in {"support", "ticket"}:
+        return _format_sender(SUPPORT_FROM_EMAIL, f"{APP_NAME} Support")
+    return _format_sender(NOTIFICATIONS_FROM_EMAIL or EMAIL_FROM_EMAIL, EMAIL_FROM_NAME or APP_NAME)
+
+
+def sender_is_resend_safe(sender: str) -> bool:
+    address = _extract_email_address(sender)
+    if not address or "@" not in address:
+        return False
+    # Resend rejects public mailbox domains like gmail.com in the From field.
+    # This app is configured for the verified moealturej.com domain.
+    return address.endswith("@moealturej.com")
 
 
 def send_email_message(to_email: str, subject: str, text: str, html_body: str, sender_label: str = "Security") -> bool:
-    """Send transactional email through Resend first, with optional SMTP fallback.
-
-    Render can block or make SMTP unreliable. Resend uses a normal HTTPS API call,
-    so production should set RESEND_API_KEY and EMAIL_PROVIDER=resend.
-    """
+    """Send transactional email through Resend using verified moealturej.com senders."""
     to_email = (to_email or "").strip()
     if not to_email or "@" not in to_email:
         logger.warning("Invalid email target for %s email: %s", sender_label, to_email)
         return False
 
-    prefer_resend = EMAIL_PROVIDER != "smtp"
-    if prefer_resend and RESEND_API_KEY and EMAIL_FROM_EMAIL:
-        payload = {
-            "from": email_from(sender_label),
-            "to": [to_email],
-            "subject": subject,
-            "text": text,
-            "html": html_body,
-        }
-        try:
-            resp = requests.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {RESEND_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-                timeout=20,
-            )
-            if resp.status_code in (200, 201, 202):
-                return True
-            logger.error("Resend rejected %s email to %s: %s %s", sender_label, to_email, resp.status_code, resp.text[:500])
-            # Fall through to SMTP only if explicitly available, so local/dev still works.
-        except Exception:
-            logger.exception("Resend request failed for %s email to %s", sender_label, to_email)
+    sender = email_from(sender_label)
 
-    if SMTP_EMAIL and SMTP_PASSWORD:
+    if EMAIL_PROVIDER == "smtp":
+        if not SMTP_EMAIL or not SMTP_PASSWORD:
+            logger.warning("SMTP is selected but SMTP_EMAIL/SMTP_PASSWORD are missing; could not send %s email to %s", sender_label, to_email)
+            return False
         try:
             msg = EmailMessage()
-            msg["From"] = f"{APP_NAME} {sender_label} <{SMTP_EMAIL}>"
+            msg["From"] = sender
             msg["To"] = to_email
             msg["Subject"] = subject
+            if RESEND_REPLY_TO:
+                msg["Reply-To"] = RESEND_REPLY_TO
             msg.set_content(text)
             msg.add_alternative(html_body, subtype="html")
             context = ssl.create_default_context()
@@ -433,10 +471,45 @@ def send_email_message(to_email: str, subject: str, text: str, html_body: str, s
                 server.send_message(msg)
             return True
         except Exception:
-            logger.exception("SMTP fallback failed for %s email to %s", sender_label, to_email)
+            logger.exception("SMTP email failed for %s email to %s", sender_label, to_email)
+            return False
 
-    logger.warning("No email provider is configured; could not send %s email to %s", sender_label, to_email)
-    return False
+    if not RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY is missing; could not send %s email to %s", sender_label, to_email)
+        return False
+
+    if not sender_is_resend_safe(sender):
+        logger.error("Invalid Resend sender for %s email: %s. Use a verified @moealturej.com address, not Gmail.", sender_label, sender)
+        return False
+
+    payload = {
+        "from": sender,
+        "to": [to_email],
+        "subject": subject,
+        "text": text,
+        "html": html_body,
+    }
+    if RESEND_REPLY_TO:
+        payload["reply_to"] = RESEND_REPLY_TO
+
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=20,
+        )
+        if resp.status_code in (200, 201, 202):
+            logger.info("Sent %s email to %s through Resend from %s", sender_label, to_email, sender)
+            return True
+        logger.error("Resend rejected %s email to %s: %s %s", sender_label, to_email, resp.status_code, resp.text[:500])
+        return False
+    except Exception:
+        logger.exception("Resend request failed for %s email to %s", sender_label, to_email)
+        return False
 
 
 def send_security_email(to_email: str, code: str, purpose: str) -> bool:
@@ -521,7 +594,7 @@ def send_security_email(to_email: str, code: str, purpose: str) -> bool:
 """
     if not email_delivery_ready():
         if IS_PRODUCTION:
-            logger.error("Email delivery is not configured. Add RESEND_API_KEY and EMAIL_FROM_EMAIL in production.")
+            logger.error("Email delivery is not configured. Add RESEND_API_KEY in production. The app defaults to security@moealturej.com for Resend.")
             return False
         flash(f"Dev security code: {code}", "warning")
         return True
@@ -1565,7 +1638,7 @@ def signup():
         payload = {"email": email, "username": username, "password_hash": generate_password_hash(password)}
         if REQUIRE_EMAIL_CODES:
             if not start_email_code_flow("signup", payload, email, "signup"):
-                flash("Email verification is not configured. Add RESEND_API_KEY in .env for moealturej@gmail.com email delivery.", "danger")
+                flash("Email verification is not configured. Add RESEND_API_KEY in .env. Emails will send from @moealturej.com with Gmail as reply-to.", "danger")
                 return render_template("signup.html", active_page="signup")
             flash("Check your email for the 6-digit signup code.", "success")
             return render_template("verify_email.html", flow="signup", email=email, active_page="signup")
@@ -1609,7 +1682,7 @@ def login():
         payload = {"email": user.get("email"), "username": user.get("username") or email.split("@")[0], "is_owner": bool(user.get("is_owner") or user.get("role") == "owner"), "role": user.get("role", "user")}
         if REQUIRE_EMAIL_CODES:
             if not start_email_code_flow("login", payload, email, "login"):
-                flash("Email 2FA is not configured. Add RESEND_API_KEY in .env for moealturej@gmail.com email delivery.", "danger")
+                flash("Email 2FA is not configured. Add RESEND_API_KEY in .env. Emails will send from @moealturej.com with Gmail as reply-to.", "danger")
                 return render_template("login.html", active_page="login")
             flash("Check your email for the 6-digit login code.", "success")
             return render_template("verify_email.html", flow="login", email=email, active_page="login")

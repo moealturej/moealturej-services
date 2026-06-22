@@ -19,7 +19,7 @@ This build supports manual key delivery after a successful Stripe or PayPal paym
 OWNER_ORDER_WEBHOOK_URL=https://discord.com/api/webhooks/your-webhook
 DELIVERY_DM_ENABLED=true
 DISCORD_BOT_TOKEN=your_bot_token
-EMAIL_FROM_EMAIL=moealturej@gmail.com
+EMAIL_FROM_EMAIL=security@moealturej.com
 RESEND_API_KEY=re_your_resend_api_key
 ```
 

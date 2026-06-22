@@ -18,7 +18,7 @@ OWNER_EMAIL=moealturej@gmail.com
 OWNER_USERNAME=moealturej
 OWNER_PASSWORD=strong-owner-password
 
-EMAIL_FROM_EMAIL=moealturej@gmail.com
+EMAIL_FROM_EMAIL=security@moealturej.com
 RESEND_API_KEY=re_your_resend_api_key
 REQUIRE_EMAIL_CODES=true
 

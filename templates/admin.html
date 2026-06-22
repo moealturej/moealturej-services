@@ -36,7 +36,7 @@
       <div class="admin-health">
         <div class="health-item"><span>Storage</span><b class="health-pill {{ '' if using_mongo else 'warn' }}">{{ 'MongoDB connected' if using_mongo else 'Local JSON fallback' }}</b></div>
         <p class="health-note">{{ mongo_status_reason }}</p>
-        <div class="health-item"><span>Email codes</span><b class="health-pill">{{ 'Resend ready' if config.RESEND_ENABLED else ('SMTP fallback ready' if config.SMTP_EMAIL else 'Email not configured') }}</b></div>
+        <div class="health-item"><span>Email codes</span><b class="health-pill">{{ 'Resend ready' if config.RESEND_ENABLED else ('SMTP selected' if config.EMAIL_PROVIDER == 'smtp' else 'Email not configured') }}</b></div>
         <div class="health-item"><span>Discord OAuth</span><b class="health-pill {{ '' if discord_oauth_enabled else 'warn' }}">{{ 'Enabled' if discord_oauth_enabled else 'Missing OAuth keys' }}</b></div>
         <div class="health-item"><span>Discord server join</span><b class="health-pill {{ '' if discord_guild_join_enabled else 'warn' }}">{{ 'Enabled' if discord_guild_join_enabled else 'Not enabled' }}</b></div>
         <p class="health-note">Guild ID: {{ discord_guild_id or 'not set' }}. Requires <code>guilds.join</code> OAuth scope and a bot already in that server.</p>
@@ -199,7 +199,7 @@
     </section>
 
     <section class="admin-card admin-section" id="security">
-      <div class="section-top"><div><div class="eyebrow">security setup</div><h2>Sign-in protection</h2><p class="muted">Email codes use <strong>{{ config.EMAIL_FROM_EMAIL if config.EMAIL_FROM_EMAIL is defined else 'moealturej@gmail.com' }}</strong> through <strong>{{ config.EMAIL_PROVIDER|upper if config.EMAIL_PROVIDER is defined else 'RESEND' }}</strong>. Discord OAuth is rate-limited and protected with state tokens. Bot token configured: <strong>{{ "yes" if discord_bot_enabled else "no" }}</strong>.</p></div></div>
+      <div class="section-top"><div><div class="eyebrow">security setup</div><h2>Sign-in protection</h2><p class="muted">Email codes use <strong>{{ config.SECURITY_FROM_EMAIL if config.SECURITY_FROM_EMAIL is defined else 'security@moealturej.com' }}</strong> through <strong>{{ config.EMAIL_PROVIDER|upper if config.EMAIL_PROVIDER is defined else 'RESEND' }}</strong>. Discord OAuth is rate-limited and protected with state tokens. Bot token configured: <strong>{{ "yes" if discord_bot_enabled else "no" }}</strong>.</p></div></div>
       <div class="security-grid">
         <div class="security-item"><i class="fas fa-envelope-circle-check"></i><span>Login, signup, forgot-password, and product-key emails use Resend in production with <code>RESEND_API_KEY</code>. Keep <code>REQUIRE_EMAIL_CODES=true</code> for 6-digit security codes.</span></div>
         <div class="security-item"><i class="fab fa-discord"></i><span>Discord login needs <code>DISCORD_CLIENT_ID</code> and <code>DISCORD_CLIENT_SECRET</code>. <code>DISCORD_BOT_TOKEN</code> is detected separately and is only for server/bot actions.</span></div>
