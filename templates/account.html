@@ -2,30 +2,99 @@
 {% block title %}Account | moealturej{% endblock %}
 {% block extra_head %}
 <style>
-  .account-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}.account-card{padding:24px;border-radius:28px;background:linear-gradient(180deg,rgba(18,9,33,.72),rgba(7,3,15,.62));border:1px solid rgba(213,156,255,.14);box-shadow:var(--shadow-md)}.account-title{font-size:clamp(42px,7vw,78px);line-height:.9;letter-spacing:-.075em;margin:10px 0 12px}.order-list{display:grid;gap:12px}.order-card{padding:15px;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}.order-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.order-id{font-size:13px;font-weight:950;color:#fff}.order-meta{color:var(--muted2);font-size:12px;font-weight:800}.status-badge{border-radius:999px;padding:7px 10px;font-size:11px;font-weight:950;text-transform:uppercase;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}.status-paid{color:#bff8d7;background:rgba(57,229,140,.10);border-color:rgba(57,229,140,.22)}.status-pending{color:#ffe6a8;background:rgba(255,200,87,.10);border-color:rgba(255,200,87,.22)}.order-items{margin-top:12px;display:grid;gap:8px}.order-item{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px}.delivery-box{margin-top:10px;padding:12px;border-radius:16px;background:rgba(57,229,140,.06);border:1px solid rgba(57,229,140,.16)}.delivery-box .label{font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#bff8d7}.delivery-key{margin-top:7px;padding:12px;border-radius:13px;background:#08040f;border:1px dashed rgba(213,156,255,.30);font-family:ui-monospace,Consolas,monospace;color:#fff;word-break:break-all}.delivery-note{margin-top:8px;color:#d9c5ff;line-height:1.55;font-size:12px}.empty-orders{padding:22px;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);color:var(--muted);text-align:center}@media(max-width:900px){.account-grid{grid-template-columns:1fr}}
+  .account-page{padding-top:24px}.account-shell{display:grid;gap:18px}.account-hero{position:relative;overflow:hidden;padding:28px;border-radius:32px;background:radial-gradient(circle at 80% 0%,rgba(168,85,247,.20),transparent 34%),linear-gradient(180deg,rgba(18,9,33,.78),rgba(7,3,15,.68));border:1px solid rgba(216,180,254,.16);box-shadow:0 26px 80px rgba(0,0,0,.36),0 0 55px rgba(168,85,247,.09);backdrop-filter:blur(16px)}.account-hero:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,rgba(255,255,255,.045),transparent 32%)}.account-hero-inner{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:end}.account-title{font-size:clamp(42px,7vw,78px);line-height:.92;letter-spacing:-.075em;margin:10px 0 12px}.account-copy{margin:0;max-width:720px;color:var(--muted);line-height:1.7}.account-email{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#eadfff;font-size:13px;font-weight:850}.account-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.account-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.account-stat{padding:18px;border-radius:22px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 45px rgba(0,0,0,.20)}.account-stat span{display:flex;align-items:center;gap:8px;color:var(--muted2);font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.1em}.account-stat strong{display:block;margin-top:9px;color:#fff;font-size:26px;letter-spacing:-.04em}.orders-panel{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(14,9,26,.72),rgba(6,3,13,.64));border:1px solid rgba(216,180,254,.14);box-shadow:0 22px 70px rgba(0,0,0,.30);backdrop-filter:blur(16px)}.orders-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:16px}.orders-head h2{margin:8px 0 0;font-size:clamp(30px,4vw,44px);line-height:1;letter-spacing:-.055em}.orders-head p{margin:8px 0 0;color:var(--muted);line-height:1.6}.order-list{display:grid;gap:14px}.order-card{position:relative;overflow:hidden;padding:16px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.024));border:1px solid rgba(255,255,255,.08);transition:.18s ease}.order-card:hover{transform:translateY(-2px);border-color:rgba(216,180,254,.22);box-shadow:0 18px 45px rgba(0,0,0,.24)}.order-card:before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(168,85,247,.7),rgba(216,180,254,.55),transparent)}.order-top{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}.order-id{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:950;color:#fff;word-break:break-word}.order-id i{color:#d8b4fe}.order-meta{margin-top:7px;display:flex;gap:8px;flex-wrap:wrap;color:var(--muted2);font-size:12px;font-weight:850}.meta-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}.order-side{text-align:right}.order-total{font-size:20px;font-weight:950;color:#fff;letter-spacing:-.04em}.status-badge{display:inline-flex;align-items:center;gap:7px;margin-top:8px;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:950;text-transform:uppercase;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}.status-paid{color:#bff8d7;background:rgba(57,229,140,.10);border-color:rgba(57,229,140,.22)}.status-pending{color:#ffe6a8;background:rgba(255,200,87,.10);border-color:rgba(255,200,87,.22)}.status-failed,.status-cancelled{color:#ffd2dc;background:rgba(255,98,125,.10);border-color:rgba(255,98,125,.24)}.order-items{position:relative;z-index:1;margin-top:14px;display:grid;gap:10px}.order-item{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px;border-radius:18px;background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.065)}.order-item img{width:62px;height:62px;border-radius:14px;object-fit:cover;background:#08040f;border:1px solid rgba(216,180,254,.14)}.order-item h3{margin:0;color:#fff;font-size:14px;line-height:1.25}.order-item p{margin:5px 0 0;color:var(--muted2);font-size:12px;font-weight:850}.order-line-price{text-align:right;color:#fff;font-weight:950;white-space:nowrap}.delivery-box{grid-column:1/-1;margin-top:2px;padding:13px;border-radius:16px;background:linear-gradient(180deg,rgba(57,229,140,.08),rgba(57,229,140,.04));border:1px solid rgba(57,229,140,.18)}.delivery-box .label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#bff8d7}.delivery-key{margin-top:9px;padding:12px;border-radius:13px;background:#08040f;border:1px dashed rgba(213,156,255,.30);font-family:ui-monospace,Consolas,monospace;color:#fff;word-break:break-all}.delivery-note{grid-column:1/-1;margin-top:2px;padding:11px 12px;border-radius:14px;background:rgba(168,85,247,.075);border:1px solid rgba(168,85,247,.14);color:#d9c5ff;line-height:1.55;font-size:12px}.order-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.mini-action{min-height:38px;padding:0 12px;border-radius:13px;display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#fff;font-size:12px;font-weight:950;text-decoration:none}.mini-action.primary{background:linear-gradient(135deg,rgba(147,51,234,.88),rgba(124,58,237,.82));border-color:rgba(216,180,254,.22)}.empty-orders{padding:42px 20px;border-radius:24px;background:radial-gradient(circle at 50% 0%,rgba(168,85,247,.12),transparent 42%),rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075);color:var(--muted);text-align:center}.empty-orders i{font-size:34px;color:#d8b4fe;margin-bottom:14px}.empty-orders strong{display:block;color:#fff;font-size:22px;margin-bottom:8px}.empty-orders p{margin:0 auto 18px;max-width:420px;line-height:1.6}.account-hint{display:flex;align-items:flex-start;gap:11px;margin-top:16px;padding:14px;border-radius:18px;background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.14);color:var(--muted);line-height:1.55;font-size:13px}.account-hint i{color:#d8b4fe;margin-top:2px}@media(max-width:900px){.account-hero-inner{grid-template-columns:1fr}.account-actions{justify-content:flex-start}.account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.orders-head{display:grid}.order-top{grid-template-columns:1fr}.order-side{text-align:left}.order-item{grid-template-columns:54px minmax(0,1fr)}.order-item img{width:54px;height:54px}.order-line-price{grid-column:1/-1;text-align:left}}@media(max-width:560px){.account-hero,.orders-panel{padding:18px;border-radius:24px}.account-stats{grid-template-columns:1fr}.order-card{padding:13px}.order-actions{display:grid}.mini-action{justify-content:center}.account-actions{display:grid}.account-actions a{width:100%}}
 </style>
 {% endblock %}
 {% block content %}
-<section class="page-section"><div class="container"><div class="account-grid">
-  <section class="account-card">
-    <div class="eyebrow">account</div><h1 class="account-title">Welcome, {{ current_user.username }}</h1>
-    <p class="muted-copy">You are logged in as {{ current_user.email }}. Purchases are signed-in-only, and paid orders will appear here.</p>
-    <div class="btn-row">
-      {% if current_user.is_owner %}<a class="primary-cta" href="/admin"><i class="fas fa-crown"></i> Owner dashboard</a>{% endif %}
-      <a class="secondary-cta" href="/cart"><i class="fas fa-cart-shopping"></i> Cart</a>
-      <a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+{% set stats = namespace(paid=0, pending=0, delivered=0, items=0, total_cents=0) %}
+{% for order in orders %}
+  {% if order.status == 'paid' %}{% set stats.paid = stats.paid + 1 %}{% endif %}
+  {% if order.status != 'paid' %}{% set stats.pending = stats.pending + 1 %}{% endif %}
+  {% set stats.total_cents = stats.total_cents + (order.amount_cents|default(0)) %}
+  {% if order.cart and order.cart.get('items') %}
+    {% for item in order.cart.get('items') %}
+      {% set stats.items = stats.items + (item.quantity|default(1)) %}
+    {% endfor %}
+  {% endif %}
+  {% if order.deliveries %}{% set stats.delivered = stats.delivered + (order.deliveries|length) %}{% endif %}
+{% endfor %}
+<section class="page-section account-page"><div class="container"><div class="account-shell">
+  <section class="account-hero">
+    <div class="account-hero-inner">
+      <div>
+        <div class="eyebrow">user panel</div>
+        <h1 class="account-title">Welcome, {{ current_user.username }}</h1>
+        <p class="account-copy">Your purchases, order status, and delivered product keys are saved here. Paid orders update here after checkout, then key delivery appears inside the matching product row.</p>
+        <div class="account-email"><i class="fas fa-envelope"></i> {{ current_user.email }}</div>
+      </div>
+      <div class="account-actions">
+        {% if current_user.is_owner %}<a class="primary-cta" href="/admin"><i class="fas fa-crown"></i> Owner dashboard</a>{% endif %}
+        <a class="secondary-cta" href="/store"><i class="fas fa-store"></i> Store</a>
+        <a class="secondary-cta" href="/cart"><i class="fas fa-bag-shopping"></i> Cart</a>
+        <a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+      </div>
     </div>
   </section>
-  <aside class="account-card"><div class="eyebrow">orders</div><h2 style="font-size:28px;margin:8px 0 16px;letter-spacing:-.04em">Order history</h2>
+
+  <section class="account-stats" aria-label="Account order stats">
+    <div class="account-stat"><span><i class="fas fa-receipt"></i> Total orders</span><strong>{{ orders|length }}</strong></div>
+    <div class="account-stat"><span><i class="fas fa-circle-check"></i> Paid</span><strong>{{ stats.paid }}</strong></div>
+    <div class="account-stat"><span><i class="fas fa-key"></i> Keys sent</span><strong>{{ stats.delivered }}</strong></div>
+    <div class="account-stat"><span><i class="fas fa-wallet"></i> Total spent</span><strong>${{ '%.2f'|format(stats.total_cents / 100) }}</strong></div>
+  </section>
+
+  <section class="orders-panel" id="orders">
+    <div class="orders-head">
+      <div><div class="eyebrow">orders</div><h2>Your orders</h2><p>Track every checkout, payment status, product, and delivered key in one clean panel.</p></div>
+      <a class="secondary-cta" href="/downloads"><i class="fas fa-download"></i> Downloads</a>
+    </div>
+
     <div class="order-list">
     {% if orders %}
       {% for order in orders %}
-      <div class="order-card"><div class="order-top"><div><div class="order-id">{{ order.order_id }}</div><div class="order-meta">{{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</div></div><span class="status-badge status-{{ order.status|default('pending') }}">{{ order.status|default('pending') }}</span></div>
-        <div class="order-items">{% if order.cart and order.cart.get('items') %}{% for item in order.cart.get('items') %}{% set delivered = (order.deliveries or {}).get(loop.index0|string) %}<div><div class="order-item"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}</span><strong>${{ item.line_amount }}</strong></div>{% if delivered %}<div class="delivery-box"><div class="label"><i class="fas fa-key"></i> Product key delivered</div><div class="delivery-key">{{ delivered.product_key }}</div>{% if delivered.note %}<div class="delivery-note">{{ delivered.note }}</div>{% endif %}</div>{% elif order.status == 'paid' %}<div class="delivery-note">Your payment is confirmed. The owner will send your key here shortly.</div>{% endif %}</div>{% endfor %}{% endif %}</div>
-      </div>
+      {% set status = order.status|default('pending') %}
+      <article class="order-card">
+        <div class="order-top">
+          <div>
+            <div class="order-id"><i class="fas fa-hashtag"></i> {{ order.order_id }}</div>
+            <div class="order-meta">
+              <span class="meta-pill"><i class="fas fa-credit-card"></i> {{ order.provider|default('payment')|title }}</span>
+              <span class="meta-pill"><i class="fas fa-calendar"></i> {{ order.created_at|default('recent') }}</span>
+              <span class="meta-pill"><i class="fas fa-box"></i> {{ (order.cart.quantity if order.cart and order.cart.quantity else (order.cart.get('items')|length if order.cart and order.cart.get('items') else 0)) }} item{% if order.cart and order.cart.quantity != 1 %}s{% endif %}</span>
+            </div>
+          </div>
+          <div class="order-side"><div class="order-total">{{ order.currency|default('USD') }} ${{ '%.2f'|format((order.amount_cents|default(0))/100) }}</div><span class="status-badge status-{{ status }}"><i class="fas {% if status == 'paid' %}fa-circle-check{% elif status == 'pending' %}fa-clock{% else %}fa-circle-info{% endif %}"></i> {{ status }}</span></div>
+        </div>
+
+        <div class="order-items">
+          {% if order.cart and order.cart.get('items') %}
+            {% for item in order.cart.get('items') %}
+            {% set delivered = (order.deliveries or {}).get(loop.index0|string) %}
+            <div class="order-item">
+              <img src="{{ item.image|default('/static/logo.png') }}" alt="{{ item.product_name|default('Product') }}">
+              <div><h3>{{ item.product_name }} </h3><p>{{ item.option_name }} · Qty {{ item.quantity }}</p></div>
+              <div class="order-line-price">${{ item.line_amount }}</div>
+              {% if delivered %}
+              <div class="delivery-box"><div class="label"><i class="fas fa-key"></i> Product key delivered</div><div class="delivery-key">{{ delivered.product_key }}</div>{% if delivered.note %}<div class="delivery-note">{{ delivered.note }}</div>{% endif %}</div>
+              {% elif status == 'paid' %}
+              <div class="delivery-note"><i class="fas fa-hourglass-half"></i> Payment confirmed. The owner will send your key here shortly.</div>
+              {% else %}
+              <div class="delivery-note"><i class="fas fa-clock"></i> Waiting for payment confirmation before key delivery.</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="delivery-note">This order has no item details saved.</div>
+          {% endif %}
+        </div>
+        <div class="order-actions"><a class="mini-action primary" href="/support"><i class="fas fa-headset"></i> Get support</a><a class="mini-action" href="/store"><i class="fas fa-store"></i> Buy again</a><a class="mini-action" href="/downloads"><i class="fas fa-download"></i> Downloads</a></div>
+      </article>
       {% endfor %}
-    {% else %}<div class="empty-orders">No orders yet. <br><br><a class="primary-cta" href="/store">Browse store</a></div>{% endif %}
+    {% else %}
+      <div class="empty-orders"><i class="fas fa-bag-shopping"></i><strong>No orders yet</strong><p>Once you purchase something, your order status, items, and delivered keys will show up here automatically.</p><a class="primary-cta" href="/store"><i class="fas fa-store"></i> Browse store</a></div>
+    {% endif %}
     </div>
-  </aside>
+    <div class="account-hint"><i class="fas fa-shield-halved"></i><span>For security, product keys only appear on orders tied to this signed-in email. Keep your account login safe and contact support if anything looks wrong.</span></div>
+  </section>
 </div></div></section>
 {% endblock %}

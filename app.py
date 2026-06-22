@@ -1145,6 +1145,23 @@ def money_to_cents(value) -> int:
 def cents_to_money(cents: int) -> str:
     return f"{max(0, int(cents)) / 100:.2f}"
 
+def object_get(obj, key, default=None):
+    """Safely read a value from dicts and SDK objects like StripeObject.
+
+    Newer stripe-python objects do not expose dict.get(), so calling
+    session_obj.get("id") can raise AttributeError('get') even after Stripe
+    successfully creates the checkout session.
+    """
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    try:
+        return obj[key]
+    except Exception:
+        return getattr(obj, key, default)
+
+
 
 def build_checkout_cart(raw_items: list) -> dict:
     if not isinstance(raw_items, list) or not raw_items:
@@ -1537,8 +1554,9 @@ def checkout_success():
             import stripe
             stripe.api_key = STRIPE_SECRET_KEY
             checkout_session = stripe.checkout.Session.retrieve(stripe_session_id)
-            if checkout_session.get("payment_status") == "paid":
-                update_order_status(order_id or checkout_session.get("metadata", {}).get("order_id", ""), "paid", {"provider_payment_id": stripe_session_id})
+            if object_get(checkout_session, "payment_status") == "paid":
+                metadata = object_get(checkout_session, "metadata", {}) or {}
+                update_order_status(order_id or object_get(metadata, "order_id", ""), "paid", {"provider_payment_id": stripe_session_id})
                 flash("Payment confirmed. Your order is ready in your account.", "success")
         except Exception as exc:
             logger.warning("Could not verify Stripe success session: %s", exc)
@@ -2244,16 +2262,22 @@ def checkout_stripe():
             "user_email": user.get("email"),
             "username": user.get("username"),
             "provider": "stripe",
-            "provider_session_id": session_obj.get("id"),
+            "provider_session_id": object_get(session_obj, "id"),
             "status": "pending",
             "cart": cart,
             "amount_cents": cart["total_cents"],
             "currency": cart["currency"],
         })
-        return jsonify({"ok": True, "url": session_obj.url, "order_id": order_id})
+        checkout_url = object_get(session_obj, "url")
+        if not checkout_url:
+            raise RuntimeError("Stripe did not return a checkout URL.")
+        return jsonify({"ok": True, "url": checkout_url, "order_id": order_id})
     except Exception as exc:
         logger.exception("Stripe checkout failed")
-        return jsonify({"ok": False, "error": str(exc)}), 400
+        message = str(exc) or exc.__class__.__name__
+        if message == "get":
+            message = "Stripe checkout session was created, but the app could not read the Stripe response. This has been patched; redeploy the updated code."
+        return jsonify({"ok": False, "error": message}), 400
 
 
 @app.route("/checkout/paypal/create", methods=["POST"])
@@ -2405,11 +2429,13 @@ def stripe_webhook():
             event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
         else:
             event = request.get_json(force=True)
-        if event.get("type") == "checkout.session.completed":
-            session_obj = event.get("data", {}).get("object", {})
-            order_id = (session_obj.get("metadata") or {}).get("order_id", "")
+        if object_get(event, "type") == "checkout.session.completed":
+            event_data = object_get(event, "data", {}) or {}
+            session_obj = object_get(event_data, "object", {}) or {}
+            metadata = object_get(session_obj, "metadata", {}) or {}
+            order_id = object_get(metadata, "order_id", "")
             if order_id:
-                update_order_status(order_id, "paid", {"provider_payment_id": session_obj.get("id")})
+                update_order_status(order_id, "paid", {"provider_payment_id": object_get(session_obj, "id")})
         return jsonify({"received": True})
     except Exception as exc:
         logger.warning("Stripe webhook rejected: %s", exc)
