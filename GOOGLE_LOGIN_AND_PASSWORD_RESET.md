@@ -31,15 +31,20 @@ Google login requires MongoDB for normal customer accounts because accounts are 
 
 ## Forgot password
 
-Forgot password uses MongoDB and your existing Gmail SMTP app password.
+Forgot password uses MongoDB and your existing Resend email delivery app password.
 
 Required values:
 
 ```env
-SMTP_EMAIL=moealturej@gmail.com
-SMTP_PASSWORD=your-google-app-password
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
+EMAIL_FROM_EMAIL=moealturej@gmail.com
+RESEND_API_KEY=re_your_resend_api_key
+EMAIL_PROVIDER=resend
+EMAIL_FROM_NAME=moealturej Security
 ```
 
 The reset link expires in 20 minutes and stores only a hashed reset token in MongoDB.
+
+
+## Email delivery on Render
+
+This build uses Resend first. See `RESEND_EMAIL_SETUP.md` and set `RESEND_API_KEY` in Render. SMTP is only a fallback for local development.

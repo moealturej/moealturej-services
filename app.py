@@ -55,10 +55,17 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "moealturej_services")
 OWNER_EMAIL = os.getenv("OWNER_EMAIL", "owner@moealturej.com").strip().lower()
 OWNER_USERNAME = os.getenv("OWNER_USERNAME", "owner").strip() or "owner"
 OWNER_PASSWORD = os.getenv("OWNER_PASSWORD", "changeme-owner-password")
+# Email delivery
+# Resend is the recommended production email provider for Render because it uses HTTPS
+# instead of SMTP ports. SMTP remains as a local/dev fallback only.
 SMTP_EMAIL = os.getenv("SMTP_EMAIL", "moealturej@gmail.com").strip()
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "resend").strip().lower() or "resend"
+EMAIL_FROM_EMAIL = os.getenv("EMAIL_FROM_EMAIL", os.getenv("RESEND_FROM_EMAIL", SMTP_EMAIL or "moealturej@gmail.com")).strip()
+EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", f"{os.getenv('APP_NAME', 'moealturej')} Security").strip()
 REQUIRE_EMAIL_CODES = os.getenv("REQUIRE_EMAIL_CODES", "true").lower() == "true"
 def env_first(*names: str, default: str = "") -> str:
     for name in names:
@@ -93,7 +100,7 @@ PROCESSING_FEE_PERCENT = max(0, min(100, int(os.getenv("PROCESSING_FEE_PERCENT",
 CHECKOUT_REQUIRE_LOGIN = os.getenv("CHECKOUT_REQUIRE_LOGIN", "true").lower() == "true"
 APP_NAME = os.getenv("APP_NAME", "moealturej").strip() or "moealturej"
 APP_URL = os.getenv("APP_URL", "https://moealturej.com").strip().rstrip("/")
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", SMTP_EMAIL or OWNER_EMAIL).strip()
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", EMAIL_FROM_EMAIL or OWNER_EMAIL).strip()
 BRAND_LOGO_URL = os.getenv("BRAND_LOGO_URL", "").strip()
 OWNER_ORDER_WEBHOOK_URL = env_first("OWNER_ORDER_WEBHOOK_URL", "ORDER_WEBHOOK_URL", "DISCORD_ORDER_WEBHOOK_URL")
 DELIVERY_DM_ENABLED = os.getenv("DELIVERY_DM_ENABLED", "true").lower() == "true"
@@ -297,6 +304,9 @@ app.config.update(
     MAX_CONTENT_LENGTH=MAX_UPLOAD_MB * 1024 * 1024,
     SEND_FILE_MAX_AGE_DEFAULT=31536000 if IS_PRODUCTION else 300,
     SMTP_EMAIL=SMTP_EMAIL,
+    EMAIL_PROVIDER=EMAIL_PROVIDER,
+    EMAIL_FROM_EMAIL=EMAIL_FROM_EMAIL,
+    RESEND_ENABLED=bool(RESEND_API_KEY),
 )
 
 # -----------------------------------------------------------------------------
@@ -355,6 +365,78 @@ def csrf_token() -> str:
 def verify_csrf() -> bool:
     sent = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
     return bool(sent and secrets.compare_digest(sent, session.get("csrf_token", "")))
+
+
+def email_delivery_ready() -> bool:
+    if EMAIL_PROVIDER == "resend":
+        return bool(RESEND_API_KEY and EMAIL_FROM_EMAIL)
+    if EMAIL_PROVIDER == "smtp":
+        return bool(SMTP_EMAIL and SMTP_PASSWORD)
+    return bool(RESEND_API_KEY and EMAIL_FROM_EMAIL) or bool(SMTP_EMAIL and SMTP_PASSWORD)
+
+
+def email_from(sender_label: str = "Security") -> str:
+    label = (sender_label or "Security").strip()
+    name = EMAIL_FROM_NAME or f"{APP_NAME} {label}"
+    # Keep the friendly name branded while using the verified sender address from .env.
+    return f"{name} <{EMAIL_FROM_EMAIL}>"
+
+
+def send_email_message(to_email: str, subject: str, text: str, html_body: str, sender_label: str = "Security") -> bool:
+    """Send transactional email through Resend first, with optional SMTP fallback.
+
+    Render can block or make SMTP unreliable. Resend uses a normal HTTPS API call,
+    so production should set RESEND_API_KEY and EMAIL_PROVIDER=resend.
+    """
+    to_email = (to_email or "").strip()
+    if not to_email or "@" not in to_email:
+        logger.warning("Invalid email target for %s email: %s", sender_label, to_email)
+        return False
+
+    prefer_resend = EMAIL_PROVIDER != "smtp"
+    if prefer_resend and RESEND_API_KEY and EMAIL_FROM_EMAIL:
+        payload = {
+            "from": email_from(sender_label),
+            "to": [to_email],
+            "subject": subject,
+            "text": text,
+            "html": html_body,
+        }
+        try:
+            resp = requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=20,
+            )
+            if resp.status_code in (200, 201, 202):
+                return True
+            logger.error("Resend rejected %s email to %s: %s %s", sender_label, to_email, resp.status_code, resp.text[:500])
+            # Fall through to SMTP only if explicitly available, so local/dev still works.
+        except Exception:
+            logger.exception("Resend request failed for %s email to %s", sender_label, to_email)
+
+    if SMTP_EMAIL and SMTP_PASSWORD:
+        try:
+            msg = EmailMessage()
+            msg["From"] = f"{APP_NAME} {sender_label} <{SMTP_EMAIL}>"
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            msg.set_content(text)
+            msg.add_alternative(html_body, subtype="html")
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=15) as server:
+                server.login(SMTP_EMAIL, SMTP_PASSWORD)
+                server.send_message(msg)
+            return True
+        except Exception:
+            logger.exception("SMTP fallback failed for %s email to %s", sender_label, to_email)
+
+    logger.warning("No email provider is configured; could not send %s email to %s", sender_label, to_email)
+    return False
 
 
 def send_security_email(to_email: str, code: str, purpose: str) -> bool:
@@ -437,27 +519,13 @@ def send_security_email(to_email: str, code: str, purpose: str) -> bool:
   </body>
 </html>
 """
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
+    if not email_delivery_ready():
         if IS_PRODUCTION:
-            logger.error("SMTP_PASSWORD is missing, cannot send security code in production.")
+            logger.error("Email delivery is not configured. Add RESEND_API_KEY and EMAIL_FROM_EMAIL in production.")
             return False
         flash(f"Dev security code: {code}", "warning")
         return True
-    try:
-        msg = EmailMessage()
-        msg["From"] = f"{APP_NAME} Security <{SMTP_EMAIL}>"
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.set_content(text)
-        msg.add_alternative(html, subtype="html")
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=15) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.send_message(msg)
-        return True
-    except Exception:
-        logger.exception("Failed to send security email to %s", to_email)
-        return False
+    return send_email_message(to_email, subject, text, html, "Security")
 
 
 def start_email_code_flow(kind: str, payload: dict, email: str, purpose: str) -> bool:
@@ -571,33 +639,19 @@ def find_user_by_reset_token(token: str):
 
 
 def send_password_reset_email(to_email: str, reset_url: str) -> bool:
-    if not SMTP_PASSWORD:
-        logger.warning("SMTP_PASSWORD is not configured; cannot send password reset email.")
+    if not email_delivery_ready():
+        logger.warning("Email delivery is not configured; cannot send password reset email.")
         return False
     safe_app = html_escape.escape(APP_NAME)
     safe_url = html_escape.escape(reset_url)
     safe_support = html_escape.escape(SUPPORT_EMAIL)
-    msg = EmailMessage()
-    msg["Subject"] = f"Reset your {APP_NAME} password"
-    msg["From"] = f"{APP_NAME} Security <{SMTP_EMAIL}>"
-    msg["To"] = to_email
+    subject = f"Reset your {APP_NAME} password"
     text = (
         f"Reset your {APP_NAME} password using this secure link: {reset_url}\n\n"
         "This link expires in 20 minutes. If you did not request it, ignore this email."
     )
     html = f"""<!doctype html><html><body style='margin:0;background:#05020a;color:#fff;font-family:Arial,sans-serif;'><table width='100%' cellpadding='0' cellspacing='0' style='padding:34px 14px;background:#05020a;'><tr><td align='center'><table width='100%' cellpadding='0' cellspacing='0' style='max-width:620px;background:linear-gradient(180deg,#160b28,#07030d);border:1px solid rgba(255,255,255,.12);border-radius:26px;overflow:hidden;'><tr><td style='padding:28px;border-bottom:1px solid rgba(255,255,255,.08);'><div style='font-size:22px;font-weight:900;letter-spacing:-.03em;'>{safe_app}</div><div style='color:#b9a8d8;font-size:13px;margin-top:5px;'>Password recovery</div></td></tr><tr><td style='padding:34px 28px;text-align:center;'><div style='display:inline-block;padding:8px 13px;border:1px solid rgba(216,180,254,.28);border-radius:999px;color:#e9d5ff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;'>Secure reset</div><h1 style='font-size:32px;line-height:1.1;margin:18px 0 10px;color:#fff;'>Reset your password</h1><p style='color:#b9a8d8;line-height:1.65;margin:0 auto 24px;max-width:420px;'>Use the button below to create a new password. This link expires in 20 minutes.</p><a href='{safe_url}' style='display:inline-block;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#db2777);padding:14px 22px;border-radius:14px;font-weight:900;'>Reset password</a><p style='margin:24px 0 0;color:#7e7191;font-size:12px;line-height:1.6;'>Did not request this? Ignore this email or contact {safe_support}.</p></td></tr></table></td></tr></table></body></html>"""
-    msg.set_content(text)
-    msg.add_alternative(html, subtype="html")
-    try:
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.send_message(msg)
-        return True
-    except Exception:
-        logger.exception("Failed to send password reset email to %s", to_email)
-        return False
-
+    return send_email_message(to_email, subject, text, html, "Security")
 
 
 def get_user_by_email(email: str | None) -> dict | None:
@@ -609,24 +663,7 @@ def get_user_by_email(email: str | None) -> dict | None:
 
 
 def send_html_email(to_email: str, subject: str, text: str, html_body: str, sender_label: str = "Notifications") -> bool:
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        logger.warning("SMTP is not configured; could not send %s email to %s", sender_label, to_email)
-        return False
-    try:
-        msg = EmailMessage()
-        msg["From"] = f"{APP_NAME} {sender_label} <{SMTP_EMAIL}>"
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.set_content(text)
-        msg.add_alternative(html_body, subtype="html")
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=15) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.send_message(msg)
-        return True
-    except Exception:
-        logger.exception("Failed to send %s email to %s", sender_label, to_email)
-        return False
+    return send_email_message(to_email, subject, text, html_body, sender_label)
 
 
 def build_key_delivery_email(to_email: str, order: dict, item: dict, product_key: str, note: str = "") -> tuple[str, str, str]:
@@ -1528,7 +1565,7 @@ def signup():
         payload = {"email": email, "username": username, "password_hash": generate_password_hash(password)}
         if REQUIRE_EMAIL_CODES:
             if not start_email_code_flow("signup", payload, email, "signup"):
-                flash("Email verification is not configured. Add SMTP_PASSWORD for moealturej@gmail.com.", "danger")
+                flash("Email verification is not configured. Add RESEND_API_KEY in .env for moealturej@gmail.com email delivery.", "danger")
                 return render_template("signup.html", active_page="signup")
             flash("Check your email for the 6-digit signup code.", "success")
             return render_template("verify_email.html", flow="signup", email=email, active_page="signup")
@@ -1572,7 +1609,7 @@ def login():
         payload = {"email": user.get("email"), "username": user.get("username") or email.split("@")[0], "is_owner": bool(user.get("is_owner") or user.get("role") == "owner"), "role": user.get("role", "user")}
         if REQUIRE_EMAIL_CODES:
             if not start_email_code_flow("login", payload, email, "login"):
-                flash("Email 2FA is not configured. Add SMTP_PASSWORD for moealturej@gmail.com.", "danger")
+                flash("Email 2FA is not configured. Add RESEND_API_KEY in .env for moealturej@gmail.com email delivery.", "danger")
                 return render_template("login.html", active_page="login")
             flash("Check your email for the 6-digit login code.", "success")
             return render_template("verify_email.html", flow="login", email=email, active_page="login")
@@ -1771,7 +1808,7 @@ def forgot_password():
             }})
             reset_url = url_for("reset_password", token=token, _external=True)
             if not send_password_reset_email(email, reset_url):
-                flash("Password reset email is not configured. Add SMTP_PASSWORD for Gmail app password.", "danger")
+                flash("Password reset email is not configured. Add RESEND_API_KEY in .env for password reset emails.", "danger")
                 return render_template("forgot_password.html", active_page="login")
             record_audit("password_reset_requested", email)
         flash(generic, "success")
@@ -2378,7 +2415,9 @@ def admin_api_diagnostics():
         "discord_bot": bool(DISCORD_BOT_TOKEN),
         "owner_order_webhook": bool(OWNER_ORDER_WEBHOOK_URL),
         "delivery_dm_enabled": bool(DELIVERY_DM_ENABLED and DISCORD_BOT_TOKEN),
-        "email_codes": bool(SMTP_EMAIL and SMTP_PASSWORD and REQUIRE_EMAIL_CODES),
+        "email_codes": bool(email_delivery_ready() and REQUIRE_EMAIL_CODES),
+        "email_provider": EMAIL_PROVIDER,
+        "resend": bool(RESEND_API_KEY),
         "maintenance": is_maintenance_mode(),
         "store_enabled": bool(load_site_settings().get("store_enabled", True)),
     })

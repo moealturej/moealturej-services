@@ -18,8 +18,8 @@ OWNER_EMAIL=moealturej@gmail.com
 OWNER_USERNAME=moealturej
 OWNER_PASSWORD=strong-owner-password
 
-SMTP_EMAIL=moealturej@gmail.com
-SMTP_PASSWORD=google-app-password
+EMAIL_FROM_EMAIL=moealturej@gmail.com
+RESEND_API_KEY=re_your_resend_api_key
 REQUIRE_EMAIL_CODES=true
 
 DISCORD_CLIENT_ID=...
@@ -64,3 +64,8 @@ Production:
 ```bash
 gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
 ```
+
+
+## Email delivery on Render
+
+This build uses Resend first. See `RESEND_EMAIL_SETUP.md` and set `RESEND_API_KEY` in Render. SMTP is only a fallback for local development.

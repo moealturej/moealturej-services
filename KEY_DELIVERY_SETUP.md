@@ -19,8 +19,8 @@ This build supports manual key delivery after a successful Stripe or PayPal paym
 OWNER_ORDER_WEBHOOK_URL=https://discord.com/api/webhooks/your-webhook
 DELIVERY_DM_ENABLED=true
 DISCORD_BOT_TOKEN=your_bot_token
-SMTP_EMAIL=moealturej@gmail.com
-SMTP_PASSWORD=your-google-app-password
+EMAIL_FROM_EMAIL=moealturej@gmail.com
+RESEND_API_KEY=re_your_resend_api_key
 ```
 
 ## Security note
@@ -37,3 +37,8 @@ The DM only sends when:
 - the customer's Discord privacy settings allow DMs from your bot/server
 
 If the DM fails, the key still saves to the account and the email can still send.
+
+
+## Email delivery on Render
+
+This build uses Resend first. See `RESEND_EMAIL_SETUP.md` and set `RESEND_API_KEY` in Render. SMTP is only a fallback for local development.

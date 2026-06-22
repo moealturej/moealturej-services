@@ -7,7 +7,7 @@
 - Account control: view users, change roles, suspend/unsuspend accounts, reset passwords, and delete accounts
 - Product control: add products, remove products, edit full product JSON, update downloads, and update live status
 - Upload manager for product images and download files
-- Email verification codes for login and signup using Gmail SMTP
+- Email verification codes for login and signup using Resend email delivery
 - CSRF protection for POST forms
 - Upload safety: file size limit, extension allow-list, randomized file names, and safe serving routes
 - Cleaner premium dark/purple admin visuals
@@ -44,21 +44,21 @@ python app.py
 http://127.0.0.1:10000/admin
 ```
 
-## Gmail 2FA / email codes
+## Resend 2FA / email codes
 
-The app sends 6-digit login/signup codes from Gmail when this is enabled:
+The app sends 6-digit login/signup codes, password resets, and key delivery emails through Resend when this is enabled:
 
 ```env
-SMTP_EMAIL=moealturej@gmail.com
-SMTP_PASSWORD=your-google-app-password
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
+EMAIL_FROM_EMAIL=moealturej@gmail.com
+RESEND_API_KEY=re_your_resend_api_key
+EMAIL_PROVIDER=resend
+EMAIL_FROM_NAME=moealturej Security
 REQUIRE_EMAIL_CODES=true
 ```
 
-Important: Gmail does **not** allow your normal Gmail password for SMTP. Turn on 2-Step Verification on the Google account, then create an **App Password** and paste that into `SMTP_PASSWORD`.
+Important: on Render, use `RESEND_API_KEY`. SMTP is only an optional local fallback.
 
-In development, if `SMTP_PASSWORD` is missing, the app shows the code as a flash message so you can test. In production, missing SMTP settings block login/signup codes for safety.
+In development, if no email provider is configured, the app can show security codes as a flash message so you can test. In production, missing Resend settings block login/signup codes for safety.
 
 ## Upload manager
 
@@ -96,10 +96,10 @@ Add these environment variables in Render:
 - `OWNER_EMAIL`
 - `OWNER_USERNAME`
 - `OWNER_PASSWORD`
-- `SMTP_EMAIL=moealturej@gmail.com`
-- `SMTP_PASSWORD`
-- `SMTP_HOST=smtp.gmail.com`
-- `SMTP_PORT=465`
+- `EMAIL_FROM_EMAIL=moealturej@gmail.com`
+- `RESEND_API_KEY`
+- `EMAIL_PROVIDER=resend`
+- `EMAIL_FROM_NAME=moealturej Security`
 - `REQUIRE_EMAIL_CODES=true`
 - `BEHIND_PROXY=true`
 
@@ -116,7 +116,7 @@ python app.py
 - Use MongoDB Atlas with a strong DB password.
 - Set `FLASK_ENV=production`.
 - Keep `REQUIRE_EMAIL_CODES=true`.
-- Use Gmail App Password for SMTP.
+- Use Resend for production email delivery on Render.
 - Do not allow public write access to MongoDB.
 - Do not upload raw `.exe`, `.bat`, `.cmd`, `.html`, or `.js` files.
 
@@ -218,3 +218,8 @@ Important Discord rules:
 - The bot token does not replace `DISCORD_CLIENT_SECRET`; OAuth login still needs Client ID + Client Secret.
 
 If auto-join fails, the login still succeeds, but the dashboard will show a warning flash explaining what Discord rejected.
+
+
+## Email delivery on Render
+
+This build uses Resend first. See `RESEND_EMAIL_SETUP.md` and set `RESEND_API_KEY` in Render. SMTP is only a fallback for local development.
