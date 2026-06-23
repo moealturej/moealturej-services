@@ -15,7 +15,7 @@ from email.message import EmailMessage
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Flask, Response, abort, flash, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -153,9 +153,11 @@ settings_col = None
 media_col = None
 audit_col = None
 orders_col = None
+media_fs = None
+media_fs = None
 
 def init_mongo():
-    global mongo_client, db, mongo_status_reason, products_col, users_col, settings_col, media_col, audit_col, orders_col
+    global mongo_client, db, mongo_status_reason, products_col, users_col, settings_col, media_col, audit_col, orders_col, media_fs
     if not MONGO_URI:
         mongo_status_reason = "MONGO_URI is empty in .env, so the app is using local JSON fallback."
         logger.warning("MONGO_URI is not set. Using local JSON fallback for products and local-only owner login.")
@@ -167,6 +169,7 @@ def init_mongo():
         return
     try:
         from pymongo import MongoClient, ASCENDING
+        import gridfs
         mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
         mongo_client.admin.command("ping")
         db = mongo_client[MONGO_DB_NAME]
@@ -176,6 +179,7 @@ def init_mongo():
         media_col = db["media"]
         audit_col = db["audit_logs"]
         orders_col = db["orders"]
+        media_fs = gridfs.GridFS(db, collection="media_files")
         users_col.create_index([("email", ASCENDING)], unique=True)
         products_col.create_index([("slug", ASCENDING)], unique=True)
         media_col.create_index([("filename", ASCENDING)], unique=True)
@@ -187,10 +191,11 @@ def init_mongo():
     except Exception as exc:
         mongo_status_reason = f"MongoDB connection failed: {exc}. Check MONGO_URI, username/password, IP whitelist, and your Atlas cluster hostname."
         logger.error("MongoDB connection failed (%s). Falling back to local JSON mode. Check MONGO_URI in .env.", exc)
-        mongo_client = db = products_col = users_col = settings_col = media_col = audit_col = orders_col = None
+        mongo_client = db = products_col = users_col = settings_col = media_col = audit_col = orders_col = media_fs = None
 media_col = None
 audit_col = None
 orders_col = None
+media_fs = None
 
 def using_mongo() -> bool:
     return products_col is not None and users_col is not None
@@ -1102,6 +1107,74 @@ def delete_media_record(filename: str):
     else:
         records = [r for r in load_media() if r.get("filename") != filename]
         MEDIA_FILE.write_text(json.dumps(records, indent=2), encoding="utf-8")
+
+
+def save_upload_to_mongo_storage(local_path: Path, filename: str, original_name: str, upload_kind: str, mime_type: str) -> str | None:
+    """Persist dashboard uploads in MongoDB GridFS so they survive Render restarts."""
+    if not (using_mongo() and media_fs is not None):
+        return None
+    try:
+        # Keep one active GridFS file per generated filename.
+        existing = list(media_fs.find({"filename": filename}))
+        for grid_file in existing:
+            media_fs.delete(grid_file._id)
+        with local_path.open("rb") as file_handle:
+            file_id = media_fs.put(
+                file_handle,
+                filename=filename,
+                content_type=mime_type or "application/octet-stream",
+                metadata={
+                    "original_name": original_name,
+                    "kind": upload_kind,
+                    "created_at": utc_now().isoformat(),
+                },
+            )
+        return str(file_id)
+    except Exception:
+        logger.exception("Failed to persist uploaded file %s to MongoDB GridFS", filename)
+        return None
+
+
+def get_mongo_stored_file(filename: str):
+    if not (using_mongo() and media_fs is not None):
+        return None
+    try:
+        return media_fs.find_one({"filename": secure_filename(filename)})
+    except Exception:
+        logger.exception("Failed to read uploaded file %s from MongoDB GridFS", filename)
+        return None
+
+
+def delete_mongo_stored_file(filename: str):
+    if not (using_mongo() and media_fs is not None):
+        return
+    try:
+        for grid_file in list(media_fs.find({"filename": secure_filename(filename)})):
+            media_fs.delete(grid_file._id)
+    except Exception:
+        logger.exception("Failed to delete uploaded file %s from MongoDB GridFS", filename)
+
+
+def send_mongo_stored_file(filename: str, as_attachment: bool = False):
+    grid_file = get_mongo_stored_file(filename)
+    if grid_file is None:
+        abort(404)
+
+    mimetype = getattr(grid_file, "content_type", None) or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    disposition = "attachment" if as_attachment else "inline"
+    safe_name = secure_filename(filename)
+    headers = {
+        "Content-Disposition": f'{disposition}; filename="{safe_name}"',
+        "Cache-Control": "public, max-age=31536000" if IS_PRODUCTION else "no-cache",
+    }
+    try:
+        size = getattr(grid_file, "length", None)
+        if size is not None:
+            headers["Content-Length"] = str(size)
+    except Exception:
+        pass
+
+    return Response(grid_file.read(), mimetype=mimetype, headers=headers)
 
 
 def allowed_upload(filename: str, upload_kind: str) -> bool:
@@ -2344,15 +2417,20 @@ def admin_media_upload():
     filename = f"{utc_now_naive().strftime('%Y%m%d')}-{uuid.uuid4().hex[:12]}.{ext}"
     target_dir = UPLOADS_DIR if upload_kind == "image" else FILES_DIR
     target_dir.mkdir(parents=True, exist_ok=True)
-    upload.save(target_dir / filename)
+    local_path = target_dir / filename
+    upload.save(local_path)
     url = url_for("media_file", filename=filename) if upload_kind == "image" else url_for("download_file", filename=filename)
+    mime_type = mimetypes.guess_type(original)[0] or "application/octet-stream"
+    gridfs_id = save_upload_to_mongo_storage(local_path, filename, original, upload_kind, mime_type)
     record = {
         "filename": filename,
         "original_name": original,
         "kind": upload_kind,
         "url": url,
-        "mime_type": mimetypes.guess_type(original)[0] or "application/octet-stream",
-        "size_bytes": (target_dir / filename).stat().st_size,
+        "mime_type": mime_type,
+        "size_bytes": local_path.stat().st_size,
+        "storage": "mongodb_gridfs" if gridfs_id else "local_disk",
+        "gridfs_id": gridfs_id,
         "created_at": utc_now().isoformat(),
         "created_by": (current_user() or {}).get("email"),
     }
@@ -2369,6 +2447,7 @@ def admin_media_delete(filename):
         path = folder / filename
         if path.exists() and path.is_file():
             path.unlink()
+    delete_mongo_stored_file(filename)
     delete_media_record(filename)
     record_audit("media_delete", filename)
     flash("Media deleted.", "success")
@@ -2382,9 +2461,9 @@ def media_file(filename):
     if not safe_path:
         abort(404)
     file_path = Path(safe_path)
-    if not file_path.exists() or not file_path.is_file():
-        abort(404)
-    return send_from_directory(str(UPLOADS_DIR), safe_name, conditional=True)
+    if file_path.exists() and file_path.is_file():
+        return send_from_directory(str(UPLOADS_DIR), safe_name, conditional=True)
+    return send_mongo_stored_file(safe_name, as_attachment=False)
 
 # -----------------------------------------------------------------------------
 # Checkout / Payments
@@ -2814,15 +2893,15 @@ def download_file(filename):
 
     file_path = Path(safe_path)
 
-    if not file_path.exists() or not file_path.is_file():
-        abort(404)
+    if file_path.exists() and file_path.is_file():
+        return send_from_directory(
+            directory=str(FILES_DIR),
+            path=normalized_filename,
+            as_attachment=True,
+            conditional=True,
+        )
 
-    return send_from_directory(
-        directory=str(FILES_DIR),
-        path=normalized_filename,
-        as_attachment=True,
-        conditional=True,
-    )
+    return send_mongo_stored_file(normalized_filename, as_attachment=True)
 
 
 # -----------------------------------------------------------------------------
