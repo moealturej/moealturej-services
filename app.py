@@ -127,6 +127,7 @@ PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox").strip().lower()
 PAYPAL_API_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
 PROCESSING_FEE_PERCENT = max(0, min(100, int(os.getenv("PROCESSING_FEE_PERCENT", "10"))))
 CHECKOUT_REQUIRE_LOGIN = os.getenv("CHECKOUT_REQUIRE_LOGIN", "true").lower() == "true"
+PENDING_ORDER_MAX_AGE_MINUTES = max(1, int(os.getenv("PENDING_ORDER_MAX_AGE_MINUTES", "10")))
 APP_NAME = os.getenv("APP_NAME", "moealturej").strip() or "moealturej"
 APP_URL = os.getenv("APP_URL", "https://moealturej.com").strip().rstrip("/")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", RESEND_REPLY_TO or OWNER_EMAIL).strip()
@@ -1261,6 +1262,83 @@ def load_orders_for_user(email: str | None = None) -> list:
 
 
 
+
+def parse_order_datetime(value) -> datetime | None:
+    """Return an aware UTC datetime from the mixed formats used in saved orders."""
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        raw = str(value or "").strip()
+        if not raw:
+            return None
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except Exception:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def order_is_expired_pending(order: dict, now: datetime | None = None) -> bool:
+    if str(order.get("status", "")).lower() != "pending":
+        return False
+    created_at = parse_order_datetime(order.get("created_at"))
+    if not created_at:
+        return False
+    now = now or utc_now()
+    return now - created_at >= timedelta(minutes=PENDING_ORDER_MAX_AGE_MINUTES)
+
+
+def delete_order(order_id: str) -> bool:
+    order_id = (order_id or "").strip()
+    if not order_id:
+        return False
+    if using_mongo() and orders_col is not None:
+        result = orders_col.delete_one({"order_id": order_id})
+        return bool(getattr(result, "deleted_count", 0))
+    orders = load_orders_for_user(None)
+    kept = [o for o in orders if str(o.get("order_id", "")) != order_id]
+    if len(kept) == len(orders):
+        return False
+    DATA_DIR.mkdir(exist_ok=True)
+    ORDERS_FILE.write_text(json.dumps(kept[:1000], indent=2), encoding="utf-8")
+    return True
+
+
+def expire_provider_checkout(order: dict) -> None:
+    """Best-effort remote cancellation before deleting a stale pending order."""
+    provider = str(order.get("provider", "")).lower()
+    if provider == "stripe" and STRIPE_SECRET_KEY and order.get("provider_session_id"):
+        try:
+            import stripe
+            stripe.api_key = STRIPE_SECRET_KEY
+            stripe.checkout.Session.expire(order.get("provider_session_id"))
+        except Exception as exc:
+            # Stripe may already be completed/expired; local cleanup should still continue.
+            logger.info("Could not expire stale Stripe session for %s: %s", order.get("order_id"), exc)
+
+
+def cleanup_expired_pending_orders() -> int:
+    """Delete pending orders that were not paid within the configured window."""
+    now = utc_now()
+    if using_mongo() and orders_col is not None:
+        candidates = list(orders_col.find({"status": "pending"}, {"_id": 0}).limit(500))
+    else:
+        try:
+            candidates = json.loads(ORDERS_FILE.read_text(encoding="utf-8")) if ORDERS_FILE.exists() else []
+        except Exception:
+            candidates = []
+    stale = [o for o in candidates if order_is_expired_pending(o, now)]
+    deleted = 0
+    for order in stale:
+        expire_provider_checkout(order)
+        if delete_order(order.get("order_id", "")):
+            deleted += 1
+    if deleted:
+        logger.info("Deleted %s expired pending order(s).", deleted)
+    return deleted
+
 def find_order_by_id(order_id: str) -> dict | None:
     order_id = (order_id or "").strip()
     if not order_id:
@@ -1283,8 +1361,18 @@ def find_order_by_provider_order(provider_order_id: str) -> dict | None:
     return None
 
 def update_order_status(order_id: str, status: str, details: dict | None = None):
+    order_id = (order_id or "").strip()
+    if not order_id:
+        logger.warning("Ignoring order status update with missing order_id: %s", status)
+        return None
     orders = load_orders_for_user(None)
-    existing = next((o for o in orders if o.get("order_id") == order_id), None) or {"order_id": order_id}
+    existing = next((o for o in orders if o.get("order_id") == order_id), None)
+    if not existing:
+        logger.warning("Ignoring status update for missing/deleted order %s -> %s", order_id, status)
+        return None
+    if order_is_expired_pending(existing) and str(status).lower() != "paid":
+        delete_order(order_id)
+        return None
     was_notified = bool(existing.get("owner_notified_at"))
     existing["status"] = status
     existing["updated_at"] = utc_now().isoformat()
@@ -1431,6 +1519,7 @@ def inject_global_template_vars():
         "paypal_mode": PAYPAL_MODE,
         "processing_fee_percent": PROCESSING_FEE_PERCENT,
         "checkout_currency": STRIPE_CURRENCY.upper(),
+        "pending_order_max_age_minutes": PENDING_ORDER_MAX_AGE_MINUTES,
         "site_settings": load_site_settings(),
     }
 
@@ -1438,6 +1527,19 @@ def inject_global_template_vars():
 # -----------------------------------------------------------------------------
 # Request hooks
 # -----------------------------------------------------------------------------
+@app.before_request
+def cleanup_stale_pending_orders_before_request():
+    # Render/Flask apps do not always have a background worker. Running a tiny
+    # cleanup on normal requests keeps abandoned pending orders out of user/admin panels.
+    if request.path.startswith(("/static/", "/media/", "/webhooks/")):
+        return None
+    try:
+        cleanup_expired_pending_orders()
+    except Exception as exc:
+        logger.warning("Pending order cleanup failed: %s", exc)
+    return None
+
+
 @app.before_request
 def set_session_timeout():
     session.permanent = True
@@ -1547,6 +1649,7 @@ def checkout():
 @app.route("/checkout/success")
 @login_required
 def checkout_success():
+    cleanup_expired_pending_orders()
     order_id = request.args.get("order_id", "")
     stripe_session_id = request.args.get("session_id", "")
     if stripe_session_id and STRIPE_SECRET_KEY:
@@ -1938,6 +2041,7 @@ def logout():
 
 @app.route("/account")
 def account():
+    cleanup_expired_pending_orders()
     if not current_user():
         return redirect(url_for("login", next=request.path))
     orders = load_orders_for_user((current_user() or {}).get("email"))
@@ -1947,6 +2051,7 @@ def account():
 @app.route("/admin")
 @owner_required
 def admin_dashboard():
+    cleanup_expired_pending_orders()
     products = load_products()
     stats = {
         "products": len(products),
@@ -2245,6 +2350,7 @@ def checkout_stripe():
             "username": user.get("username"),
             "provider": "stripe",
             "status": "pending",
+            "expires_at": (utc_now() + timedelta(minutes=PENDING_ORDER_MAX_AGE_MINUTES)).isoformat(),
             "cart": cart,
             "amount_cents": cart["total_cents"],
             "currency": cart["currency"],
@@ -2264,6 +2370,7 @@ def checkout_stripe():
             "provider": "stripe",
             "provider_session_id": object_get(session_obj, "id"),
             "status": "pending",
+            "expires_at": (utc_now() + timedelta(minutes=PENDING_ORDER_MAX_AGE_MINUTES)).isoformat(),
             "cart": cart,
             "amount_cents": cart["total_cents"],
             "currency": cart["currency"],
@@ -2326,6 +2433,7 @@ def checkout_paypal_create():
             "provider": "paypal",
             "provider_order_id": pp.get("id"),
             "status": "pending",
+            "expires_at": (utc_now() + timedelta(minutes=PENDING_ORDER_MAX_AGE_MINUTES)).isoformat(),
             "cart": cart,
             "amount_cents": cart["total_cents"],
             "currency": cart["currency"],
