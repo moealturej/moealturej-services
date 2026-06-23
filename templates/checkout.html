@@ -257,59 +257,6 @@
     font-weight: 800;
   }
 
-
-  .embedded-checkout-wrap {
-    display: none;
-    margin-top: 16px;
-    padding: 12px;
-    border-radius: 22px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: rgba(255,255,255,.035);
-  }
-
-  .embedded-checkout-wrap.active {
-    display: block;
-  }
-
-  .embedded-checkout-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
-    padding: 2px 2px 8px;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-  }
-
-  .embedded-checkout-head strong {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-  }
-
-  .mini-action {
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(255,255,255,.055);
-    color: rgba(255,255,255,.72);
-    border-radius: 999px;
-    min-height: 34px;
-    padding: 0 12px;
-    font-size: 11px;
-    font-weight: 900;
-    cursor: pointer;
-  }
-
-  #stripe-embedded-checkout {
-    min-height: 460px;
-    overflow: hidden;
-    border-radius: 16px;
-  }
-
-  #paypal-buttons {
-    min-height: 48px;
-  }
-
   .pay-note,
   .provider-missing {
     margin-top: 14px;
@@ -328,14 +275,16 @@
     color: #ffe8a9;
   }
 
-  .pay-note:empty {
-    display: none;
-  }
-
   .pay-note.error {
     border-color: rgba(255, 98, 125, .32);
     background: rgba(255, 98, 125, .10);
     color: #ffd1da;
+  }
+
+  .pay-note.success {
+    border-color: rgba(35, 165, 90, .28);
+    background: rgba(35, 165, 90, .10);
+    color: #bfffd7;
   }
 
   .spinner {
@@ -409,7 +358,9 @@
 
         <div id="checkout-list" class="checkout-items-clean"></div>
 
-        <div id="pay-message" class="pay-note">Loading checkout...</div>
+        <div id="pay-message" class="pay-note">
+          Loading checkout...
+        </div>
       </main>
 
       <aside class="pay-card pay-summary">
@@ -436,28 +387,28 @@
 
         <div class="payment-stack">
           {% if stripe_enabled %}
-          <button id="stripe-btn" class="pay-method stripe" type="button">
+          <button id="stripe-btn" class="pay-method stripe">
             <i class="fas fa-credit-card"></i>
             <span>
-              Embedded Stripe checkout
+              Pay with Stripe
               <small>Card, Apple Pay, Google Pay</small>
             </span>
-            <i class="fas fa-chevron-down"></i>
+            <i class="fas fa-arrow-right"></i>
           </button>
           {% else %}
           <div class="provider-missing">
-            Stripe embedded checkout needs STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY.
+            Stripe is not configured.
           </div>
           {% endif %}
 
           {% if paypal_enabled %}
-          <button id="paypal-btn" class="pay-method paypal" type="button">
+          <button id="paypal-direct-btn" class="pay-method paypal">
             <i class="fab fa-paypal"></i>
             <span>
-              PayPal checkout
-              <small>PayPal balance, debit, or credit card</small>
+              Pay with PayPal
+              <small>PayPal balance or card</small>
             </span>
-            <i class="fas fa-chevron-down"></i>
+            <i class="fas fa-arrow-right"></i>
           </button>
           {% else %}
           <div class="provider-missing">
@@ -466,29 +417,9 @@
           {% endif %}
         </div>
 
-        {% if stripe_enabled %}
-        <div class="embedded-checkout-wrap" id="stripe-wrap">
-          <div class="embedded-checkout-head">
-            <strong><i class="fas fa-credit-card"></i> Stripe checkout</strong>
-            <button id="stripe-reset" class="mini-action" type="button">Restart</button>
-          </div>
-          <div id="stripe-embedded-checkout"></div>
-        </div>
-        {% endif %}
-
-        {% if paypal_enabled %}
-        <div class="embedded-checkout-wrap" id="paypal-wrap">
-          <div class="embedded-checkout-head">
-            <strong><i class="fab fa-paypal"></i> PayPal checkout</strong>
-            <button id="paypal-close" class="mini-action" type="button">Close</button>
-          </div>
-          <div id="paypal-buttons"></div>
-        </div>
-        {% endif %}
-
         <div class="pay-lock">
           <i class="fas fa-lock"></i>
-          Secure embedded checkout
+          Secure checkout
         </div>
       </aside>
 
@@ -498,18 +429,10 @@
 {% endblock %}
 
 {% block extra_scripts %}
-{% if stripe_enabled %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
-{% if paypal_enabled %}<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id|urlencode }}&currency={{ checkout_currency }}&intent=capture&disable-funding=venmo,paylater"></script>{% endif %}
 <script>
 const CART_KEY = 'moeCart';
 const CSRF = {{ csrf_token()|tojson }};
-const STRIPE_PUBLIC_KEY = {{ stripe_publishable_key|default('', true)|tojson }};
 let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-let checkoutReady = false;
-let stripeCheckout = null;
-let stripeMounted = false;
-let paypalRendered = false;
-let pendingPayPalOrderId = '';
 
 const msg = document.getElementById('pay-message');
 const list = document.getElementById('checkout-list');
@@ -584,8 +507,6 @@ async function preview() {
       button.disabled = true;
     });
 
-    document.getElementById('paypal-wrap')?.classList.remove('active');
-    document.getElementById('stripe-wrap')?.classList.remove('active');
     return;
   }
 
@@ -610,11 +531,7 @@ async function preview() {
       </div>
     `).join('');
 
-    checkoutReady = true;
-    document.querySelectorAll('.pay-method').forEach(button => {
-      button.disabled = false;
-    });
-    setMsg('', false);
+    setMsg('Ready for payment.', false, 'success');
   } catch (error) {
     setMsg(error.message, false, 'error');
 
@@ -624,113 +541,38 @@ async function preview() {
   }
 }
 
-async function mountStripeCheckout(force = false) {
-  const wrap = document.getElementById('stripe-wrap');
-  const container = document.getElementById('stripe-embedded-checkout');
-  const button = document.getElementById('stripe-btn');
+document.getElementById('stripe-btn')?.addEventListener('click', async () => {
+  try {
+    setMsg('Starting Stripe checkout...', true);
 
-  if (!wrap || !container || !button) return;
-  if (!checkoutReady) {
-    setMsg('Checkout is still loading. Try again in a second.', false, 'error');
-    return;
+    const json = await post('/checkout/stripe', payload());
+
+    location.href = json.url;
+  } catch (error) {
+    setMsg(error.message, false, 'error');
   }
-  if (!window.Stripe || !STRIPE_PUBLIC_KEY) {
-    setMsg('Stripe.js or STRIPE_PUBLISHABLE_KEY is missing.', false, 'error');
-    return;
-  }
-  if (stripeMounted && !force) {
-    document.getElementById('paypal-wrap')?.classList.remove('active');
-    wrap.classList.toggle('active');
-    return;
-  }
+});
+
+document.getElementById('paypal-direct-btn')?.addEventListener('click', async () => {
+  const button = document.getElementById('paypal-direct-btn');
 
   try {
     button.disabled = true;
-    document.getElementById('paypal-wrap')?.classList.remove('active');
-    wrap.classList.add('active');
-    container.innerHTML = '';
-    setMsg('Loading embedded Stripe checkout...', true);
+    setMsg('Starting PayPal checkout...', true);
 
-    if (stripeCheckout && typeof stripeCheckout.destroy === 'function') {
-      stripeCheckout.destroy();
+    const json = await post('/checkout/paypal/create', payload());
+
+    if (!json.approve_url) {
+      throw new Error('PayPal did not return an approval link.');
     }
 
-    const json = await post('/checkout/stripe', payload());
-    const stripe = Stripe(STRIPE_PUBLIC_KEY);
-    stripeCheckout = await stripe.initEmbeddedCheckout({
-      clientSecret: json.client_secret
-    });
-    stripeCheckout.mount('#stripe-embedded-checkout');
-    stripeMounted = true;
-    setMsg('Stripe checkout is embedded below. Finish payment without leaving this page.', false, 'success');
+    localStorage.setItem('moePendingPayPalOrder', json.order_id || '');
+    location.href = json.approve_url;
   } catch (error) {
-    stripeMounted = false;
-    setMsg(error.message, false, 'error');
-  } finally {
     button.disabled = false;
+    setMsg(error.message, false, 'error');
   }
-}
-
-function openPayPalCheckout() {
-  const wrap = document.getElementById('paypal-wrap');
-  if (!wrap) return;
-  if (!checkoutReady) {
-    setMsg('Checkout is still loading. Try again in a second.', false, 'error');
-    return;
-  }
-  document.getElementById('stripe-wrap')?.classList.remove('active');
-  wrap.classList.add('active');
-  renderPayPalButtons();
-}
-
-function renderPayPalButtons() {
-  const wrap = document.getElementById('paypal-wrap');
-  const target = document.getElementById('paypal-buttons');
-  if (!wrap || !target || paypalRendered || !checkoutReady) return;
-  if (!window.paypal) {
-    setMsg('PayPal SDK did not load. Check your PayPal client ID/domain settings.', false, 'error');
-    return;
-  }
-
-  paypal.Buttons({
-    style: {
-      layout: 'vertical',
-      shape: 'pill',
-      label: 'pay'
-    },
-    createOrder: async () => {
-      setMsg('Creating PayPal order...', true);
-      const json = await post('/checkout/paypal/create', payload());
-      pendingPayPalOrderId = json.order_id || '';
-      localStorage.setItem('moePendingPayPalOrder', pendingPayPalOrderId);
-      if (!json.id) throw new Error('PayPal did not return an order ID.');
-      return json.id;
-    },
-    onApprove: async (data) => {
-      setMsg('Capturing PayPal payment...', true);
-      const json = await post('/checkout/paypal/capture', {
-        orderID: data.orderID,
-        paypal_order_id: data.orderID,
-        order_id: pendingPayPalOrderId || localStorage.getItem('moePendingPayPalOrder') || ''
-      });
-      localStorage.removeItem(CART_KEY);
-      localStorage.removeItem('moePendingPayPalOrder');
-      window.location.href = `/checkout/success?order_id=${encodeURIComponent(json.order_id || pendingPayPalOrderId || '')}`;
-    },
-    onCancel: () => {
-      setMsg('PayPal checkout was cancelled. Your cart is still here.', false, 'error');
-    },
-    onError: (error) => {
-      setMsg((error && error.message) ? error.message : 'PayPal checkout failed.', false, 'error');
-    }
-  }).render('#paypal-buttons');
-  paypalRendered = true;
-}
-
-document.getElementById('stripe-btn')?.addEventListener('click', () => mountStripeCheckout(false));
-document.getElementById('stripe-reset')?.addEventListener('click', () => mountStripeCheckout(true));
-document.getElementById('paypal-btn')?.addEventListener('click', openPayPalCheckout);
-document.getElementById('paypal-close')?.addEventListener('click', () => document.getElementById('paypal-wrap')?.classList.remove('active'));
+});
 
 preview();
 </script>
