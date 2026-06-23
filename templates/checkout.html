@@ -328,16 +328,14 @@
     color: #ffe8a9;
   }
 
+  .pay-note:empty {
+    display: none;
+  }
+
   .pay-note.error {
     border-color: rgba(255, 98, 125, .32);
     background: rgba(255, 98, 125, .10);
     color: #ffd1da;
-  }
-
-  .pay-note.success {
-    border-color: rgba(35, 165, 90, .28);
-    background: rgba(35, 165, 90, .10);
-    color: #bfffd7;
   }
 
   .spinner {
@@ -411,9 +409,7 @@
 
         <div id="checkout-list" class="checkout-items-clean"></div>
 
-        <div id="pay-message" class="pay-note">
-          Loading checkout...
-        </div>
+        <div id="pay-message" class="pay-note">Loading checkout...</div>
       </main>
 
       <aside class="pay-card pay-summary">
@@ -455,13 +451,14 @@
           {% endif %}
 
           {% if paypal_enabled %}
-          <div class="embedded-checkout-wrap active" id="paypal-wrap">
-            <div class="embedded-checkout-head">
-              <strong><i class="fab fa-paypal"></i> PayPal checkout</strong>
-              <span class="pay-lock" style="margin:0"><i class="fas fa-shield-halved"></i> In-page</span>
-            </div>
-            <div id="paypal-buttons"></div>
-          </div>
+          <button id="paypal-btn" class="pay-method paypal" type="button">
+            <i class="fab fa-paypal"></i>
+            <span>
+              PayPal checkout
+              <small>PayPal balance, debit, or credit card</small>
+            </span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
           {% else %}
           <div class="provider-missing">
             PayPal is not configured.
@@ -476,6 +473,16 @@
             <button id="stripe-reset" class="mini-action" type="button">Restart</button>
           </div>
           <div id="stripe-embedded-checkout"></div>
+        </div>
+        {% endif %}
+
+        {% if paypal_enabled %}
+        <div class="embedded-checkout-wrap" id="paypal-wrap">
+          <div class="embedded-checkout-head">
+            <strong><i class="fab fa-paypal"></i> PayPal checkout</strong>
+            <button id="paypal-close" class="mini-action" type="button">Close</button>
+          </div>
+          <div id="paypal-buttons"></div>
         </div>
         {% endif %}
 
@@ -607,8 +614,7 @@ async function preview() {
     document.querySelectorAll('.pay-method').forEach(button => {
       button.disabled = false;
     });
-    renderPayPalButtons();
-    setMsg('Ready for secure embedded payment.', false, 'success');
+    setMsg('', false);
   } catch (error) {
     setMsg(error.message, false, 'error');
 
@@ -633,12 +639,14 @@ async function mountStripeCheckout(force = false) {
     return;
   }
   if (stripeMounted && !force) {
+    document.getElementById('paypal-wrap')?.classList.remove('active');
     wrap.classList.toggle('active');
     return;
   }
 
   try {
     button.disabled = true;
+    document.getElementById('paypal-wrap')?.classList.remove('active');
     wrap.classList.add('active');
     container.innerHTML = '';
     setMsg('Loading embedded Stripe checkout...', true);
@@ -661,6 +669,18 @@ async function mountStripeCheckout(force = false) {
   } finally {
     button.disabled = false;
   }
+}
+
+function openPayPalCheckout() {
+  const wrap = document.getElementById('paypal-wrap');
+  if (!wrap) return;
+  if (!checkoutReady) {
+    setMsg('Checkout is still loading. Try again in a second.', false, 'error');
+    return;
+  }
+  document.getElementById('stripe-wrap')?.classList.remove('active');
+  wrap.classList.add('active');
+  renderPayPalButtons();
 }
 
 function renderPayPalButtons() {
@@ -709,6 +729,8 @@ function renderPayPalButtons() {
 
 document.getElementById('stripe-btn')?.addEventListener('click', () => mountStripeCheckout(false));
 document.getElementById('stripe-reset')?.addEventListener('click', () => mountStripeCheckout(true));
+document.getElementById('paypal-btn')?.addEventListener('click', openPayPalCheckout);
+document.getElementById('paypal-close')?.addEventListener('click', () => document.getElementById('paypal-wrap')?.classList.remove('active'));
 
 preview();
 </script>
