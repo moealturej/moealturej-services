@@ -1,39 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Legal Center | moealturej{% endblock %}
+{% block title %}Legal | moealturej{% endblock %}
 {% block extra_head %}
 <style>
-  .legal-page { padding-top: 24px; }
-  .legal-shell { padding: 24px; }
-  .legal-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 22px; }
-  .legal-card { display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 22px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); transition: .18s ease; }
-  .legal-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.05); }
-  .legal-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: rgba(139,44,255,0.14); border: 1px solid rgba(139,44,255,0.22); color: #fff; }
-  .legal-card h3 { margin: 0; font-size: 17px; }
-  .legal-card p { margin: 0; font-size: 13px; }
-  @media (max-width: 1100px) { .legal-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-  @media (max-width: 720px) { .legal-shell { padding: 18px; } .legal-grid { grid-template-columns: 1fr; } }
+  .legal-page{padding:42px 0 74px}.legal-shell{width:min(1060px,100%);margin:0 auto;display:grid;gap:18px}.legal-hero{padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
+  .legal-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.legal-hero h1{margin:0;font-size:clamp(34px,5.5vw,56px);line-height:1;letter-spacing:-1.6px}.legal-hero p{margin:14px 0 0;max-width:620px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}
+  .legal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.legal-card{display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);transition:.18s ease;text-decoration:none}.legal-card:hover{transform:translateY(-2px);border-color:rgba(216,180,254,.20);background:rgba(255,255,255,.045)}.legal-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.18);color:#d8b4fe}.legal-card h3{margin:0;color:#fff;font-size:15px;letter-spacing:-.25px}.legal-card p{margin:0;color:rgba(255,255,255,.50);font-size:12.5px;line-height:1.5}
+  @media(max-width:900px){.legal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){.legal-hero{padding:24px}.legal-grid{grid-template-columns:1fr}}
 </style>
 {% endblock %}
-
 {% block content %}
 <section class="page-section legal-page">
   <div class="container">
-    <section class="panel legal-shell">
-      <div class="page-head">
-        <div class="eyebrow">moealturej legal</div>
-        <h1>Legal Center</h1>
-        <p>Terms, privacy, refunds, licensing, and policy information.</p>
+    <div class="legal-shell">
+      <div class="legal-hero">
+        <div class="legal-kicker">Legal</div>
+        <h1>Simple terms. Clear policies.</h1>
+        <p>Review how purchases, downloads, privacy, refunds, and product access are handled.</p>
       </div>
-
       <div class="legal-grid">
-        <a href="/terms" class="legal-card"><div class="legal-icon"><i class="fas fa-file-contract"></i></div><h3>Terms of Service</h3><p>General use, payments, and access rules for the site and products.</p></a>
-        <a href="/privacy" class="legal-card"><div class="legal-icon"><i class="fas fa-user-shield"></i></div><h3>Privacy Policy</h3><p>How site and service information may be collected, used, and protected.</p></a>
-        <a href="/refund-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-rotate-left"></i></div><h3>Refund Policy</h3><p>How digital refund requests are reviewed and handled.</p></a>
-        <a href="/cookie-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-cookie-bite"></i></div><h3>Cookie Policy</h3><p>How cookies and related site technologies may be used.</p></a>
-        <a href="/license" class="legal-card"><div class="legal-icon"><i class="fas fa-key"></i></div><h3>License</h3><p>Rules around use, sharing, and redistribution of products.</p></a>
-        <a href="/support" class="legal-card"><div class="legal-icon"><i class="fab fa-discord"></i></div><h3>Discord Support</h3><p>Customer support and product assistance through Discord.</p></a>
+        <a href="/terms" class="legal-card"><div class="legal-icon"><i class="fas fa-file-contract"></i></div><h3>Terms</h3><p>Site use, accounts, purchases, and access rules.</p></a>
+        <a href="/privacy" class="legal-card"><div class="legal-icon"><i class="fas fa-user-shield"></i></div><h3>Privacy</h3><p>How account and order information is handled.</p></a>
+        <a href="/refund-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-rotate-left"></i></div><h3>Refunds</h3><p>How digital refund requests are reviewed.</p></a>
+        <a href="/cookie-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-cookie-bite"></i></div><h3>Cookies</h3><p>Basic site cookies and browser preferences.</p></a>
+        <a href="/license" class="legal-card"><div class="legal-icon"><i class="fas fa-key"></i></div><h3>License</h3><p>Rules for product use, sharing, and access.</p></a>
+        <a href="/support" class="legal-card"><div class="legal-icon"><i class="fas fa-headset"></i></div><h3>Support</h3><p>Need help with an order or download?</p></a>
       </div>
-    </section>
+    </div>
   </div>
 </section>
 {% endblock %}

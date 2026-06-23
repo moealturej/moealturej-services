@@ -1,25 +1,715 @@
 {% extends "base.html" %}
-{% block title %}Checkout | moealturej Store{% endblock %}
+{% block title %}Checkout | moealturej Services{% endblock %}
+
 {% block extra_head %}
 <style>
-  .pay-page{padding-top:24px}.pay-layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:22px;align-items:start}.pay-card{border-radius:24px;background:rgba(13,8,25,.72);border:1px solid rgba(213,156,255,.14);box-shadow:0 18px 58px rgba(0,0,0,.32);backdrop-filter:blur(16px)}.pay-main{padding:28px}.pay-main h1{margin:10px 0 10px;font-size:clamp(42px,5vw,68px);letter-spacing:-.06em;line-height:1}.pay-main p{max-width:720px;margin:0 0 22px}.checkout-items-clean{display:grid;gap:10px}.checkout-item-clean{display:grid;grid-template-columns:68px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}.checkout-item-clean img{width:68px;height:68px;border-radius:14px;object-fit:cover;background:#07030d}.checkout-item-clean h3{margin:0 0 4px;font-size:14px}.checkout-item-clean p{margin:0;color:var(--muted2);font-size:12px;text-transform:uppercase;font-weight:800;letter-spacing:.05em}.pay-summary{padding:22px;position:sticky;top:112px}.pay-summary h2{font-size:24px;letter-spacing:-.04em;margin:8px 0 16px}.summary-row-clean{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.075);color:var(--muted)}.summary-row-clean strong{color:#fff}.summary-total-clean{font-size:24px;color:#fff}.payment-stack{display:grid;gap:10px;margin-top:18px}.pay-method{width:100%;min-height:58px;border-radius:16px;border:1px solid rgba(213,156,255,.16);background:rgba(255,255,255,.045);color:#fff;font-weight:950;display:flex;align-items:center;gap:12px;padding:0 14px;text-align:left}.pay-method i{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.08)}.pay-method span{display:block;flex:1}.pay-method small{display:block;color:var(--muted);font-weight:750;margin-top:3px}.pay-method.stripe{background:linear-gradient(135deg,rgba(124,58,237,.35),rgba(109,32,255,.16));border-color:rgba(213,156,255,.24)}.pay-method.paypal{background:linear-gradient(135deg,rgba(255,196,57,.14),rgba(0,112,186,.10));border-color:rgba(255,196,57,.28)}.pay-method:disabled{opacity:.55;cursor:not-allowed}.pay-note,.provider-missing{margin-top:12px;padding:13px;border-radius:15px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);color:var(--muted);font-size:13px;line-height:1.55}.provider-missing{border-color:rgba(255,200,87,.24);background:rgba(255,200,87,.08);color:#ffe8a9}.pay-note.error{border-color:rgba(255,98,125,.32);background:rgba(255,98,125,.10);color:#ffd1da}.pay-note.success{border-color:rgba(70,255,180,.26);background:rgba(70,255,180,.08);color:#c9ffe7}.mini-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0}.mini-steps div{padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);color:var(--muted);font-size:12px;font-weight:800}.mini-steps strong{display:block;color:#fff;margin-bottom:4px}.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.22);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:980px){.pay-layout{grid-template-columns:1fr}.pay-summary{position:relative;top:auto}.mini-steps{grid-template-columns:1fr}.checkout-item-clean{grid-template-columns:58px minmax(0,1fr)}.checkout-item-clean strong{grid-column:1/-1}.checkout-item-clean img{width:58px;height:58px}}
+  .pay-page {
+    padding: 34px 0 80px;
+  }
+
+  .pay-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .pay-card {
+    border-radius: 26px;
+    background:
+      radial-gradient(circle at top left, rgba(147, 51, 234, .13), transparent 34%),
+      rgba(12, 9, 22, .74);
+    border: 1px solid rgba(255,255,255,.075);
+    box-shadow: 0 22px 70px rgba(0,0,0,.34);
+    backdrop-filter: blur(18px);
+  }
+
+  .pay-main {
+    padding: 28px;
+  }
+
+  .pay-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: rgba(168, 85, 247, .10);
+    border: 1px solid rgba(168, 85, 247, .18);
+    color: #d8b4fe;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .pay-kicker::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #a855f7;
+    box-shadow: 0 0 14px rgba(168, 85, 247, .8);
+  }
+
+  .pay-main h1 {
+    margin: 0;
+    font-size: clamp(34px, 5vw, 54px);
+    line-height: .98;
+    letter-spacing: -1.8px;
+    font-weight: 950;
+  }
+
+  .pay-main .lead {
+    max-width: 620px;
+    margin: 13px 0 22px;
+    color: rgba(255,255,255,.58);
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .checkout-items-clean {
+    display: grid;
+    gap: 10px;
+  }
+
+  .checkout-item-clean {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 11px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.065);
+  }
+
+  .checkout-item-clean img {
+    width: 62px;
+    height: 62px;
+    border-radius: 15px;
+    object-fit: cover;
+    background: #07030d;
+  }
+
+  .checkout-item-clean h3 {
+    margin: 0 0 4px;
+    font-size: 13.5px;
+    line-height: 1.2;
+    letter-spacing: -.2px;
+  }
+
+  .checkout-item-clean p {
+    margin: 0;
+    color: rgba(255,255,255,.45);
+    font-size: 11.5px;
+    font-weight: 800;
+  }
+
+  .checkout-item-clean strong {
+    font-size: 13px;
+    color: #fff;
+  }
+
+  .pay-summary {
+    padding: 22px;
+    position: sticky;
+    top: 112px;
+  }
+
+  .pay-summary h2 {
+    margin: 0 0 15px;
+    font-size: 22px;
+    letter-spacing: -.7px;
+    font-weight: 950;
+  }
+
+  .summary-box {
+    display: grid;
+    gap: 0;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.065);
+    background: rgba(255,255,255,.025);
+  }
+
+  .summary-row-clean {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    color: rgba(255,255,255,.55);
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .summary-row-clean:last-child {
+    border-bottom: 0;
+  }
+
+  .summary-row-clean strong {
+    color: #fff;
+    font-size: 13px;
+  }
+
+  .summary-total-clean {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 950;
+    background: rgba(255,255,255,.025);
+  }
+
+  .summary-total-clean strong {
+    font-size: 20px;
+  }
+
+  .payment-stack {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .pay-method {
+    width: 100%;
+    min-height: 58px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.08);
+    color: #fff;
+    font-weight: 950;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: transform .18s ease, filter .18s ease, border-color .18s ease;
+  }
+
+  .pay-method:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+  }
+
+  .pay-method:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+  }
+
+  .pay-method i:first-child {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+  }
+
+  .pay-method span {
+    display: block;
+    flex: 1;
+    font-size: 13.5px;
+  }
+
+  .pay-method small {
+    display: block;
+    margin-top: 3px;
+    color: rgba(255,255,255,.56);
+    font-size: 11.5px;
+    font-weight: 750;
+  }
+
+  .pay-method.stripe {
+    background:
+      linear-gradient(135deg, rgba(99, 91, 255, .82), rgba(124, 58, 237, .72)),
+      rgba(255,255,255,.04);
+    border-color: rgba(160, 150, 255, .35);
+    box-shadow: 0 16px 36px rgba(99, 91, 255, .20);
+  }
+
+  .pay-method.stripe i:first-child {
+    background: rgba(255,255,255,.15);
+  }
+
+  .pay-method.paypal {
+    background:
+      linear-gradient(135deg, rgba(0, 112, 186, .88), rgba(0, 48, 135, .78)),
+      rgba(255,255,255,.04);
+    border-color: rgba(0, 156, 222, .34);
+    box-shadow: 0 16px 36px rgba(0, 112, 186, .18);
+  }
+
+  .pay-method.paypal i:first-child {
+    background: rgba(255,255,255,.16);
+    color: #ffd140;
+  }
+
+  .pay-lock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 13px;
+    color: rgba(255,255,255,.42);
+    font-size: 11.5px;
+    font-weight: 800;
+  }
+
+
+  .embedded-checkout-wrap {
+    display: none;
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.035);
+  }
+
+  .embedded-checkout-wrap.active {
+    display: block;
+  }
+
+  .embedded-checkout-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 2px 2px 8px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+
+  .embedded-checkout-head strong {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .mini-action {
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(255,255,255,.055);
+    color: rgba(255,255,255,.72);
+    border-radius: 999px;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  #stripe-embedded-checkout {
+    min-height: 460px;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  #paypal-buttons {
+    min-height: 48px;
+  }
+
+  .pay-note,
+  .provider-missing {
+    margin-top: 14px;
+    padding: 13px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.075);
+    background: rgba(255,255,255,.032);
+    color: rgba(255,255,255,.55);
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .provider-missing {
+    border-color: rgba(255, 200, 87, .22);
+    background: rgba(255, 200, 87, .08);
+    color: #ffe8a9;
+  }
+
+  .pay-note.error {
+    border-color: rgba(255, 98, 125, .32);
+    background: rgba(255, 98, 125, .10);
+    color: #ffd1da;
+  }
+
+  .pay-note.success {
+    border-color: rgba(35, 165, 90, .28);
+    background: rgba(35, 165, 90, .10);
+    color: #bfffd7;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(255,255,255,.22);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 980px) {
+    .pay-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .pay-summary {
+      position: relative;
+      top: auto;
+      order: -1;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .pay-page {
+      padding: 22px 0 64px;
+    }
+
+    .pay-main,
+    .pay-summary {
+      padding: 20px;
+    }
+
+    .checkout-item-clean {
+      grid-template-columns: 56px minmax(0, 1fr);
+    }
+
+    .checkout-item-clean img {
+      width: 56px;
+      height: 56px;
+    }
+
+    .checkout-item-clean strong {
+      grid-column: 1 / -1;
+      justify-self: end;
+    }
+  }
 </style>
 {% endblock %}
+
 {% block content %}
-<section class="page-section pay-page"><div class="container"><div class="pay-layout">
-  <main class="pay-card pay-main"><div class="eyebrow">Signed-in checkout</div><h1>Checkout</h1><p>Logged in as <strong>{{ current_user.email }}</strong>. Your cart is validated by the server before Stripe or PayPal payment starts.</p><div class="mini-steps"><div><strong>1. Review</strong>Confirm items and total.</div><div><strong>2. Pay</strong>Choose Stripe or PayPal.</div><div><strong>3. Access</strong>Order saves to account.</div></div><div id="checkout-list" class="checkout-items-clean"></div><div id="pay-message" class="pay-note">Loading checkout preview...</div></main>
-  <aside class="pay-card pay-summary"><div class="eyebrow">Payment</div><h2>Pay securely</h2><div class="summary-row-clean"><span>Subtotal</span><strong id="subtotal">$0.00</strong></div><div class="summary-row-clean"><span>Processing fee ({{ processing_fee_percent }}%)</span><strong id="fee">$0.00</strong></div><div class="summary-row-clean summary-total-clean"><span>Total</span><strong id="total">$0.00</strong></div><div class="payment-stack">{% if stripe_enabled %}<button id="stripe-btn" class="pay-method stripe"><i class="fas fa-credit-card"></i><span>Pay with Stripe<small>Card, Apple Pay, Google Pay when enabled</small></span><i class="fas fa-arrow-right"></i></button>{% else %}<div class="provider-missing">Stripe is not configured. Add <strong>STRIPE_SECRET_KEY</strong>.</div>{% endif %}{% if paypal_enabled %}<button id="paypal-direct-btn" class="pay-method paypal"><i class="fab fa-paypal"></i><span>Pay with PayPal<small>Redirects in this tab, no popup</small></span><i class="fas fa-arrow-right"></i></button>{% else %}<div class="provider-missing">PayPal is not configured. Add <strong>PAYPAL_CLIENT_ID</strong> and <strong>PAYPAL_CLIENT_SECRET</strong>.</div>{% endif %}</div></aside>
-</div></div></section>
+<section class="page-section pay-page">
+  <div class="container">
+    <div class="pay-layout">
+
+      <main class="pay-card pay-main">
+        <div class="pay-kicker">Checkout</div>
+
+        <h1>Review and pay.</h1>
+
+        <p class="lead">
+          Signed in as <strong>{{ current_user.email }}</strong>. Review your order, then choose a payment method.
+        </p>
+
+        <div id="checkout-list" class="checkout-items-clean"></div>
+
+        <div id="pay-message" class="pay-note">
+          Loading checkout...
+        </div>
+      </main>
+
+      <aside class="pay-card pay-summary">
+        <div class="pay-kicker">Payment</div>
+
+        <h2>Order total</h2>
+
+        <div class="summary-box">
+          <div class="summary-row-clean">
+            <span>Subtotal</span>
+            <strong id="subtotal">$0.00</strong>
+          </div>
+
+          <div class="summary-row-clean">
+            <span>Fee</span>
+            <strong id="fee">$0.00</strong>
+          </div>
+
+          <div class="summary-row-clean summary-total-clean">
+            <span>Total</span>
+            <strong id="total">$0.00</strong>
+          </div>
+        </div>
+
+        <div class="payment-stack">
+          {% if stripe_enabled %}
+          <button id="stripe-btn" class="pay-method stripe" type="button">
+            <i class="fas fa-credit-card"></i>
+            <span>
+              Embedded Stripe checkout
+              <small>Card, Apple Pay, Google Pay</small>
+            </span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          {% else %}
+          <div class="provider-missing">
+            Stripe embedded checkout needs STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY.
+          </div>
+          {% endif %}
+
+          {% if paypal_enabled %}
+          <div class="embedded-checkout-wrap active" id="paypal-wrap">
+            <div class="embedded-checkout-head">
+              <strong><i class="fab fa-paypal"></i> PayPal checkout</strong>
+              <span class="pay-lock" style="margin:0"><i class="fas fa-shield-halved"></i> In-page</span>
+            </div>
+            <div id="paypal-buttons"></div>
+          </div>
+          {% else %}
+          <div class="provider-missing">
+            PayPal is not configured.
+          </div>
+          {% endif %}
+        </div>
+
+        {% if stripe_enabled %}
+        <div class="embedded-checkout-wrap" id="stripe-wrap">
+          <div class="embedded-checkout-head">
+            <strong><i class="fas fa-credit-card"></i> Stripe checkout</strong>
+            <button id="stripe-reset" class="mini-action" type="button">Restart</button>
+          </div>
+          <div id="stripe-embedded-checkout"></div>
+        </div>
+        {% endif %}
+
+        <div class="pay-lock">
+          <i class="fas fa-lock"></i>
+          Secure embedded checkout
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</section>
 {% endblock %}
+
 {% block extra_scripts %}
+{% if stripe_enabled %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
+{% if paypal_enabled %}<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id|urlencode }}&currency={{ checkout_currency }}&intent=capture&disable-funding=venmo,paylater"></script>{% endif %}
 <script>
-const CART_KEY='moeCart'; const CSRF={{ csrf_token()|tojson }}; let cart=JSON.parse(localStorage.getItem(CART_KEY)||'[]');
-const msg=document.getElementById('pay-message'), list=document.getElementById('checkout-list'); function setMsg(t,busy=false,type=''){msg.classList.remove('error','success'); if(type) msg.classList.add(type); msg.innerHTML=(busy?'<span class="spinner"></span>':'')+t} function money(v){return '$'+Number(v||0).toFixed(2)} function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function payload(){return {items:cart.map(i=>({slug:i.slug,option_id:i.optionId||i.uniqid,quantity:i.quantity||1}))}}
-async function post(url,data){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},body:JSON.stringify(data)}); const j=await r.json().catch(()=>({ok:false,error:'Invalid server response'})); if(!r.ok||!j.ok)throw new Error(j.error||'Request failed'); return j}
-async function preview(){if(!cart.length){list.innerHTML='<div class="pay-note">Your cart is empty. <a href="/store">Return to the store</a>.</div>';setMsg('Add products to cart before checkout.');document.querySelectorAll('.pay-method').forEach(b=>b.disabled=true);return} try{const j=await post('/api/checkout/preview',payload()); const c=j.cart; document.getElementById('subtotal').textContent=money(c.subtotal); document.getElementById('fee').textContent=money(c.fee); document.getElementById('total').textContent=money(c.total); list.innerHTML=c.items.map(i=>`<div class="checkout-item-clean"><img src="${esc(i.image||'/static/logo.png')}" alt="${esc(i.product_name)}"><div><h3>${esc(i.product_name)}</h3><p>${esc(i.option_name)} × ${i.quantity}</p></div><strong>${money(i.line_amount)}</strong></div>`).join(''); setMsg('Ready for secure payment.','', 'success');}catch(e){setMsg(e.message,false,'error');document.querySelectorAll('.pay-method').forEach(b=>b.disabled=true)}}
-document.getElementById('stripe-btn')?.addEventListener('click',async()=>{try{setMsg('Starting Stripe checkout...',true); const j=await post('/checkout/stripe',payload()); location.href=j.url;}catch(e){setMsg(e.message,false,'error')}});
-document.getElementById('paypal-direct-btn')?.addEventListener('click',async()=>{const btn=document.getElementById('paypal-direct-btn');try{btn.disabled=true;setMsg('Creating PayPal checkout...',true);const j=await post('/checkout/paypal/create',payload());if(!j.approve_url) throw new Error('PayPal did not return an approval link.');localStorage.setItem('moePendingPayPalOrder', j.order_id || '');location.href=j.approve_url;}catch(e){btn.disabled=false;setMsg(e.message,false,'error');}});
+const CART_KEY = 'moeCart';
+const CSRF = {{ csrf_token()|tojson }};
+const STRIPE_PUBLIC_KEY = {{ stripe_publishable_key|default('', true)|tojson }};
+let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+let checkoutReady = false;
+let stripeCheckout = null;
+let stripeMounted = false;
+let paypalRendered = false;
+let pendingPayPalOrderId = '';
+
+const msg = document.getElementById('pay-message');
+const list = document.getElementById('checkout-list');
+
+function setMsg(text, busy = false, type = '') {
+  msg.classList.remove('error', 'success');
+
+  if (type) {
+    msg.classList.add(type);
+  }
+
+  msg.innerHTML = (busy ? '<span class="spinner"></span>' : '') + text;
+}
+
+function money(value) {
+  return '$' + Number(value || 0).toFixed(2);
+}
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, match => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[match]));
+}
+
+function payload() {
+  return {
+    items: cart.map(item => ({
+      slug: item.slug,
+      option_id: item.optionId || item.uniqid,
+      quantity: item.quantity || 1
+    }))
+  };
+}
+
+async function post(url, data) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': CSRF
+    },
+    body: JSON.stringify(data)
+  });
+
+  const json = await response.json().catch(() => ({
+    ok: false,
+    error: 'Invalid server response'
+  }));
+
+  if (!response.ok || !json.ok) {
+    throw new Error(json.error || 'Request failed');
+  }
+
+  return json;
+}
+
+async function preview() {
+  if (!cart.length) {
+    list.innerHTML = `
+      <div class="pay-note">
+        Your cart is empty. <a href="/store">Browse the store</a>.
+      </div>
+    `;
+
+    setMsg('Add an item before checkout.');
+
+    document.querySelectorAll('.pay-method').forEach(button => {
+      button.disabled = true;
+    });
+
+    document.getElementById('paypal-wrap')?.classList.remove('active');
+    document.getElementById('stripe-wrap')?.classList.remove('active');
+    return;
+  }
+
+  try {
+    const json = await post('/api/checkout/preview', payload());
+    const checkout = json.cart;
+
+    document.getElementById('subtotal').textContent = money(checkout.subtotal);
+    document.getElementById('fee').textContent = money(checkout.fee);
+    document.getElementById('total').textContent = money(checkout.total);
+
+    list.innerHTML = checkout.items.map(item => `
+      <div class="checkout-item-clean">
+        <img src="${esc(item.image || '/static/logo.png')}" alt="${esc(item.product_name)}">
+
+        <div>
+          <h3>${esc(item.product_name)}</h3>
+          <p>${esc(item.option_name)} × ${item.quantity}</p>
+        </div>
+
+        <strong>${money(item.line_amount)}</strong>
+      </div>
+    `).join('');
+
+    checkoutReady = true;
+    document.querySelectorAll('.pay-method').forEach(button => {
+      button.disabled = false;
+    });
+    renderPayPalButtons();
+    setMsg('Ready for secure embedded payment.', false, 'success');
+  } catch (error) {
+    setMsg(error.message, false, 'error');
+
+    document.querySelectorAll('.pay-method').forEach(button => {
+      button.disabled = true;
+    });
+  }
+}
+
+async function mountStripeCheckout(force = false) {
+  const wrap = document.getElementById('stripe-wrap');
+  const container = document.getElementById('stripe-embedded-checkout');
+  const button = document.getElementById('stripe-btn');
+
+  if (!wrap || !container || !button) return;
+  if (!checkoutReady) {
+    setMsg('Checkout is still loading. Try again in a second.', false, 'error');
+    return;
+  }
+  if (!window.Stripe || !STRIPE_PUBLIC_KEY) {
+    setMsg('Stripe.js or STRIPE_PUBLISHABLE_KEY is missing.', false, 'error');
+    return;
+  }
+  if (stripeMounted && !force) {
+    wrap.classList.toggle('active');
+    return;
+  }
+
+  try {
+    button.disabled = true;
+    wrap.classList.add('active');
+    container.innerHTML = '';
+    setMsg('Loading embedded Stripe checkout...', true);
+
+    if (stripeCheckout && typeof stripeCheckout.destroy === 'function') {
+      stripeCheckout.destroy();
+    }
+
+    const json = await post('/checkout/stripe', payload());
+    const stripe = Stripe(STRIPE_PUBLIC_KEY);
+    stripeCheckout = await stripe.initEmbeddedCheckout({
+      clientSecret: json.client_secret
+    });
+    stripeCheckout.mount('#stripe-embedded-checkout');
+    stripeMounted = true;
+    setMsg('Stripe checkout is embedded below. Finish payment without leaving this page.', false, 'success');
+  } catch (error) {
+    stripeMounted = false;
+    setMsg(error.message, false, 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function renderPayPalButtons() {
+  const wrap = document.getElementById('paypal-wrap');
+  const target = document.getElementById('paypal-buttons');
+  if (!wrap || !target || paypalRendered || !checkoutReady) return;
+  if (!window.paypal) {
+    setMsg('PayPal SDK did not load. Check your PayPal client ID/domain settings.', false, 'error');
+    return;
+  }
+
+  paypal.Buttons({
+    style: {
+      layout: 'vertical',
+      shape: 'pill',
+      label: 'pay'
+    },
+    createOrder: async () => {
+      setMsg('Creating PayPal order...', true);
+      const json = await post('/checkout/paypal/create', payload());
+      pendingPayPalOrderId = json.order_id || '';
+      localStorage.setItem('moePendingPayPalOrder', pendingPayPalOrderId);
+      if (!json.id) throw new Error('PayPal did not return an order ID.');
+      return json.id;
+    },
+    onApprove: async (data) => {
+      setMsg('Capturing PayPal payment...', true);
+      const json = await post('/checkout/paypal/capture', {
+        orderID: data.orderID,
+        paypal_order_id: data.orderID,
+        order_id: pendingPayPalOrderId || localStorage.getItem('moePendingPayPalOrder') || ''
+      });
+      localStorage.removeItem(CART_KEY);
+      localStorage.removeItem('moePendingPayPalOrder');
+      window.location.href = `/checkout/success?order_id=${encodeURIComponent(json.order_id || pendingPayPalOrderId || '')}`;
+    },
+    onCancel: () => {
+      setMsg('PayPal checkout was cancelled. Your cart is still here.', false, 'error');
+    },
+    onError: (error) => {
+      setMsg((error && error.message) ? error.message : 'PayPal checkout failed.', false, 'error');
+    }
+  }).render('#paypal-buttons');
+  paypalRendered = true;
+}
+
+document.getElementById('stripe-btn')?.addEventListener('click', () => mountStripeCheckout(false));
+document.getElementById('stripe-reset')?.addEventListener('click', () => mountStripeCheckout(true));
+
 preview();
 </script>
 {% endblock %}

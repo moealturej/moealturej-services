@@ -2,14 +2,9 @@
 {% block title %}Refund Policy | moealturej{% endblock %}
 {% block extra_head %}
 <style>
-  .legal-doc-page { padding-top: 24px; }
-  .doc-shell { max-width: 980px; margin: 0 auto; padding: 28px; }
-  .doc-kicker { display:inline-flex; padding:9px 14px; border-radius:999px; background: rgba(139,44,255,0.10); border:1px solid rgba(139,44,255,0.22); color:#f3e9ff; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
-  .doc-shell h1 { margin: 18px 0 14px; font-size: clamp(40px, 6vw, 68px); }
-  .doc-intro { margin: 0 0 24px; max-width: 760px; font-size: 15px; }
-  .doc-content h2 { margin: 24px 0 10px; font-size: 22px; }
-  .doc-content p { margin: 0; }
-  @media (max-width: 720px) { .doc-shell { padding: 20px 18px; } }
+  .legal-doc-page{padding:42px 0 74px}.doc-shell{width:min(860px,100%);margin:0 auto;padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
+  .doc-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.doc-shell h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:-1.5px}.doc-intro{margin:14px 0 24px;max-width:650px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}.doc-content{display:grid;gap:12px}.doc-block{padding:17px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.doc-content h2{margin:0 0 7px;font-size:15px;letter-spacing:-.25px}.doc-content p{margin:0;color:rgba(255,255,255,.54);font-size:12.8px;line-height:1.55}.doc-back{display:inline-flex;align-items:center;gap:8px;margin-top:22px;color:#d8b4fe;font-size:13px;font-weight:900;text-decoration:none}.doc-back:hover{color:#fff}
+  @media(max-width:640px){.doc-shell{padding:24px 20px}}
 </style>
 {% endblock %}
 
@@ -17,21 +12,17 @@
 <section class="page-section legal-doc-page">
   <div class="container">
     <div class="doc-shell">
-      <div class="doc-kicker">legal</div>
+      <div class="doc-kicker">Legal</div>
       <h1>Refund Policy</h1>
-      <p class="doc-intro">This Refund Policy explains how refund requests are reviewed and handled for purchases made through moealturej.</p>
+      <p class="doc-intro">How refund requests are reviewed for digital products and services.</p>
       <div class="doc-content">
-        <h2>1. Digital Products</h2>
-        <p>Because products may be delivered instantly or digitally, refunds may be limited or unavailable once access has been provided.</p>
-        <h2>2. Eligibility</h2>
-        <p>Refund requests may be considered in limited situations such as duplicate purchases, broken delivery caused by the platform, or other clearly valid issues.</p>
-        <h2>3. Non-Refundable Cases</h2>
-        <p>Refunds may be denied for change of mind, lack of use, misunderstanding of the product description, or violation of terms.</p>
-        <h2>4. Request Process</h2>
-        <p>To request help, contact support through the Discord server and provide clear details about the order and issue.</p>
-        <h2>5. Final Decision</h2>
-        <p>All refund decisions are made at the discretion of moealturej based on the circumstances of the request.</p>
+        <div class="doc-block"><h2>Digital delivery</h2><p>Products may be delivered instantly, so refunds can be limited after access is provided.</p></div>
+        <div class="doc-block"><h2>Eligible cases</h2><p>Duplicate purchases or delivery issues caused by the platform may be reviewed.</p></div>
+        <div class="doc-block"><h2>Not covered</h2><p>Change of mind, lack of use, or ignoring product details may not qualify.</p></div>
+        <div class="doc-block"><h2>Request help</h2><p>Open a support ticket with your order details and a clear explanation.</p></div>
+        <div class="doc-block"><h2>Decision</h2><p>Refund decisions are reviewed case by case by moealturej Services.</p></div>
       </div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal</a>
     </div>
   </div>
 </section>

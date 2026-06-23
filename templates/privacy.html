@@ -2,14 +2,9 @@
 {% block title %}Privacy Policy | moealturej{% endblock %}
 {% block extra_head %}
 <style>
-  .legal-doc-page { padding-top: 24px; }
-  .doc-shell { max-width: 980px; margin: 0 auto; padding: 28px; }
-  .doc-kicker { display:inline-flex; padding:9px 14px; border-radius:999px; background: rgba(139,44,255,0.10); border:1px solid rgba(139,44,255,0.22); color:#f3e9ff; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
-  .doc-shell h1 { margin: 18px 0 14px; font-size: clamp(40px, 6vw, 68px); }
-  .doc-intro { margin: 0 0 24px; max-width: 760px; font-size: 15px; }
-  .doc-content h2 { margin: 24px 0 10px; font-size: 22px; }
-  .doc-content p { margin: 0; }
-  @media (max-width: 720px) { .doc-shell { padding: 20px 18px; } }
+  .legal-doc-page{padding:42px 0 74px}.doc-shell{width:min(860px,100%);margin:0 auto;padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
+  .doc-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.doc-shell h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:-1.5px}.doc-intro{margin:14px 0 24px;max-width:650px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}.doc-content{display:grid;gap:12px}.doc-block{padding:17px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.doc-content h2{margin:0 0 7px;font-size:15px;letter-spacing:-.25px}.doc-content p{margin:0;color:rgba(255,255,255,.54);font-size:12.8px;line-height:1.55}.doc-back{display:inline-flex;align-items:center;gap:8px;margin-top:22px;color:#d8b4fe;font-size:13px;font-weight:900;text-decoration:none}.doc-back:hover{color:#fff}
+  @media(max-width:640px){.doc-shell{padding:24px 20px}}
 </style>
 {% endblock %}
 
@@ -17,25 +12,19 @@
 <section class="page-section legal-doc-page">
   <div class="container">
     <div class="doc-shell">
-      <div class="doc-kicker">legal</div>
+      <div class="doc-kicker">Legal</div>
       <h1>Privacy Policy</h1>
-      <p class="doc-intro">This Privacy Policy explains how moealturej may collect, use, and protect information when you interact with the site and services.</p>
+      <p class="doc-intro">How moealturej Services handles account, order, and support information.</p>
       <div class="doc-content">
-        <h2>1. Information Collected</h2>
-        <p>Information may include account details, purchase details, technical data, browser information, and support communications.</p>
-        <h2>2. How Information Is Used</h2>
-        <p>Information may be used to deliver products, improve services, provide support, process orders, and maintain site security.</p>
-        <h2>3. Data Protection</h2>
-        <p>Reasonable steps may be taken to protect stored information, but no system can guarantee complete security.</p>
-        <h2>4. Third-Party Services</h2>
-        <p>Third-party tools may be used for payments, analytics, hosting, or communications, and those services may process data separately.</p>
-        <h2>5. Retention</h2>
-        <p>Information may be kept only as long as reasonably necessary for business, legal, or operational purposes.</p>
-        <h2>6. Your Choices</h2>
-        <p>You may contact support for questions regarding data use, access, or general privacy concerns.</p>
-        <h2>7. Changes</h2>
-        <p>This policy may be updated from time to time. Continued use of the site means you accept the current version.</p>
+        <div class="doc-block"><h2>Information</h2><p>We may collect account details, order details, technical data, and support messages.</p></div>
+        <div class="doc-block"><h2>Use</h2><p>Information is used to deliver products, process orders, provide support, and protect the site.</p></div>
+        <div class="doc-block"><h2>Security</h2><p>Reasonable steps are used to protect information, but no system is fully guaranteed.</p></div>
+        <div class="doc-block"><h2>Services</h2><p>Payments, hosting, analytics, and communication tools may process data separately.</p></div>
+        <div class="doc-block"><h2>Retention</h2><p>Information may be kept as long as needed for support, operations, or legal reasons.</p></div>
+        <div class="doc-block"><h2>Choices</h2><p>Contact support for questions about account data or privacy concerns.</p></div>
+        <div class="doc-block"><h2>Changes</h2><p>This policy may be updated as the site or services change.</p></div>
       </div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal</a>
     </div>
   </div>
 </section>

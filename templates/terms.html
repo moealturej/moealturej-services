@@ -1,15 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Terms of Service | moealturej{% endblock %}
+{% block title %}Terms | moealturej{% endblock %}
 {% block extra_head %}
 <style>
-  .legal-doc-page { padding-top: 24px; }
-  .doc-shell { max-width: 980px; margin: 0 auto; padding: 28px; }
-  .doc-kicker { display:inline-flex; padding:9px 14px; border-radius:999px; background: rgba(139,44,255,0.10); border:1px solid rgba(139,44,255,0.22); color:#f3e9ff; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
-  .doc-shell h1 { margin: 18px 0 14px; font-size: clamp(40px, 6vw, 68px); }
-  .doc-intro { margin: 0 0 24px; max-width: 760px; font-size: 15px; }
-  .doc-content h2 { margin: 24px 0 10px; font-size: 22px; }
-  .doc-content p { margin: 0; }
-  @media (max-width: 720px) { .doc-shell { padding: 20px 18px; } }
+  .legal-doc-page{padding:42px 0 74px}.doc-shell{width:min(860px,100%);margin:0 auto;padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
+  .doc-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.doc-shell h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:-1.5px}.doc-intro{margin:14px 0 24px;max-width:650px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}.doc-content{display:grid;gap:12px}.doc-block{padding:17px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.doc-content h2{margin:0 0 7px;font-size:15px;letter-spacing:-.25px}.doc-content p{margin:0;color:rgba(255,255,255,.54);font-size:12.8px;line-height:1.55}.doc-back{display:inline-flex;align-items:center;gap:8px;margin-top:22px;color:#d8b4fe;font-size:13px;font-weight:900;text-decoration:none}.doc-back:hover{color:#fff}
+  @media(max-width:640px){.doc-shell{padding:24px 20px}}
 </style>
 {% endblock %}
 
@@ -17,27 +12,20 @@
 <section class="page-section legal-doc-page">
   <div class="container">
     <div class="doc-shell">
-      <div class="doc-kicker">legal</div>
+      <div class="doc-kicker">Legal</div>
       <h1>Terms of Service</h1>
-      <p class="doc-intro">These Terms of Service govern access to and use of moealturej, including the website, products, downloads, and related services.</p>
+      <p class="doc-intro">The basic rules for using moealturej Services, purchases, accounts, and downloads.</p>
       <div class="doc-content">
-        <h2>1. Acceptance of Terms</h2>
-        <p>By accessing or purchasing from this site, you agree to these terms.</p>
-        <h2>2. Products and Access</h2>
-        <p>Products, downloads, and services may be updated, changed, limited, or removed at any time without notice.</p>
-        <h2>3. User Responsibilities</h2>
-        <p>You agree not to misuse the site, attempt unauthorized access, interfere with services, or redistribute products in violation of the license.</p>
-        <h2>4. Payments</h2>
-        <p>All purchases must be completed through approved checkout methods. You are responsible for providing accurate purchase information.</p>
-        <h2>5. Refunds</h2>
-        <p>Refunds are subject to the Refund Policy. Purchasing a product means you agree to that policy.</p>
-        <h2>6. Intellectual Property</h2>
-        <p>All site content, branding, design, and products remain the property of moealturej unless otherwise stated.</p>
-        <h2>7. Limitation of Liability</h2>
-        <p>Services and products may be provided as-is, without guarantees of uninterrupted availability or compatibility in all environments.</p>
-        <h2>8. Changes</h2>
-        <p>These terms may be updated at any time. Continued use of the site means you accept the updated version.</p>
+        <div class="doc-block"><h2>Acceptance</h2><p>By using the site or buying a product, you agree to these terms.</p></div>
+        <div class="doc-block"><h2>Products</h2><p>Products and downloads may be updated, changed, limited, or removed when needed.</p></div>
+        <div class="doc-block"><h2>Accounts</h2><p>Keep your account details accurate and do not attempt to access another account.</p></div>
+        <div class="doc-block"><h2>Payments</h2><p>Purchases must be completed through approved checkout methods with accurate information.</p></div>
+        <div class="doc-block"><h2>Refunds</h2><p>Refund requests are handled under the Refund Policy.</p></div>
+        <div class="doc-block"><h2>Ownership</h2><p>Branding, content, design, and products remain owned by moealturej unless stated otherwise.</p></div>
+        <div class="doc-block"><h2>Availability</h2><p>Services are provided as available and may not be uninterrupted at all times.</p></div>
+        <div class="doc-block"><h2>Updates</h2><p>These terms may change. Continued use means you accept the current version.</p></div>
       </div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal</a>
     </div>
   </div>
 </section>

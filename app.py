@@ -119,6 +119,7 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 STRIPE_SECRET_KEY = env_first("STRIPE_SECRET_KEY", "STRIPE_API_KEY")
+STRIPE_PUBLISHABLE_KEY = env_first("STRIPE_PUBLISHABLE_KEY", "STRIPE_PUBLIC_KEY", "STRIPE_PK")
 STRIPE_WEBHOOK_SECRET = env_first("STRIPE_WEBHOOK_SECRET", "STRIPE_ENDPOINT_SECRET")
 STRIPE_CURRENCY = os.getenv("STRIPE_CURRENCY", "usd").strip().lower() or "usd"
 PAYPAL_CLIENT_ID = env_first("PAYPAL_CLIENT_ID", "PAYPAL_SANDBOX_CLIENT_ID")
@@ -1184,6 +1185,21 @@ def allowed_upload(filename: str, upload_kind: str) -> bool:
     return ext in ALLOWED_FILE_EXTENSIONS
 
 
+def human_file_size(size_bytes: int | None) -> str:
+    try:
+        size = float(size_bytes or 0)
+    except (TypeError, ValueError):
+        size = 0
+    units = ["B", "KB", "MB", "GB"]
+    unit = 0
+    while size >= 1024 and unit < len(units) - 1:
+        size /= 1024
+        unit += 1
+    if unit == 0:
+        return f"{int(size)} {units[unit]}"
+    return f"{size:.1f} {units[unit]}"
+
+
 def record_audit(action: str, target: str = "", details: dict | None = None):
     if not (using_mongo() and audit_col is not None):
         return
@@ -1675,7 +1691,8 @@ def inject_global_template_vars():
         "google_oauth_enabled": google_oauth_ready(),
         "google_oauth_missing": google_oauth_missing(),
         "mongo_status_reason": mongo_status_reason,
-        "stripe_enabled": bool(STRIPE_SECRET_KEY),
+        "stripe_enabled": bool(STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY),
+        "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
         "paypal_enabled": bool(PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET),
         "paypal_client_id": PAYPAL_CLIENT_ID,
         "paypal_mode": PAYPAL_MODE,
@@ -2301,6 +2318,68 @@ def admin_product_update(slug):
     flash("Product updated.", "success")
     return redirect(url_for("admin_dashboard"))
 
+
+@app.route("/admin/product/<slug>/download", methods=["POST"])
+@owner_required
+@limiter.limit("20 per minute")
+def admin_product_download_update(slug):
+    products = load_products()
+    product = next((p for p in products if str(p.get("slug", "")).lower() == slug.lower()), None)
+    if not product:
+        abort(404)
+
+    downloads = product.setdefault("downloads", {}) if isinstance(product.get("downloads"), dict) else {}
+    product["downloads"] = downloads
+    downloads["enabled"] = bool(request.form.get("downloads_enabled"))
+    downloads["version"] = (request.form.get("download_version") or downloads.get("version") or "Latest").strip()
+
+    manual_url = (request.form.get("download_url") or "").strip()
+    manual_size = (request.form.get("file_size") or "").strip()
+    upload = request.files.get("download_file")
+
+    if upload and upload.filename:
+        if not allowed_upload(upload.filename, "file"):
+            flash("That download file type is not allowed.", "danger")
+            return redirect(url_for("admin_dashboard") + "#products")
+        original = secure_filename(upload.filename)
+        ext = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
+        filename = f"{utc_now_naive().strftime('%Y%m%d')}-{uuid.uuid4().hex[:12]}.{ext}"
+        FILES_DIR.mkdir(parents=True, exist_ok=True)
+        local_path = FILES_DIR / filename
+        upload.save(local_path)
+        url = url_for("download_file", filename=filename)
+        mime_type = mimetypes.guess_type(original)[0] or "application/octet-stream"
+        gridfs_id = save_upload_to_mongo_storage(local_path, filename, original, "file", mime_type)
+        downloads["downloadUrl"] = url
+        downloads["fileSize"] = manual_size or human_file_size(local_path.stat().st_size)
+        save_media_record({
+            "filename": filename,
+            "original_name": original,
+            "kind": "file",
+            "url": url,
+            "mime_type": mime_type,
+            "size_bytes": local_path.stat().st_size,
+            "storage": "mongodb_gridfs" if gridfs_id else "local_disk",
+            "gridfs_id": gridfs_id,
+            "created_at": utc_now().isoformat(),
+            "created_by": (current_user() or {}).get("email"),
+        })
+        record_audit("product_download_file_update", product.get("slug", slug), {"filename": filename})
+    else:
+        if manual_url:
+            downloads["downloadUrl"] = manual_url
+        if manual_size:
+            downloads["fileSize"] = manual_size
+
+    product = normalize_product(product)
+    if using_mongo():
+        products_col.update_one({"slug": product["slug"]}, {"$set": {"downloads": product["downloads"]}})
+    else:
+        save_products_file(products)
+    flash("Download details updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#products")
+
+
 @app.route("/admin/product/<slug>/delete", methods=["POST"])
 @owner_required
 def admin_product_delete(slug):
@@ -2483,10 +2562,11 @@ def api_checkout_preview():
 @login_required
 @limiter.limit("20 per minute")
 def checkout_stripe():
+    """Create a Stripe Embedded Checkout session and return its client secret."""
     if not load_site_settings().get("store_enabled", True):
         return jsonify({"ok": False, "error": "Checkout is temporarily closed."}), 400
-    if not STRIPE_SECRET_KEY:
-        return jsonify({"ok": False, "error": "Stripe is not configured."}), 400
+    if not (STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY):
+        return jsonify({"ok": False, "error": "Stripe embedded checkout is not configured. Add STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY."}), 400
     try:
         import stripe
         stripe.api_key = STRIPE_SECRET_KEY
@@ -2496,15 +2576,15 @@ def checkout_stripe():
         order_id = f"ord_{secrets.token_hex(10)}"
         stripe_lines = []
         for item in cart["items"]:
+            product_data = {"name": f"{item['product_name']} — {item['option_name']}"}
+            if str(item.get("image", "")).startswith("/"):
+                product_data["images"] = [request.url_root.rstrip("/") + item["image"]]
             stripe_lines.append({
                 "quantity": item["quantity"],
                 "price_data": {
                     "currency": STRIPE_CURRENCY,
                     "unit_amount": item["unit_cents"],
-                    "product_data": {
-                        "name": f"{item['product_name']} — {item['option_name']}",
-                        "images": [request.url_root.rstrip("/") + item["image"]] if str(item.get("image", "")).startswith("/") else [],
-                    },
+                    "product_data": product_data,
                 },
             })
         if cart["fee_cents"] > 0:
@@ -2516,7 +2596,7 @@ def checkout_stripe():
                     "product_data": {"name": f"Processing fee ({PROCESSING_FEE_PERCENT}%)"},
                 },
             })
-        save_order({
+        order_payload = {
             "order_id": order_id,
             "user_email": user.get("email"),
             "username": user.get("username"),
@@ -2526,37 +2606,26 @@ def checkout_stripe():
             "cart": cart,
             "amount_cents": cart["total_cents"],
             "currency": cart["currency"],
-        })
+        }
+        save_order(order_payload)
         session_obj = stripe.checkout.Session.create(
             mode="payment",
+            ui_mode="embedded",
             line_items=stripe_lines,
             customer_email=user.get("email"),
+            client_reference_id=order_id,
             metadata={"order_id": order_id, "user_email": user.get("email", "")},
-            success_url=url_for("checkout_success", order_id=order_id, _external=True) + "&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=url_for("checkout", _external=True),
+            return_url=url_for("checkout_success", order_id=order_id, _external=True) + "&session_id={CHECKOUT_SESSION_ID}",
         )
-        save_order({
-            "order_id": order_id,
-            "user_email": user.get("email"),
-            "username": user.get("username"),
-            "provider": "stripe",
-            "provider_session_id": object_get(session_obj, "id"),
-            "status": "pending",
-            "expires_at": (utc_now() + timedelta(minutes=PENDING_ORDER_MAX_AGE_MINUTES)).isoformat(),
-            "cart": cart,
-            "amount_cents": cart["total_cents"],
-            "currency": cart["currency"],
-        })
-        checkout_url = object_get(session_obj, "url")
-        if not checkout_url:
-            raise RuntimeError("Stripe did not return a checkout URL.")
-        return jsonify({"ok": True, "url": checkout_url, "order_id": order_id})
+        order_payload.update({"provider_session_id": object_get(session_obj, "id")})
+        save_order(order_payload)
+        client_secret = object_get(session_obj, "client_secret")
+        if not client_secret:
+            raise RuntimeError("Stripe did not return an embedded checkout client secret.")
+        return jsonify({"ok": True, "client_secret": client_secret, "order_id": order_id})
     except Exception as exc:
-        logger.exception("Stripe checkout failed")
-        message = str(exc) or exc.__class__.__name__
-        if message == "get":
-            message = "Stripe checkout session was created, but the app could not read the Stripe response. This has been patched; redeploy the updated code."
-        return jsonify({"ok": False, "error": message}), 400
+        logger.exception("Stripe embedded checkout failed")
+        return jsonify({"ok": False, "error": str(exc) or exc.__class__.__name__}), 400
 
 
 @app.route("/checkout/paypal/create", methods=["POST"])
@@ -2676,6 +2745,15 @@ def checkout_paypal_capture():
         internal_order_id = str(payload.get("order_id") or "").strip()
         if not paypal_order_id:
             return jsonify({"ok": False, "error": "Missing PayPal order ID."}), 400
+
+        order = find_order_by_provider_order(paypal_order_id)
+        user = current_user() or {}
+        if not order:
+            return jsonify({"ok": False, "error": "Local PayPal order was not found."}), 404
+        if str(order.get("user_email", "")).lower() != str(user.get("email", "")).lower():
+            return jsonify({"ok": False, "error": "This PayPal order belongs to a different account."}), 403
+        internal_order_id = internal_order_id or order.get("order_id", "")
+
         token = paypal_access_token()
         resp = requests.post(
             f"{PAYPAL_API_BASE}/v2/checkout/orders/{paypal_order_id}/capture",
@@ -2685,8 +2763,7 @@ def checkout_paypal_capture():
         resp.raise_for_status()
         data = resp.json()
         status = "paid" if data.get("status") == "COMPLETED" else "pending"
-        if internal_order_id:
-            update_order_status(internal_order_id, status, {"provider_payment_id": paypal_order_id, "paypal_capture": data})
+        update_order_status(internal_order_id, status, {"provider_payment_id": paypal_order_id, "paypal_capture": data})
         return jsonify({"ok": True, "status": status, "order_id": internal_order_id})
     except RuntimeError as exc:
         logger.warning("PayPal capture blocked: %s", exc)

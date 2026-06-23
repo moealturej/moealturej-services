@@ -5,32 +5,32 @@
 {% block extra_head %}
 <style>
   .store-page { padding-top: 22px; }
-  .store-layout { display: grid; grid-template-columns: 280px minmax(0,1fr); gap: 18px; align-items: start; }
-  .store-hero { grid-column: 1 / -1; padding: 26px; border-radius: 28px; background: linear-gradient(180deg, rgba(22,16,36,.94), rgba(9,8,15,.98)); border: 1px solid rgba(255,255,255,.08); box-shadow: 0 24px 60px rgba(0,0,0,.30); }
+  .store-layout { display: grid; grid-template-columns: minmax(0,1fr); gap: 18px; align-items: start; }
+  .store-hero { grid-column: 1 / -1; padding: 26px; border-radius: 28px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); box-shadow:none; }
   .store-hero-row { display:flex; justify-content:space-between; gap:20px; align-items:end; }
   .store-hero h1 { margin: 8px 0 8px; font-size: clamp(34px, 5vw, 56px); letter-spacing: -.06em; }
   .store-hero p { margin: 0; color: var(--muted); max-width: 680px; line-height:1.65; }
-  .store-stats { display:grid; grid-template-columns: repeat(3, minmax(100px,1fr)); gap:10px; min-width: 360px; }
+  .store-stats { display:grid; grid-template-columns: repeat(2, minmax(100px,1fr)); gap:10px; min-width: 250px; }
   .store-stat { padding: 13px; border-radius: 17px; background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.075); }
   .store-stat strong { display:block; font-size:19px; margin-bottom:3px; }
   .store-stat span { color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; }
-  .store-sidebar { position: sticky; top: 100px; display:grid; gap:14px; }
-  .store-panel-clean { padding:16px; border-radius:22px; background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.075); }
+  .store-sidebar { position:static; display:grid; grid-template-columns: minmax(240px,1.15fr) minmax(260px,1.85fr); gap:14px; }
+  .store-panel-clean { padding:14px; border-radius:20px; background:rgba(255,255,255,.028); border:1px solid rgba(255,255,255,.075); }
   .store-panel-clean h3 { margin:0 0 12px; font-size:15px; }
   .search-box { position:relative; }
   .search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,.56); }
   .search-box input { width:100%; min-height:48px; padding:0 14px 0 42px; border-radius:15px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.18); color:#fff; outline:none; }
   .search-box input:focus { border-color:rgba(139,44,255,.45); box-shadow:0 0 0 4px rgba(139,44,255,.1); }
-  .filter-list { display:grid; gap:8px; }
-  .filter-btn { width:100%; min-height:42px; padding:0 13px; border-radius:14px; border:1px solid rgba(255,255,255,.075); background:rgba(255,255,255,.035); color:#fff; cursor:pointer; text-align:left; font-weight:850; transition:.16s ease; }
+  .filter-list { display:flex; gap:8px; flex-wrap:wrap; }
+  .filter-btn { min-height:42px; padding:0 13px; border-radius:999px; border:1px solid rgba(255,255,255,.075); background:rgba(255,255,255,.035); color:#fff; cursor:pointer; text-align:left; font-weight:850; transition:.16s ease; }
   .filter-btn:hover,.filter-btn.active { background:rgba(139,44,255,.16); border-color:rgba(139,44,255,.34); }
   .store-hint { color:var(--muted); font-size:12px; line-height:1.6; }
   .store-toolbar { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:14px; }
   .result-count { color:var(--muted); font-size:13px; font-weight:800; }
   .store-sort { min-height:42px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); color:#fff; padding:0 12px; font-weight:800; outline:none; }
   .store-sort option { background:#12091f; color:#fff; }
-  .products-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:14px; }
-  .product-card { display:flex; flex-direction:column; overflow:hidden; min-height:100%; border-radius:22px; background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.075); transition: transform .16s ease, border-color .16s ease, background .16s ease; }
+  .products-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; }
+  .product-card { display:flex; flex-direction:column; overflow:hidden; min-height:100%; border-radius:22px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.075); transition: transform .16s ease, border-color .16s ease, background .16s ease; }
   .product-card:hover { transform:translateY(-3px); border-color:rgba(139,44,255,.28); background:rgba(255,255,255,.05); }
   .product-media { position:relative; padding:12px; }
   .product-media img { width:100%; aspect-ratio:1.22 / 1; object-fit:cover; display:block; border-radius:17px; background:#10091b; border:1px solid rgba(255,255,255,.07); }
@@ -54,7 +54,7 @@
   .notice-toast.success { border-color:rgba(57,229,140,.26); } .notice-toast.error { border-color:rgba(255,98,125,.26); }
   @keyframes shimmer { to { background-position:-240% 0; } }
   @media (max-width: 1180px){ .products-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .store-hero-row{display:grid;} .store-stats{min-width:0;} }
-  @media (max-width: 900px){ .store-layout{grid-template-columns:1fr;} .store-sidebar{position:static; grid-template-columns:1fr;} .filter-list{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width: 900px){ .store-layout{grid-template-columns:1fr;} .store-sidebar{grid-template-columns:1fr;} .filter-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));} }
   @media (max-width: 640px){ .store-hero{padding:18px;border-radius:22px;} .store-stats,.products-grid,.filter-list{grid-template-columns:1fr;} .store-toolbar{align-items:stretch;flex-direction:column;} .product-actions{grid-template-columns:1fr;} }
 </style>
 {% endblock %}
@@ -67,13 +67,12 @@
         <div class="store-hero-row">
           <div>
             <div class="eyebrow">moealturej store</div>
-            <h1>Store catalog</h1>
-            <p>Pick a product, choose an option, then checkout with your signed-in account. Cart prices are validated again on the server before payment.</p>
+            <h1>Products</h1>
+            <p>Clean catalog, quick options, and checkout without the extra noise.</p>
           </div>
           <div class="store-stats">
             <div class="store-stat"><strong id="stat-products">—</strong><span>products</span></div>
             <div class="store-stat"><strong id="stat-online">—</strong><span>online</span></div>
-            <div class="store-stat"><strong>10%</strong><span>processing</span></div>
           </div>
         </div>
       </section>
@@ -87,7 +86,6 @@
           <h3>Categories</h3>
           <div id="filter-container" class="filter-list"><button class="filter-btn active">All</button></div>
         </div>
-        <div class="store-panel-clean store-hint"><strong>Signed-in checkout</strong><br>Purchases require an account so downloads and orders stay tied to you.</div>
       </aside>
 
       <main>
@@ -130,7 +128,7 @@
   function minPrice(product){ const p=options(product).map(o=>o.price).filter(Number.isFinite); return p.length ? Math.min(...p) : 0; }
   function priceText(product){ const p=minPrice(product); return p ? `$${p.toFixed(2)}+` : 'Options'; }
   function isOnline(product){ const raw=String(product?.status?.state || product?.status?.label || 'online').toLowerCase(); return !(raw.includes('offline') || raw.includes('degraded')); }
-  function statusChip(product){ if(!isOnline(product)){ const raw=String(product?.status?.state || product?.status?.label || 'Issue'); return `<span class="chip ${raw.toLowerCase().includes('degraded')?'is-yellow':'is-red'}"><i class="fas fa-circle"></i> ${esc(raw)}</span>`; } return '<span class="chip is-green"><i class="fas fa-circle"></i> Online</span>'; }
+  function statusChip(product){ const raw=String(product?.status?.state || product?.status?.label || 'Online'); const low=raw.toLowerCase(); if(low.includes('offline') || low.includes('out')) return `<span class="chip is-red"><i class="fas fa-circle"></i> ${esc(raw)}</span>`; if(low.includes('degraded') || low.includes('limited') || low.includes('issue')) return `<span class="chip is-yellow"><i class="fas fa-triangle-exclamation"></i> ${esc(raw)}</span>`; return `<span class="chip is-green"><i class="fas fa-circle"></i> ${esc(raw.includes('online')||raw.includes('operational')?raw:'Online')}</span>`; }
   function addToCart(product,opt){ if(!opt?.uniqid) return showNotification('This option is missing an id','error'); const existing=cart.find(i=>i.uniqid===opt.uniqid); if(existing) existing.quantity += 1; else cart.push({ uniqid:opt.uniqid, productId:product.id, slug:product.slug, productName:product.name, image:product.image || PLACEHOLDER_IMAGE, optionId:opt.id, optionName:opt.name, price:Number(opt.price || 0), quantity:1 }); saveCart(); if(window.showCartToast){ window.showCartToast({productName:product.name, optionName:opt.name, image:product.image || PLACEHOLDER_IMAGE, price:Number(opt.price || 0)}); } else { showNotification('Added to cart','success'); } }
   function buildFilters(){ const cats=[...new Set(products.map(p=>p.category).filter(Boolean))]; filterContainer.innerHTML = `<button class="filter-btn active" data-category="all">All products</button>${cats.map(c=>`<button class="filter-btn" data-category="${esc(c)}">${esc(c)}</button>`).join('')}`; filterContainer.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{ currentFilter=btn.dataset.category || 'all'; filterContainer.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderProducts(); })); }
   function getFiltered(){ let list=products.filter(p=>p?.store?.enabled); if(currentFilter !== 'all') list=list.filter(p=>String(p.category||'').toLowerCase()===currentFilter.toLowerCase()); if(currentSearch){ list=list.filter(p=>[p.name,p.category,p.description,p.detailedDescription].join(' ').toLowerCase().includes(currentSearch)); } const sort=sortSelect.value; if(sort==='price-low') list.sort((a,b)=>minPrice(a)-minPrice(b)); if(sort==='price-high') list.sort((a,b)=>minPrice(b)-minPrice(a)); if(sort==='name') list.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))); return list; }

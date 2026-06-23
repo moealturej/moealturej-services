@@ -68,7 +68,7 @@
           <a class="detail-back" href="/store"><i class="fas fa-arrow-left"></i> Back to store</a>
           <div class="eyebrow">{{ product.category or product.type or 'product' }}</div>
           <h1 class="detail-title">{{ product.name }}</h1>
-          <p class="detail-subtitle">Choose a license option, add it to cart, or review the full product info below.</p>
+          <p class="detail-subtitle">Pick an option, add it to cart, and checkout when ready.</p>
           <div class="detail-meta">
             {% set state = (product.status.state if product.status else product.store.stockStatus)|default('Live') %}
             {% set raw_state = state|string|lower %}
@@ -81,7 +81,7 @@
           <div class="detail-actions"><button id="add-detail-cart" class="detail-btn buy"><i class="fas fa-cart-plus"></i>&nbsp; Add selected to cart</button><button class="detail-btn cart-icon"><i class="fas fa-cart-shopping"></i>&nbsp; Open cart</button></div>
         </aside>
       </div>
-      <div class="detail-section-card"><h2 class="detail-section-title">Full product details</h2><div id="detail-description" class="detail-description"></div></div>
+      <div class="detail-section-card"><h2 class="detail-section-title">Details</h2><div id="detail-description" class="detail-description"></div></div>
     </section>
   </div>
   <button class="cart-fab cart-icon" aria-label="Open cart"><i class="fas fa-cart-shopping"></i><span class="cart-count">0</span></button>

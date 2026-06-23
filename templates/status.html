@@ -6,14 +6,14 @@
 <style>
   .status-page { padding-top:22px; }
   .status-layout { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:18px; align-items:start; }
-  .status-head { grid-column:1 / -1; padding:26px; border-radius:28px; background:linear-gradient(180deg, rgba(22,16,36,.94), rgba(9,8,15,.98)); border:1px solid rgba(255,255,255,.08); }
+  .status-head { grid-column:1 / -1; padding:26px; border-radius:28px; background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.08); }
   .status-head h1 { margin:8px 0 8px; font-size:clamp(34px,5vw,56px); letter-spacing:-.06em; }
   .status-head p { color:var(--muted); margin:0; max-width:700px; line-height:1.65; }
   .status-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:18px; }
   .summary-card { padding:15px; border-radius:18px; background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.075); }
   .summary-card span { display:block; color:var(--muted); font-size:11px; font-weight:850; letter-spacing:.11em; text-transform:uppercase; margin-bottom:5px; }
   .summary-card strong { font-size:26px; letter-spacing:-.05em; }
-  .status-main,.status-side { padding:18px; border-radius:24px; background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.075); }
+  .status-main,.status-side { padding:18px; border-radius:24px; background:rgba(255,255,255,.028); border:1px solid rgba(255,255,255,.075); }
   .status-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
   .status-toolbar h2 { margin:0; font-size:22px; letter-spacing:-.04em; }
   .status-list { display:grid; gap:10px; }
@@ -44,8 +44,8 @@
     <div class="status-layout">
       <section class="status-head">
         <div class="eyebrow">system health</div>
-        <h1>Product status</h1>
-        <p>Track product availability, versions, and latest owner-updated status. This page loads fast and handles missing data cleanly.</p>
+        <h1>Status</h1>
+        <p>Live product availability.</p>
         <div class="status-summary">
           <div class="summary-card"><span>Tracked</span><strong id="overview-total">0</strong></div>
           <div class="summary-card"><span>Operational</span><strong id="overview-operational">0</strong></div>
@@ -64,12 +64,12 @@
       </main>
 
       <aside class="status-side">
-        <h3 class="side-title">Status guide</h3>
-        <p class="status-note">Operational means the product is currently marked online. Degraded means there may be issues. Offline means the item should not be treated as available.</p>
+        <h3 class="side-title">Guide</h3>
+        <p class="status-note">Green is live, yellow is limited, red is offline.</p>
         <div class="mini-events">
-          <div class="mini-event"><span class="status-dot"></span><p><strong>Operational</strong><br>Product is live or ready.</p></div>
-          <div class="mini-event"><span class="status-dot issue"></span><p><strong>Degraded</strong><br>May have partial issues.</p></div>
-          <div class="mini-event"><span class="status-dot offline"></span><p><strong>Offline</strong><br>Unavailable or paused.</p></div>
+          <div class="mini-event"><span class="status-dot"></span><p><strong>Operational</strong><br>Live and ready.</p></div>
+          <div class="mini-event"><span class="status-dot issue"></span><p><strong>Degraded</strong><br>Limited right now.</p></div>
+          <div class="mini-event"><span class="status-dot offline"></span><p><strong>Offline</strong><br>Paused or down.</p></div>
         </div>
       </aside>
     </div>
