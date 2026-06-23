@@ -1,5 +1,69 @@
 {% extends "base.html" %}
 {% block title %}Owner Dashboard | moealturej{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updatePricingButtons(){
+  const rows=[...document.querySelectorAll('#pricingOptions .pricing-row')];
+  rows.forEach((row)=>{
+    const btn=row.querySelector('button.danger-btn');
+    if(btn) btn.disabled = rows.length <= 1;
+  });
+}
+function addPricingOption(){
+  const wrap=document.getElementById('pricingOptions');
+  const count=wrap.querySelectorAll('.pricing-row').length+1;
+  const row=document.createElement('div');
+  row.className='pricing-row';
+  row.innerHTML=`<label>Option name<input name="option_name" placeholder="WEEK KEY" value="Option ${count}" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><button class="danger-btn" type="button" onclick="removePricingOption(this)"><i class="fas fa-trash"></i></button>`;
+  wrap.appendChild(row);
+  updatePricingButtons();
+}
+function removePricingOption(btn){
+  const row=btn.closest('.pricing-row');
+  if(row && document.querySelectorAll('#pricingOptions .pricing-row').length>1) row.remove();
+  updatePricingButtons();
+}
+function parseDetailedText(raw){
+  const known=['aimbot','targeting','esp','visuals','colors','misc','config','settings','radar','unlock','unlocks','weapon mods','movement','self','vehicle control','player interaction','teleportation','server tools','world mods'];
+  const lines=(raw||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const groups=[]; let current=null; const notes=[];
+  function nextNonEmpty(i){ for(let x=i+1;x<lines.length;x++){ if(lines[x]) return lines[x]; } return ''; }
+  function isHeading(line,i){
+    if(line.startsWith('-')||line.startsWith('•')) return false;
+    const lower=line.toLowerCase();
+    if(known.includes(lower)) return true;
+    const nxt=nextNonEmpty(i);
+    return line.length<=32 && !/^save slot\s+\d+/i.test(line) && (nxt.startsWith('-')||nxt.startsWith('•'));
+  }
+  for(let i=0;i<lines.length;i++){
+    let line=lines[i];
+    if(isHeading(line,i)){
+      current={title:line.replace(/:$/,''),items:[]}; groups.push(current); continue;
+    }
+    line=line.replace(/^[-•]\s*/, '').trim();
+    if(!line) continue;
+    if(current) current.items.push(line); else notes.push(line);
+  }
+  const out=[];
+  if(notes.length) out.push('• Notes: '+notes.join(', '));
+  groups.forEach(g=>{ if(g.items.length) out.push('• '+g.title+': '+g.items.join(', ')); });
+  return out.join('\n');
+}
+function previewDetailedDescription(){
+  const source=document.getElementById('detailSource');
+  const preview=document.getElementById('detailPreview');
+  if(!source||!preview) return;
+  preview.textContent=parseDetailedText(source.value) || 'Paste feature text first.';
+  preview.hidden=false;
+}
+function clearDetailPreview(){
+  const preview=document.getElementById('detailPreview');
+  if(preview){ preview.hidden=true; preview.textContent=''; }
+}
+updatePricingButtons();
+</script>
+{% endblock %}
 {% block extra_head %}
 <style>
   .admin-page{--admin-line:rgba(213,156,255,.16);--admin-soft:rgba(255,255,255,.035)}
@@ -10,7 +74,7 @@
   .admin-tabs{position:sticky;top:105px;z-index:20;display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;padding:9px;border-radius:24px;background:rgba(4,2,10,.82);border:1px solid rgba(213,156,255,.14);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.28)}.admin-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.14);color:#efe3ff;font-weight:950;text-decoration:none;transition:.18s ease}.admin-tab:hover{background:rgba(169,53,255,.14);border-color:rgba(213,156,255,.32);transform:translateY(-1px)}
   .admin-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.admin-section{scroll-margin-top:190px}.admin-card{padding:24px!important;border-radius:30px!important;background:linear-gradient(180deg,rgba(11,6,23,.86),rgba(5,2,12,.92))!important;border:1px solid var(--admin-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.30)!important}.section-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}.section-top h2{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.04em}.muted{color:var(--muted);line-height:1.65}.admin-two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-form-grid .wide{grid-column:1/-1}.check-row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px}.check-row label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.11)}.check-row input{width:auto!important;min-height:auto!important}.admin-page label{color:#f1e7ff;font-weight:900;font-size:13px}.admin-page select,.admin-page input,.admin-page textarea{background:#0b0615!important;color:#fff!important;border-color:rgba(213,156,255,.22)!important}.admin-page select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#d59cff 50%),linear-gradient(135deg,#d59cff 50%,transparent 50%)!important;background-position:calc(100% - 18px) 22px,calc(100% - 12px) 22px!important;background-size:6px 6px,6px 6px!important;background-repeat:no-repeat!important;padding-right:38px!important}.admin-page select option{background:#0b0615!important;color:#f7efff!important}.admin-page select option:checked{background:#251036!important;color:#fff!important}
   .media-grid,.users-grid,.product-list{display:grid;gap:12px}.media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media-item,.user-row,.admin-product{display:grid;gap:13px;padding:16px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.018));border:1px solid rgba(213,156,255,.12)}.media-top{display:flex;gap:14px;align-items:center;min-width:0}.media-preview,.media-file-icon{width:78px;height:78px;flex:0 0 auto;border-radius:20px;border:1px solid rgba(213,156,255,.18);background:#090411}.media-preview{object-fit:cover}.media-file-icon{display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,rgba(169,53,255,.24),rgba(255,68,188,.10))}.copy-field{display:flex;gap:8px}.copy-field input{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis}.copy-field button{white-space:nowrap}
-  .product-list{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-product-main{display:flex;gap:14px;align-items:center}.admin-product-main img{width:82px;height:82px;border-radius:21px;object-fit:cover;border:1px solid rgba(213,156,255,.18);background:#08040f}.admin-product-main h3{margin:0 0 5px}.admin-product-main p{margin:0}.admin-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.admin-tags span,.owner-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(169,53,255,.11);border:1px solid rgba(169,53,255,.18);font-size:12px;font-weight:900;color:#eadfff}.status-mini{display:grid;grid-template-columns:auto 170px 1fr auto;gap:10px;align-items:center}.status-mini input[type=checkbox]{width:auto!important;min-height:auto!important}.status-mini button,.small-btn,.danger-btn{border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.05);color:#fff;font-weight:900;cursor:pointer;transition:.18s ease}.small-btn:hover,.status-mini button:hover{background:rgba(169,53,255,.13);border-color:rgba(213,156,255,.28);transform:translateY(-1px)}.danger-btn{background:rgba(255,55,95,.10);border-color:rgba(255,55,95,.28);color:#ffd8df}.danger-btn:hover{background:rgba(255,55,95,.16);transform:translateY(-1px)}.danger-btn.compact{margin-top:0}.json-editor{margin-top:2px}.json-editor summary{cursor:pointer;color:#dca8ff;font-weight:900}.json-editor textarea{margin-top:12px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5}.admin-actions{margin-top:10px}
+  .product-list{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-product-main{display:flex;gap:14px;align-items:center}.admin-product-main img{width:82px;height:82px;border-radius:21px;object-fit:cover;border:1px solid rgba(213,156,255,.18);background:#08040f}.admin-product-main h3{margin:0 0 5px}.admin-product-main p{margin:0}.admin-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.admin-tags span,.owner-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(169,53,255,.11);border:1px solid rgba(169,53,255,.18);font-size:12px;font-weight:900;color:#eadfff}.status-mini{display:grid;grid-template-columns:auto 170px 1fr auto;gap:10px;align-items:center}.status-mini input[type=checkbox]{width:auto!important;min-height:auto!important}.status-mini button,.small-btn,.danger-btn{border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.05);color:#fff;font-weight:900;cursor:pointer;transition:.18s ease}.small-btn:hover,.status-mini button:hover{background:rgba(169,53,255,.13);border-color:rgba(213,156,255,.28);transform:translateY(-1px)}.danger-btn{background:rgba(255,55,95,.10);border-color:rgba(255,55,95,.28);color:#ffd8df}.danger-btn:hover{background:rgba(255,55,95,.16);transform:translateY(-1px)}.danger-btn.compact{margin-top:0}.json-editor{margin-top:2px}.json-editor summary{cursor:pointer;color:#dca8ff;font-weight:900}.json-editor textarea{margin-top:12px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5}.admin-actions{margin-top:10px}.pricing-builder{display:grid;gap:10px}.pricing-row{display:grid;grid-template-columns:1fr 130px auto;gap:10px;align-items:end;padding:12px;border:1px solid rgba(213,156,255,.14);background:rgba(255,255,255,.035);border-radius:18px}.parser-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.detail-preview{white-space:pre-wrap;margin-top:10px;padding:14px;border-radius:18px;background:rgba(6,3,12,.72);border:1px dashed rgba(213,156,255,.22);font-size:12px;color:#d7cdea;max-height:260px;overflow:auto}.helper-text{display:block;margin-top:6px;color:#9b91ad;font-size:12px;line-height:1.45}
   .user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}.user-email{font-weight:950;color:#fff}.user-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.owner-badge{background:rgba(255,198,75,.12);border-color:rgba(255,198,75,.25);color:#ffe3a3}.suspended-badge{background:rgba(255,70,101,.13);border-color:rgba(255,70,101,.32);color:#ffd3dc}.active-badge{background:rgba(57,255,159,.10);border-color:rgba(57,255,159,.22);color:#b8ffd8}.discord-badge{background:rgba(88,101,242,.14);border-color:rgba(88,101,242,.32);color:#dfe2ff}.user-forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.inline-form{display:flex;gap:8px;align-items:center;padding:10px;border-radius:18px;background:rgba(255,255,255,.026);border:1px solid rgba(213,156,255,.10)}.inline-form select,.inline-form input{flex:1 1 160px;min-width:0}.security-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.security-item{display:flex;gap:12px;align-items:flex-start;padding:15px;border-radius:20px;background:rgba(255,255,255,.034);border:1px solid rgba(213,156,255,.12)}.security-item i{color:#dca8ff;margin-top:2px;font-size:20px}.admin-page code{color:#e6c7ff;background:rgba(169,53,255,.12);border:1px solid rgba(213,156,255,.15);padding:2px 7px;border-radius:9px}.secondary-cta{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:0 16px;border-radius:999px;border:1px solid rgba(213,156,255,.22);background:rgba(255,255,255,.035);font-weight:900;color:#fff}.secondary-cta:hover{background:rgba(169,53,255,.12)}.delivery-form{display:grid;grid-template-columns:170px minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:12px;padding:12px;border-radius:18px;background:rgba(57,229,140,.05);border:1px solid rgba(57,229,140,.12)}.delivery-form label{margin:0!important}.delivery-form textarea{min-height:46px!important;height:46px!important;resize:vertical}.delivery-status{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.delivery-key-preview{padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.24);border:1px dashed rgba(213,156,255,.28);font-family:ui-monospace,Consolas,monospace;color:#fff;word-break:break-all;font-size:12px}.order-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;color:var(--muted);font-size:13px;padding:10px;border-radius:15px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}.order-line strong{color:#fff}.order-line small{display:block;color:#8f80ad;margin-top:4px}@media(max-width:880px){.delivery-form{grid-template-columns:1fr}.order-line{grid-template-columns:1fr}}
   @media(max-width:1100px){.admin-command,.admin-two-col{grid-template-columns:1fr}.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.product-list,.media-grid{grid-template-columns:1fr}.admin-tabs{top:96px}}
   @media(max-width:760px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs{position:relative;top:auto}.admin-tab{flex:1;justify-content:center}.admin-form-grid,.user-forms,.security-grid{grid-template-columns:1fr}.inline-form,.copy-field,.status-mini{display:grid;grid-template-columns:1fr}.admin-product-main{align-items:flex-start}.admin-hero{min-height:auto}.admin-side-panel,.admin-card{border-radius:24px!important}}
@@ -100,7 +164,25 @@
           <label>Slug<input name="slug" placeholder="new-product"></label>
           <label>Category<input name="category" placeholder="cod"></label>
           <label>Image URL<input name="image" placeholder="/media/your-image.png"></label>
-          <label class="wide">Short description<textarea name="description" rows="3" placeholder="Clean product details..."></textarea></label>
+          <label class="wide">Short description<textarea name="description" rows="3" placeholder="Short store-card description..."></textarea></label>
+          <label class="wide">Detailed description parser
+            <textarea id="detailSource" name="detailed_source" rows="12" placeholder="Paste raw feature text here. Headings like Aimbot, ESP, Misc, Config will be converted into the product JSON detailedDescription format."></textarea>
+            <small class="helper-text">On save, this turns raw lists into lines like <code>• Aimbot: Silent Aim, FOV Circle...</code> inside <code>detailedDescription</code>.</small>
+            <div class="parser-actions"><button class="small-btn" type="button" onclick="previewDetailedDescription()"><i class="fas fa-wand-magic-sparkles"></i> Preview parsed description</button><button class="small-btn" type="button" onclick="clearDetailPreview()">Clear preview</button></div>
+            <pre id="detailPreview" class="detail-preview" hidden></pre>
+          </label>
+          <div class="wide pricing-builder">
+            <label>Pricing options</label>
+            <small class="helper-text">Starts with 1 option. Add as many as you need; these become <code>store.options</code> in product JSON.</small>
+            <div id="pricingOptions">
+              <div class="pricing-row">
+                <label>Option name<input name="option_name" value="DAY KEY" placeholder="DAY KEY" required></label>
+                <label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label>
+                <button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <button class="small-btn" type="button" onclick="addPricingOption()"><i class="fas fa-plus"></i> Add pricing option</button>
+          </div>
           <label>Download URL<input name="download_url" placeholder="/download/file.zip"></label>
           <label>File size<input name="file_size" placeholder="25 MB"></label>
           <div class="check-row"><label><input type="checkbox" name="store_enabled" checked> Store</label><label><input type="checkbox" name="downloads_enabled"> Downloads</label><label><input type="checkbox" name="status_enabled" checked> Status</label><label><input type="checkbox" name="featured"> Featured</label></div>

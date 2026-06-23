@@ -383,6 +383,95 @@ CSP_POLICY = (
 # Helpers
 # -----------------------------------------------------------------------------
 
+
+def parse_detailed_description(raw: str) -> str:
+    """Convert pasted feature-list text into the compact bullet format used by product JSON."""
+    raw = str(raw or "").replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.strip() for line in raw.split("\n") if line.strip()]
+    if not lines:
+        return ""
+
+    known_headings = {
+        "aimbot", "targeting", "esp", "visuals", "colors", "misc", "config", "settings",
+        "radar", "unlock", "unlocks", "weapon mods", "movement", "self", "vehicle control",
+        "player interaction", "vehicle list tools", "teleportation", "server tools", "world mods",
+        "triggerbot", "silent aim", "silent aim / magic bullet", "account", "anti aim", "override",
+        "exploits", "dvars"
+    }
+
+    def next_line(index: int) -> str:
+        for nxt in lines[index + 1:]:
+            if nxt:
+                return nxt
+        return ""
+
+    def is_heading(line: str, index: int) -> bool:
+        if line.startswith(("-", "•")):
+            return False
+        clean = line.strip().rstrip(":")
+        lower = clean.lower()
+        if lower in known_headings:
+            return True
+        nxt = next_line(index)
+        if re.match(r"^save slot\s+\d+", lower):
+            return False
+        return len(clean) <= 32 and bool(nxt.startswith(("-", "•")))
+
+    notes: list[str] = []
+    groups: list[dict] = []
+    current: dict | None = None
+
+    for index, line in enumerate(lines):
+        if is_heading(line, index):
+            current = {"title": line.rstrip(":"), "items": []}
+            groups.append(current)
+            continue
+
+        item = re.sub(r"^[-•]\s*", "", line).strip()
+        if not item:
+            continue
+        if current is None:
+            notes.append(item)
+        else:
+            current["items"].append(item)
+
+    output: list[str] = []
+    if notes:
+        output.append("• Notes: " + ", ".join(notes))
+    for group in groups:
+        items = [str(i).strip() for i in group.get("items", []) if str(i).strip()]
+        if items:
+            output.append(f"• {group['title']}: " + ", ".join(items))
+
+    return "\n".join(output)
+
+
+def build_store_options_from_form() -> list[dict]:
+    names = request.form.getlist("option_name")
+    prices = request.form.getlist("option_price")
+    options: list[dict] = []
+    for index, name in enumerate(names):
+        option_name = (name or "").strip()
+        raw_price = prices[index] if index < len(prices) else ""
+        if not option_name and not str(raw_price).strip():
+            continue
+        if not option_name:
+            option_name = f"Option {index + 1}"
+        try:
+            price = round(float(raw_price), 2)
+        except Exception:
+            price = 1.00
+        if price < 0.50:
+            price = 0.50
+        options.append({
+            "id": int(utc_now().timestamp() * 1000) + index,
+            "name": option_name,
+            "price": price,
+        })
+    if not options:
+        options.append({"id": int(utc_now().timestamp() * 1000), "name": "DAY KEY", "price": 1.00})
+    return options
+
 def clean_slug(value: str) -> str:
     value = str(value or "").strip().lower()
     value = re.sub(r"[^a-z0-9]+", "-", value).strip("-")
@@ -2092,17 +2181,21 @@ def admin_site_settings():
 def admin_product_new():
     name = request.form.get("name", "New Product").strip() or "New Product"
     slug = clean_slug(request.form.get("slug") or name)
+    short_description = request.form.get("description", "").strip()
+    parsed_details = parse_detailed_description(request.form.get("detailed_source", ""))
+    detailed_description = parsed_details or short_description
     product = normalize_product({
         "id": int(utc_now().timestamp() * 1000),
         "slug": slug,
         "name": name,
-        "detailedDescription": request.form.get("description", ""),
+        "description": short_description,
+        "detailedDescription": detailed_description,
         "image": request.form.get("image", "/static/logo.png"),
         "category": request.form.get("category", "general"),
         "type": "product",
         "featured": bool(request.form.get("featured")),
         "features": [],
-        "store": {"enabled": bool(request.form.get("store_enabled")), "stockStatus": "In Stock", "options": []},
+        "store": {"enabled": bool(request.form.get("store_enabled")), "stockStatus": "In Stock", "options": build_store_options_from_form()},
         "downloads": {"enabled": bool(request.form.get("downloads_enabled")), "version": "Latest", "downloadUrl": request.form.get("download_url", ""), "fileSize": request.form.get("file_size", "")},
         "status": {"enabled": bool(request.form.get("status_enabled")), "state": "Operational", "label": "Online", "lastUpdated": today_utc_date()},
     })
