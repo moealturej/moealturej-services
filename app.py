@@ -8,7 +8,7 @@ import secrets
 import smtplib
 import ssl
 import uuid
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from functools import wraps
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -134,6 +134,14 @@ SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", RESEND_REPLY_TO or OWNER_EMAIL).strip
 BRAND_LOGO_URL = os.getenv("BRAND_LOGO_URL", "").strip()
 OWNER_ORDER_WEBHOOK_URL = env_first("OWNER_ORDER_WEBHOOK_URL", "ORDER_WEBHOOK_URL", "DISCORD_ORDER_WEBHOOK_URL")
 DELIVERY_DM_ENABLED = os.getenv("DELIVERY_DM_ENABLED", "true").lower() == "true"
+
+# Reselling.pro auto key delivery. Keep the API key in .env only. Product/option
+# JSON stores the provider base URL WITHOUT the key, for example:
+# https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day
+RESELLING_PRO_API_KEY = env_first("RESELLING_PRO_API_KEY", "RESELLING_PRO_TOKEN")
+RESELLING_PRO_ENABLED = os.getenv("RESELLING_PRO_ENABLED", "true").lower() == "true"
+RESELLING_PRO_TIMEOUT_SECONDS = max(3, min(30, int(os.getenv("RESELLING_PRO_TIMEOUT_SECONDS", "15"))))
+RESELLING_PRO_ALLOWED_HOST = os.getenv("RESELLING_PRO_ALLOWED_HOST", "api.reselling.pro").strip().lower()
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -451,9 +459,35 @@ def parse_detailed_description(raw: str) -> str:
     return "\n".join(output)
 
 
+def safe_reselling_base_url(value: str) -> str:
+    """Validate/store a Reselling.pro base URL without the secret API key."""
+    base_url = str(value or "").strip().rstrip("/")
+    if not base_url:
+        return ""
+    parsed = urlparse(base_url)
+    if parsed.scheme != "https" or parsed.netloc.lower() != RESELLING_PRO_ALLOWED_HOST:
+        raise ValueError("Auto-delivery URL must start with https://api.reselling.pro")
+    if not parsed.path.startswith("/rft/api/seller/keys/"):
+        raise ValueError("Auto-delivery URL must use /rft/api/seller/keys/...")
+    # Admin should paste only the base URL. If the key got pasted by accident, remove it.
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) > 6:
+        clean_path = "/" + "/".join(parts[:6])
+        parsed = parsed._replace(path=clean_path, query="", fragment="")
+        base_url = parsed.geturl().rstrip("/")
+    return base_url
+
+
+def auto_delivery_dict_from_base_url(base_url: str, enabled: bool = True) -> dict:
+    base_url = safe_reselling_base_url(base_url)
+    return {"enabled": bool(enabled and base_url), "provider": "reselling_pro", "base_url": base_url}
+
+
 def build_store_options_from_form() -> list[dict]:
     names = request.form.getlist("option_name")
     prices = request.form.getlist("option_price")
+    auto_enabled = request.form.getlist("option_auto_enabled")
+    auto_urls = request.form.getlist("option_auto_base_url")
     options: list[dict] = []
     for index, name in enumerate(names):
         option_name = (name or "").strip()
@@ -468,11 +502,16 @@ def build_store_options_from_form() -> list[dict]:
             price = 1.00
         if price < 0.50:
             price = 0.50
-        options.append({
+        option = {
             "id": int(utc_now().timestamp() * 1000) + index,
             "name": option_name,
             "price": price,
-        })
+        }
+        base_url = auto_urls[index].strip() if index < len(auto_urls) else ""
+        enabled = str(index) in set(auto_enabled)
+        if base_url:
+            option["autoDelivery"] = auto_delivery_dict_from_base_url(base_url, enabled)
+        options.append(option)
     if not options:
         options.append({"id": int(utc_now().timestamp() * 1000), "name": "DAY KEY", "price": 1.00})
     return options
@@ -917,10 +956,176 @@ def send_discord_key_dm(discord_id: str | None, order: dict, item: dict, product
     return False
 
 
-def format_order_items_for_discord(cart: dict) -> str:
+
+class AutoDeliveryError(Exception):
+    pass
+
+
+def normalize_auto_delivery_config(config: dict | None) -> dict:
+    """Return a safe, non-secret auto-delivery config for storing on order items."""
+    if not isinstance(config, dict):
+        return {"enabled": False}
+    provider = str(config.get("provider") or "reselling_pro").strip().lower()
+    base_url = str(config.get("base_url") or config.get("baseUrl") or config.get("url") or "").strip()
+    enabled = bool(config.get("enabled")) and provider == "reselling_pro" and bool(base_url)
+    return {"enabled": enabled, "provider": "reselling_pro", "base_url": base_url}
+
+
+def item_auto_delivery_config(product: dict, option: dict) -> dict:
+    """Option-level config wins; product-level config is the fallback."""
+    product_store = product.get("store") or {}
+    option_config = normalize_auto_delivery_config(option.get("autoDelivery") or option.get("auto_delivery"))
+    if option_config.get("enabled"):
+        return option_config
+    return normalize_auto_delivery_config(product_store.get("autoDelivery") or product_store.get("auto_delivery"))
+
+
+def build_reselling_pro_delivery_url(base_url: str) -> str:
+    if not RESELLING_PRO_ENABLED:
+        raise AutoDeliveryError("Reselling.pro auto-delivery is disabled.")
+    if not RESELLING_PRO_API_KEY:
+        raise AutoDeliveryError("RESELLING_PRO_API_KEY is missing from .env.")
+    base_url = str(base_url or "").strip().rstrip("/")
+    if not base_url:
+        raise AutoDeliveryError("Auto-delivery base URL is missing.")
+    parsed = urlparse(base_url)
+    if parsed.scheme != "https" or parsed.netloc.lower() != RESELLING_PRO_ALLOWED_HOST:
+        raise AutoDeliveryError("Auto-delivery URL must be an HTTPS api.reselling.pro URL.")
+    if not parsed.path.startswith("/rft/api/seller/keys/"):
+        raise AutoDeliveryError("Auto-delivery URL must use the Reselling.pro seller keys endpoint.")
+    return f"{base_url}/{RESELLING_PRO_API_KEY}"
+
+
+def extract_product_key_from_response(resp: requests.Response) -> str:
+    text = (resp.text or "").strip()
+    try:
+        data = resp.json()
+    except Exception:
+        data = None
+    if isinstance(data, dict):
+        for key_name in ("key", "license", "license_key", "code", "data", "result"):
+            value = data.get(key_name)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        nested = data.get("data")
+        if isinstance(nested, dict):
+            for key_name in ("key", "license", "license_key", "code"):
+                value = nested.get(key_name)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+    if isinstance(data, str) and data.strip():
+        return data.strip()
+    if text:
+        return text
+    raise AutoDeliveryError("Provider returned an empty key response.")
+
+
+def fetch_reselling_pro_key(base_url: str) -> str:
+    """Fetch exactly one product key. Never logs or exposes the secret API URL."""
+    delivery_url = build_reselling_pro_delivery_url(base_url)
+    try:
+        resp = requests.get(delivery_url, timeout=RESELLING_PRO_TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise AutoDeliveryError(f"Could not contact Reselling.pro: {exc.__class__.__name__}") from exc
+    if resp.status_code >= 400:
+        safe_body = (resp.text or "").strip().replace(RESELLING_PRO_API_KEY, "[hidden]")[:220]
+        raise AutoDeliveryError(f"Reselling.pro returned HTTP {resp.status_code}: {safe_body}")
+    product_key = extract_product_key_from_response(resp)
+    if not product_key or len(product_key.strip()) < 3:
+        raise AutoDeliveryError("Provider returned an invalid key.")
+    return product_key.strip()
+
+
+def save_delivery_to_order(order: dict, item: dict, item_index: int, product_key: str, note: str = "", source: str = "manual") -> dict:
+    deliveries = order.get("deliveries") or {}
+    delivery_id = str(item_index)
+    deliveries[delivery_id] = {
+        "item_index": item_index,
+        "product_name": item.get("product_name"),
+        "option_name": item.get("option_name"),
+        "product_key": product_key,
+        "note": note,
+        "sent_at": utc_now().isoformat(),
+        "sent_by": source,
+        "source": source,
+        "email_sent": False,
+        "discord_dm_sent": False,
+    }
+    order["deliveries"] = deliveries
+    return deliveries[delivery_id]
+
+
+def notify_buyer_delivery(order: dict, item: dict, delivery: dict) -> dict:
+    buyer = get_user_by_email(order.get("user_email")) or {}
+    product_key = delivery.get("product_key", "")
+    note = delivery.get("note", "")
+    email_sent = False
+    dm_sent = False
+    if order.get("user_email"):
+        subject, text, html_body = build_key_delivery_email(order.get("user_email"), order, item, product_key, note)
+        email_sent = send_html_email(order.get("user_email"), subject, text, html_body, "Delivery")
+    if buyer.get("discord_id"):
+        dm_sent = send_discord_key_dm(buyer.get("discord_id"), order, item, product_key, note)
+    delivery["email_sent"] = email_sent
+    delivery["discord_dm_sent"] = dm_sent
+    return delivery
+
+
+def process_auto_delivery(order: dict) -> dict:
+    """Deliver any paid order items configured for Reselling.pro auto-delivery."""
+    if str(order.get("status", "")).lower() != "paid":
+        return order
+    cart_items = (order.get("cart") or {}).get("items") or []
+    deliveries = order.get("deliveries") or {}
+    attempts = order.get("auto_delivery_attempts") or {}
+    failures = []
+    delivered_count = 0
+    for index, item in enumerate(cart_items):
+        delivery_id = str(index)
+        if deliveries.get(delivery_id):
+            continue
+        config = item.get("auto_delivery") or {}
+        if not config.get("enabled"):
+            continue
+        quantity = min(max(int(item.get("quantity") or 1), 1), 10)
+        base_url = str(config.get("base_url") or "").strip()
+        keys = []
+        try:
+            for _ in range(quantity):
+                keys.append(fetch_reselling_pro_key(base_url))
+            note = "Auto-delivered by moealturej. Keep this key private."
+            delivery = save_delivery_to_order(order, item, index, "\n".join(keys), note, "reselling_pro_auto")
+            notify_buyer_delivery(order, item, delivery)
+            delivered_count += 1
+            attempts[delivery_id] = {"status": "delivered", "at": utc_now().isoformat(), "quantity": quantity}
+        except Exception as exc:
+            message = str(exc)[:500]
+            failures.append({"item_index": index, "product_name": item.get("product_name"), "option_name": item.get("option_name"), "error": message, "at": utc_now().isoformat()})
+            attempts[delivery_id] = {"status": "failed", "at": utc_now().isoformat(), "error": message}
+            logger.warning("Auto-delivery failed for order %s item %s: %s", order.get("order_id"), index, message)
+    order["auto_delivery_attempts"] = attempts
+    if failures:
+        order["auto_delivery_failures"] = failures
+    elif order.get("auto_delivery_failures"):
+        order.pop("auto_delivery_failures", None)
+    if cart_items and len((order.get("deliveries") or {})) >= len(cart_items):
+        order["delivery_status"] = "delivered"
+    elif delivered_count:
+        order["delivery_status"] = "partial"
+    elif any((item.get("auto_delivery") or {}).get("enabled") for item in cart_items):
+        order["delivery_status"] = "auto_failed" if failures else order.get("delivery_status", "pending")
+    else:
+        order.setdefault("delivery_status", "manual_required")
+    order["updated_at"] = utc_now().isoformat()
+    return order
+
+def format_order_items_for_discord(cart: dict, deliveries: dict | None = None) -> str:
     lines = []
-    for item in (cart or {}).get("items", [])[:10]:
-        lines.append(f"• {item.get('product_name','Product')} — {item.get('option_name','Option')} × {item.get('quantity',1)} — ${item.get('line_amount','0.00')}")
+    deliveries = deliveries or {}
+    for index, item in enumerate((cart or {}).get("items", [])[:10]):
+        delivered = " ✅ delivered" if deliveries.get(str(index)) else " ⏳ needs key"
+        auto = " · auto" if (item.get("auto_delivery") or {}).get("enabled") else " · manual"
+        lines.append(f"• {item.get('product_name','Product')} — {item.get('option_name','Option')} × {item.get('quantity',1)} — ${item.get('line_amount','0.00')}{auto}{delivered}")
     return "\n".join(lines) or "No items found."
 
 
@@ -928,23 +1133,39 @@ def send_owner_order_webhook(order: dict) -> bool:
     if not OWNER_ORDER_WEBHOOK_URL or not str(order.get("status", "")).lower() == "paid":
         return False
     cart = order.get("cart") or {}
+    deliveries = order.get("deliveries") or {}
+    failures = order.get("auto_delivery_failures") or []
     buyer = get_user_by_email(order.get("user_email")) or {}
+    undelivered = []
+    for index, item in enumerate((cart or {}).get("items", [])):
+        if not deliveries.get(str(index)):
+            undelivered.append(item)
     fields = [
         {"name": "Buyer", "value": str(order.get("user_email") or "Unknown")[:1024], "inline": True},
         {"name": "Provider", "value": str(order.get("provider") or "payment").title()[:1024], "inline": True},
         {"name": "Total", "value": f"{order.get('currency','USD')} ${cents_to_money(order.get('amount_cents', 0))}", "inline": True},
         {"name": "Order ID", "value": f"`{order.get('order_id','')}`"[:1024], "inline": False},
-        {"name": "Items waiting for key", "value": format_order_items_for_discord(cart)[:1024], "inline": False},
+        {"name": "Delivery status", "value": str(order.get("delivery_status") or "pending")[:1024], "inline": True},
+        {"name": "Items", "value": format_order_items_for_discord(cart, deliveries)[:1024], "inline": False},
     ]
+    if failures:
+        fields.append({"name": "Auto-delivery failure", "value": "\n".join([f"• {f.get('product_name','Product')} — {f.get('option_name','Option')}: {f.get('error','failed')}" for f in failures[:5]])[:1024], "inline": False})
     if buyer.get("discord_id"):
         fields.append({"name": "Discord linked", "value": f"Yes — `{buyer.get('discord_id')}`", "inline": True})
+    fully_delivered = bool(cart.get("items")) and not undelivered
+    content = "✅ Paid order auto-delivered." if fully_delivered else "✅ New paid order needs key delivery / review."
+    description = (
+        f"All configured keys were delivered for order `{order.get('order_id','')}`."
+        if fully_delivered
+        else f"Open the owner dashboard and deliver/review remaining keys for order `{order.get('order_id','')}`."
+    )
     payload = {
         "username": f"{APP_NAME} Orders",
-        "content": "✅ New paid order needs manual key delivery.",
+        "content": content,
         "embeds": [{
             "title": "New paid order",
-            "description": f"Open the owner dashboard and send the product key for order `{order.get('order_id','')}`.",
-            "color": 0x9B5CFF,
+            "description": description,
+            "color": 0x39E58C if fully_delivered else 0x9B5CFF,
             "fields": fields,
             "footer": {"text": f"{APP_NAME} owner notification"},
             "timestamp": utc_now().isoformat(),
@@ -1384,6 +1605,7 @@ def build_checkout_cart(raw_items: list) -> dict:
             "quantity": quantity,
             "line_cents": line_total,
             "line_amount": cents_to_money(line_total),
+            "auto_delivery": item_auto_delivery_config(product, option),
         })
     if not line_items:
         raise ValueError("No valid products are in the cart.")
@@ -1555,12 +1777,15 @@ def update_order_status(order_id: str, status: str, details: dict | None = None)
     existing["updated_at"] = utc_now().isoformat()
     if details:
         existing.update(details)
+    if str(status).lower() == "paid":
+        existing = process_auto_delivery(existing)
     should_notify_owner = str(status).lower() == "paid" and not was_notified
     if should_notify_owner:
         existing["owner_notified_at"] = utc_now().isoformat()
     save_order(existing)
     if should_notify_owner:
         send_owner_order_webhook(existing)
+    return existing
 
 
 def paypal_config_hint() -> str:
@@ -1698,6 +1923,7 @@ def inject_global_template_vars():
         "checkout_currency": STRIPE_CURRENCY.upper(),
         "pending_order_max_age_minutes": PENDING_ORDER_MAX_AGE_MINUTES,
         "site_settings": load_site_settings(),
+        "using_mongo": using_mongo(),
     }
 
 
@@ -2241,6 +2467,7 @@ def admin_dashboard():
         "orders": len(load_orders_for_user(None)),
         "payments": ("Stripe " if STRIPE_SECRET_KEY else "") + ("PayPal" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "") or "not configured",
         "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
+        "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
     return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
 
@@ -2272,6 +2499,11 @@ def admin_product_new():
     short_description = request.form.get("description", "").strip()
     parsed_details = parse_detailed_description(request.form.get("detailed_source", ""))
     detailed_description = parsed_details or short_description
+    try:
+        store_options = build_store_options_from_form()
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("admin_dashboard") + "#create")
     product = normalize_product({
         "id": int(utc_now().timestamp() * 1000),
         "slug": slug,
@@ -2283,7 +2515,7 @@ def admin_product_new():
         "type": "product",
         "featured": bool(request.form.get("featured")),
         "features": [],
-        "store": {"enabled": bool(request.form.get("store_enabled")), "stockStatus": "In Stock", "options": build_store_options_from_form()},
+        "store": {"enabled": bool(request.form.get("store_enabled")), "stockStatus": "In Stock", "options": store_options},
         "downloads": {"enabled": bool(request.form.get("downloads_enabled")), "version": "Latest", "downloadUrl": request.form.get("download_url", ""), "fileSize": request.form.get("file_size", "")},
         "status": {"enabled": bool(request.form.get("status_enabled")), "state": "Operational", "label": "Online", "lastUpdated": today_utc_date()},
     })
@@ -2375,6 +2607,52 @@ def admin_product_download_update(slug):
     else:
         save_products_file(products)
     flash("Download details updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#products")
+
+
+@app.route("/admin/product/<slug>/auto-delivery", methods=["POST"])
+@owner_required
+def admin_product_auto_delivery_update(slug):
+    products = load_products()
+    product = next((p for p in products if str(p.get("slug", "")).lower() == slug.lower()), None)
+    if not product:
+        abort(404)
+
+    store = product.setdefault("store", {}) if isinstance(product.get("store"), dict) else {}
+    product["store"] = store
+    options = store.setdefault("options", []) if isinstance(store.get("options"), list) else []
+    store["options"] = options
+
+    product_base_url = request.form.get("product_auto_base_url", "").strip()
+    product_enabled = bool(request.form.get("product_auto_enabled"))
+    try:
+        if product_base_url:
+            store["autoDelivery"] = auto_delivery_dict_from_base_url(product_base_url, product_enabled)
+        else:
+            store.pop("autoDelivery", None)
+            store.pop("auto_delivery", None)
+
+        enabled_option_ids = set(request.form.getlist("option_auto_enabled"))
+        for option in options:
+            option_key = str(option.get("id") or option.get("uniqid") or option.get("name") or "").strip()
+            raw_url = request.form.get(f"option_auto_base_url_{option_key}", "").strip()
+            enabled = option_key in enabled_option_ids
+            if raw_url:
+                option["autoDelivery"] = auto_delivery_dict_from_base_url(raw_url, enabled)
+            else:
+                option.pop("autoDelivery", None)
+                option.pop("auto_delivery", None)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    product = normalize_product(product)
+    if using_mongo():
+        products_col.update_one({"slug": product["slug"]}, {"$set": {"store": product["store"]}})
+    else:
+        save_products_file(products)
+    record_audit("product_auto_delivery_update", product.get("slug", slug), {"option_count": len(options)})
+    flash("Auto-delivery settings updated.", "success")
     return redirect(url_for("admin_dashboard") + "#products")
 
 
@@ -2825,38 +3103,26 @@ def admin_order_deliver_key(order_id):
         flash("Enter a valid key before sending.", "danger")
         return redirect(url_for("admin_dashboard") + "#orders")
     item = cart_items[item_index]
-    deliveries = order.get("deliveries") or {}
-    delivery_id = str(item_index)
-    buyer = get_user_by_email(order.get("user_email")) or {}
-    email_sent = False
-    dm_sent = False
-    if order.get("user_email"):
-        subject, text, html_body = build_key_delivery_email(order.get("user_email"), order, item, product_key, note)
-        email_sent = send_html_email(order.get("user_email"), subject, text, html_body, "Delivery")
-    if buyer.get("discord_id"):
-        dm_sent = send_discord_key_dm(buyer.get("discord_id"), order, item, product_key, note)
-    deliveries[delivery_id] = {
-        "item_index": item_index,
-        "product_name": item.get("product_name"),
-        "option_name": item.get("option_name"),
-        "product_key": product_key,
-        "note": note,
-        "sent_at": utc_now().isoformat(),
-        "sent_by": (current_user() or {}).get("email"),
-        "email_sent": email_sent,
-        "discord_dm_sent": dm_sent,
-    }
-    order["deliveries"] = deliveries
-    order["delivery_status"] = "delivered"
+    delivery = save_delivery_to_order(
+        order,
+        item,
+        item_index,
+        product_key,
+        note,
+        (current_user() or {}).get("email") or "manual",
+    )
+    notify_buyer_delivery(order, item, delivery)
+    order["delivery_status"] = "delivered" if len(order.get("deliveries") or {}) >= len(cart_items) else "partial"
     order["updated_at"] = utc_now().isoformat()
     save_order(order)
-    record_audit("order_key_delivered", order_id, {"item_index": item_index, "email_sent": email_sent, "discord_dm_sent": dm_sent})
+    record_audit("order_key_delivered", order_id, {"item_index": item_index, "email_sent": delivery.get("email_sent"), "discord_dm_sent": delivery.get("discord_dm_sent")})
     msg = "Key saved to the customer's account"
-    msg += ", email sent" if email_sent else ", email not sent"
-    if buyer.get("discord_id"):
-        msg += ", Discord DM sent" if dm_sent else ", Discord DM failed"
-    flash(msg + ".", "success" if email_sent or dm_sent else "warning")
+    msg += ", email sent" if delivery.get("email_sent") else ", email not sent"
+    if (get_user_by_email(order.get("user_email")) or {}).get("discord_id"):
+        msg += ", Discord DM sent" if delivery.get("discord_dm_sent") else ", Discord DM failed"
+    flash(msg + ".", "success" if delivery.get("email_sent") or delivery.get("discord_dm_sent") else "warning")
     return redirect(url_for("admin_dashboard") + "#orders")
+
 
 @app.route("/admin/api/diagnostics")
 @owner_required
@@ -2874,6 +3140,7 @@ def admin_api_diagnostics():
         "email_codes": bool(email_delivery_ready() and REQUIRE_EMAIL_CODES),
         "email_provider": EMAIL_PROVIDER,
         "resend": bool(RESEND_API_KEY),
+        "reselling_pro": bool(RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY),
         "maintenance": is_maintenance_mode(),
         "store_enabled": bool(load_site_settings().get("store_enabled", True)),
     })

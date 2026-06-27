@@ -77,7 +77,7 @@
               {% if delivered %}
               <div class="delivery-box"><div class="label"><i class="fas fa-key"></i> Product key delivered</div><div class="delivery-key">{{ delivered.product_key }}</div>{% if delivered.note %}<div class="delivery-note">{{ delivered.note }}</div>{% endif %}</div>
               {% elif status == 'paid' %}
-              <div class="delivery-note"><i class="fas fa-hourglass-half"></i> Payment confirmed. The owner will send your key here shortly.</div>
+              <div class="delivery-note"><i class="fas fa-hourglass-half"></i> Payment confirmed. If this product supports auto-delivery, your key is being prepared; otherwise the owner will send it here shortly.</div>
               {% else %}
               <div class="delivery-note"><i class="fas fa-clock"></i> Waiting for payment confirmation before key delivery.</div>
               {% endif %}

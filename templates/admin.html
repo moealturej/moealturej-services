@@ -15,7 +15,7 @@ function addPricingOption(){
   const count=wrap.querySelectorAll('.pricing-row').length+1;
   const row=document.createElement('div');
   row.className='pricing-row';
-  row.innerHTML=`<label>Option name<input name="option_name" placeholder="WEEK KEY" value="Option ${count}" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><button class="danger-btn" type="button" onclick="removePricingOption(this)"><i class="fas fa-trash"></i></button>`;
+  row.innerHTML=`<label>Option name<input name="option_name" placeholder="WEEK KEY" value="Option ${count}" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/duration"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="${count-1}"> Auto deliver</label><button class="danger-btn" type="button" onclick="removePricingOption(this)"><i class="fas fa-trash"></i></button>`;
   wrap.appendChild(row);
   updatePricingButtons();
 }
@@ -84,6 +84,24 @@ updatePricingButtons();
   .download-editor summary::-webkit-details-marker{display:none}
   .download-editor summary:before{content:"\f0ed";font-family:"Font Awesome 6 Free";font-weight:900;margin-right:9px;color:#d8b4fe}
   .download-update-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 15px 15px}.download-update-grid .wide{grid-column:1/-1}.download-update-grid label{display:grid;gap:7px;margin:0!important;color:#cfc4db!important;font-size:12px!important}.download-update-grid .inline-check{display:flex!important;align-items:center;gap:8px}.download-update-grid .inline-check input{width:auto!important;min-height:auto!important}.download-update-grid input{min-height:42px!important;border-radius:13px!important}.download-update-grid button{min-height:42px;border:0}@media(max-width:780px){.download-update-grid{grid-template-columns:1fr}}
+
+  /* cleaner admin refresh + auto-delivery editor */
+  .admin-page{padding-top:28px}
+  .admin-command{grid-template-columns:minmax(0,1.25fr) 360px}
+  .admin-stats{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .admin-tabs{top:82px;justify-content:center}
+  .product-list{grid-template-columns:1fr!important}
+  .admin-product{padding:18px!important;gap:14px!important}
+  .admin-product-main{padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .admin-product-main h3{font-size:20px;letter-spacing:-.02em}
+  .pricing-row{grid-template-columns:minmax(150px,1fr) 120px minmax(260px,1.5fr) auto auto!important}
+  .pricing-row .auto-url-field{min-width:0}.auto-toggle{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(57,229,140,.055);border:1px solid rgba(57,229,140,.16);white-space:nowrap}.auto-toggle input{width:auto!important;min-height:auto!important}
+  .auto-delivery-editor{margin-top:10px;border-radius:18px;border:1px solid rgba(57,229,140,.16);background:linear-gradient(180deg,rgba(57,229,140,.055),rgba(255,255,255,.018));overflow:hidden}
+  .auto-delivery-editor summary{cursor:pointer;padding:13px 15px;font-weight:950;color:#d9ffe9;list-style:none}.auto-delivery-editor summary::-webkit-details-marker{display:none}.auto-delivery-editor summary i{color:#85ffbd;margin-right:8px}
+  .auto-delivery-grid{display:grid;grid-template-columns:1fr 220px;gap:10px;padding:0 15px 15px}.auto-delivery-grid .wide{grid-column:1/-1}.auto-delivery-grid label{display:grid;gap:7px;margin:0!important}.auto-delivery-grid input{min-height:42px!important;border-radius:13px!important}.auto-delivery-note{padding:12px 13px;border-radius:16px;background:rgba(0,0,0,.20);border:1px solid rgba(57,229,140,.13);color:#b9abca;font-size:12px;line-height:1.6}.option-api-list{display:grid;gap:10px}.option-api-row{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:10px;align-items:end;padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}.option-api-row strong{display:block;color:#fff}.option-api-row small{display:block;margin-top:4px;color:#998aae}.inline-check{display:flex!important;align-items:center;gap:8px}.inline-check input{width:auto!important;min-height:auto!important}
+  @media(max-width:1100px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pricing-row,.option-api-row,.auto-delivery-grid{grid-template-columns:1fr!important}.auto-toggle{justify-content:flex-start}}
+  @media(max-width:760px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-command{grid-template-columns:1fr}.pricing-row{gap:8px}.auto-delivery-note{font-size:11px}}
+
 </style>
 {% endblock %}
 {% block content %}
@@ -112,6 +130,7 @@ updatePricingButtons();
         <p class="health-note">Guild ID: {{ discord_guild_id or 'not set' }}. Requires <code>guilds.join</code> OAuth scope and a bot already in that server.</p>
         <div class="health-item"><span>Uploads</span><b class="health-pill">Limited + safe names</b></div>
         <div class="health-item"><span>Payments</span><b class="health-pill {{ '' if stripe_enabled or paypal_enabled else 'warn' }}">{{ stats.payments }}</b></div>
+        <div class="health-item"><span>Auto delivery</span><b class="health-pill {{ '' if stats.auto_delivery == 'ready' else 'warn' }}">{{ stats.auto_delivery }}</b></div>
       </div>
     </aside>
   </div>
@@ -184,6 +203,8 @@ updatePricingButtons();
               <div class="pricing-row">
                 <label>Option name<input name="option_name" value="DAY KEY" placeholder="DAY KEY" required></label>
                 <label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label>
+                <label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day"></label>
+                <label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label>
                 <button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled><i class="fas fa-trash"></i></button>
               </div>
             </div>
@@ -242,6 +263,35 @@ updatePricingButtons();
               <button class="small-btn" type="submit"><i class="fas fa-cloud-arrow-up"></i> Save download</button>
             </form>
           </details>
+          <details class="auto-delivery-editor">
+            <summary><i class="fas fa-robot"></i> Auto-delivery API settings</summary>
+            <form class="auto-delivery-grid" action="{{ url_for('admin_product_auto_delivery_update', slug=product.slug) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% set product_auto = (product.store.autoDelivery if product.store and product.store.autoDelivery is defined else {}) %}
+              <div class="auto-delivery-note wide">
+                Paste the base URL only. Example: <code>https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day</code>. The secret API key is appended on the backend from <code>RESELLING_PRO_API_KEY</code>.
+              </div>
+              <label class="wide"><span>Product fallback base URL</span><input name="product_auto_base_url" value="{{ product_auto.base_url if product_auto else '' }}" placeholder="Used when an option has no URL"></label>
+              <label class="inline-check wide"><input type="checkbox" name="product_auto_enabled" {% if product_auto and product_auto.enabled %}checked{% endif %}> Enable product fallback auto-delivery</label>
+              <div class="option-api-list wide">
+                {% for opt in product.store.options if product.store and product.store.options %}
+                  {% set option_key = (opt.id or opt.uniqid or opt.name)|string %}
+                  {% set option_auto = (opt.autoDelivery if opt.autoDelivery is defined else {}) %}
+                  <div class="option-api-row">
+                    <div>
+                      <strong>{{ opt.name }}</strong>
+                      <small>${{ '%.2f'|format(opt.price|float) }} · {{ option_key }}</small>
+                    </div>
+                    <label>Base URL<input name="option_auto_base_url_{{ option_key }}" value="{{ option_auto.base_url if option_auto else '' }}" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/duration"></label>
+                    <label class="inline-check"><input type="checkbox" name="option_auto_enabled" value="{{ option_key }}" {% if option_auto and option_auto.enabled %}checked{% endif %}> Auto</label>
+                  </div>
+                {% else %}
+                  <p class="muted">No pricing options yet. Add options in JSON or create a new product with options.</p>
+                {% endfor %}
+              </div>
+              <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save auto-delivery</button>
+            </form>
+          </details>
           <details class="json-editor"><summary>Edit full product JSON</summary><form action="/admin/product/{{ product.slug }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="product_json" rows="18">{{ product|tojson(indent=2) }}</textarea><div class="admin-actions"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save JSON</button></div></form></details>
           <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete item</button></form>
         </article>
@@ -268,16 +318,16 @@ updatePricingButtons();
 
 
     <section class="admin-card admin-section" id="orders">
-      <div class="section-top"><div><div class="eyebrow">payment center</div><h2>Orders & key delivery</h2><p class="muted">Paid Stripe/PayPal orders appear here. After payment, the owner webhook is notified; then you can manually send the customer their key. Keys save to their account, email them, and DM them if Discord is linked.</p></div></div>
+      <div class="section-top"><div><div class="eyebrow">payment center</div><h2>Orders & key delivery</h2><p class="muted">Paid Stripe/PayPal orders appear here. Products with Reselling.pro auto-delivery fetch keys server-side from your .env API key; anything not delivered can still be handled manually.</p></div></div>
       <div class="users-grid">
         {% for order in orders[:30] %}
         <article class="user-row">
-          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</p><div class="user-meta"><span class="owner-badge {{ 'active-badge' if order.status == 'paid' else 'suspended-badge' }}">{{ order.status|default('pending') }}</span>{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% endif %}</div></div></div>
+          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</p><div class="user-meta"><span class="owner-badge {{ 'active-badge' if order.status == 'paid' else 'suspended-badge' }}">{{ order.status|default('pending') }}</span>{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% elif order.delivery_status == 'partial' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Partially delivered</span>{% elif order.delivery_status == 'auto_failed' %}<span class="owner-badge suspended-badge"><i class="fas fa-triangle-exclamation"></i> Auto failed</span>{% endif %}</div></div></div>
           <div class="order-items" style="margin-top:12px;display:grid;gap:8px">
             {% if order.cart and order.cart.get('items') %}
               {% for item in order.cart.get('items') %}
               {% set delivered = (order.deliveries or {}).get(loop.index0|string) %}
-              <div class="order-line"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}{% if delivered %}<small>Delivered {{ delivered.sent_at }} · email {{ 'sent' if delivered.email_sent else 'not sent' }} · Discord {{ 'sent' if delivered.discord_dm_sent else 'not sent' }}</small><div class="delivery-key-preview">{{ delivered.product_key }}</div>{% endif %}</span><strong>${{ item.line_amount }}</strong></div>
+              <div class="order-line"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}{% if item.auto_delivery and item.auto_delivery.enabled %}<small>Auto-delivery: Reselling.pro</small>{% endif %}{% if delivered %}<small>Delivered {{ delivered.sent_at }} · {{ delivered.source|default('manual') }} · email {{ 'sent' if delivered.email_sent else 'not sent' }} · Discord {{ 'sent' if delivered.discord_dm_sent else 'not sent' }}</small><div class="delivery-key-preview">{{ delivered.product_key }}</div>{% endif %}</span><strong>${{ item.line_amount }}</strong></div>
               {% endfor %}
             {% endif %}
           </div>
@@ -285,7 +335,7 @@ updatePricingButtons();
           <form class="delivery-form" action="{{ url_for('admin_order_deliver_key', order_id=order.order_id) }}" method="post" onsubmit="return confirm('Send/save this key to {{ order.user_email }}?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label>Item<select name="item_index">{% for item in order.cart.get('items') %}<option value="{{ loop.index0 }}">{{ item.product_name }} — {{ item.option_name }}</option>{% endfor %}</select></label>
-            <label>Product key<input name="product_key" placeholder="Paste key/license here" required minlength="3" autocomplete="off"></label>
+            <label>Product key<input name="product_key" placeholder="Paste key/license here if auto-delivery did not already fill it" required minlength="3" autocomplete="off"></label>
             <label>Note<textarea name="delivery_note" placeholder="Optional install/login note"></textarea></label>
             <button class="primary-cta" type="submit"><i class="fas fa-paper-plane"></i> Send key</button>
           </form>
@@ -300,7 +350,7 @@ updatePricingButtons();
     <section class="admin-card admin-section" id="security">
       <div class="section-top"><div><div class="eyebrow">security setup</div><h2>Sign-in protection</h2><p class="muted">Email codes use <strong>{{ config.SECURITY_FROM_EMAIL if config.SECURITY_FROM_EMAIL is defined else 'security@moealturej.com' }}</strong> through <strong>{{ config.EMAIL_PROVIDER|upper if config.EMAIL_PROVIDER is defined else 'RESEND' }}</strong>. Discord OAuth is rate-limited and protected with state tokens. Bot token configured: <strong>{{ "yes" if discord_bot_enabled else "no" }}</strong>.</p></div></div>
       <div class="security-grid">
-        <div class="security-item"><i class="fas fa-envelope-circle-check"></i><span>Login, signup, forgot-password, and product-key emails use Resend in production with <code>RESEND_API_KEY</code>. Keep <code>REQUIRE_EMAIL_CODES=true</code> for 6-digit security codes.</span></div>
+        <div class="security-item"><i class="fas fa-envelope-circle-check"></i><span>Login, signup, forgot-password, and product-key emails use Resend in production with <code>RESEND_API_KEY</code>. Keep <code>REQUIRE_EMAIL_CODES=true</code> for 6-digit security codes.</span></div><div class="security-item"><i class="fas fa-key"></i><span>Auto key delivery uses <code>RESELLING_PRO_API_KEY</code> from .env only. Admin product settings store only the Reselling.pro base URL without the API key.</span></div>
         <div class="security-item"><i class="fab fa-discord"></i><span>Discord login needs <code>DISCORD_CLIENT_ID</code> and <code>DISCORD_CLIENT_SECRET</code>. <code>DISCORD_BOT_TOKEN</code> is detected separately and is only for server/bot actions.</span></div>
         <div class="security-item"><i class="fas fa-gauge-high"></i><span>Auth routes and upload routes are rate-limited to avoid spam and Discord OAuth abuse.</span></div>
         <div class="security-item"><i class="fas fa-cloud"></i><span>Render-safe email delivery uses HTTPS through Resend, avoiding blocked SMTP ports. Use a verified sender/domain before going live.</span></div>
