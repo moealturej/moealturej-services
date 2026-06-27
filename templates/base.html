@@ -23,27 +23,28 @@
   <link rel="canonical" href="{% block canonical %}https://moealturej.com{{ request.path }}{% endblock %}" />
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='logo.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='logo (2).png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='logo (3).png') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
 
-  <!-- Open Graph -->
-  <meta property="og:locale" content="en_US" />
-  <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
-  <meta property="og:site_name" content="moealturej" />
-  <meta property="og:title" content="{% block og_title %}moealturej{% endblock %}" />
-  <meta property="og:description" content="{% block og_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
-  <meta property="og:url" content="{% block og_url %}https://moealturej.com{{ request.path }}{% endblock %}" />
-  <meta property="og:image" content="{% block og_image %}https://i.postimg.cc/GtgYHP8w/standard-(1).gif{% endblock %}" />
-  <meta property="og:image:alt" content="{% block og_image_alt %}moealturej preview image{% endblock %}" />
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US" />
+<meta property="og:type" content="{% block og_type %}website{% endblock %}" />
+<meta property="og:site_name" content="moealturej" />
+<meta property="og:title" content="{% block og_title %}moealturej{% endblock %}" />
+<meta property="og:description" content="{% block og_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
+<meta property="og:url" content="{% block og_url %}{{ request.url }}{% endblock %}" />
+<meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='banner.png', _external=True) }}{% endblock %}" />
+<meta property="og:image:secure_url" content="{% block og_image_secure %}{{ url_for('static', filename='banner.png', _external=True) }}{% endblock %}" />
+<meta property="og:image:alt" content="{% block og_image_alt %}moealturej preview image{% endblock %}" />
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{% block twitter_title %}moealturej{% endblock %}" />
-  <meta name="twitter:description" content="{% block twitter_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
-  <meta name="twitter:image" content="{% block twitter_image %}https://i.postimg.cc/GtgYHP8w/standard-(1).gif{% endblock %}" />
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{% block twitter_title %}moealturej{% endblock %}" />
+<meta name="twitter:description" content="{% block twitter_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
+<meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='banner.png', _external=True) }}{% endblock %}" />
 
   <!-- Performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
