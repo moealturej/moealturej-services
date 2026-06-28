@@ -269,6 +269,35 @@ def save_products_file(products: list):
     with PRODUCTS_FILE.open("w", encoding="utf-8") as f:
         json.dump(products, f, indent=2, ensure_ascii=False)
 
+def sanitize_user_for_session(user: dict | None) -> dict | None:
+    """Store only safe, JSON-serializable fields in Flask's signed cookie session.
+
+    Mongo user documents can contain ObjectIds, datetimes, password hashes, reset
+    tokens, and other fields that should never be written back into the browser
+    cookie. The session-refresh security hook uses this helper to keep the
+    logged-in user fresh without leaking sensitive data or crashing on Mongo
+    types.
+    """
+    if not user:
+        return None
+    email = str(user.get("email") or "").strip().lower()
+    username = str(user.get("username") or (email.split("@")[0] if email else "user")).strip() or "user"
+    role = str(user.get("role") or ("owner" if user.get("is_owner") else "user")).strip().lower()
+    is_owner = bool(user.get("is_owner") or role == "owner")
+    return {
+        "email": email,
+        "username": username,
+        "is_owner": is_owner,
+        "role": "owner" if is_owner else ("admin" if role == "admin" else "user"),
+        "auth_provider": str(user.get("auth_provider") or "email"),
+        "discord_id": str(user.get("discord_id") or "") or None,
+        "discord_username": str(user.get("discord_username") or "") or None,
+        "discord_avatar": str(user.get("discord_avatar") or "") or None,
+        "google_id": str(user.get("google_id") or "") or None,
+        "status": str(user.get("status") or "active"),
+    }
+
+
 def current_user():
     return session.get("user")
 
@@ -769,15 +798,10 @@ def consume_email_code_flow(kind: str, code: str) -> dict | None:
 
 
 def finish_login(user: dict):
-    session["user"] = {
-        "email": user.get("email"),
-        "username": user.get("username") or user.get("email", "user").split("@")[0],
-        "is_owner": bool(user.get("is_owner") or user.get("role") == "owner"),
-        "role": user.get("role", "owner" if user.get("is_owner") else "user"),
-        "auth_provider": user.get("auth_provider", "email"),
-        "discord_id": user.get("discord_id"),
-        "discord_avatar": user.get("discord_avatar"),
-    }
+    safe_user = sanitize_user_for_session(user)
+    if not safe_user:
+        abort(403, description="Invalid login session.")
+    session["user"] = safe_user
     session.pop("csrf_token", None)
 
 
