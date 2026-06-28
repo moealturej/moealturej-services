@@ -33,5 +33,10 @@
     },
     "codes": []
   },
-  "updated_at": "2026-06-28T14:32:30.606715+00:00"
+  "applications": {
+    "enabled": true,
+    "items": [],
+    "submissions": []
+  },
+  "updated_at": "2026-06-28T14:57:17.030592+00:00"
 }

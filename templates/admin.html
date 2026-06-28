@@ -70,7 +70,7 @@ updatePricingButtons();
   .admin-command{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:stretch;margin-bottom:18px}
   .admin-hero{position:relative;overflow:hidden;min-height:240px}.admin-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% 12%,rgba(213,156,255,.22),transparent 34%),radial-gradient(circle at 8% 92%,rgba(169,53,255,.14),transparent 32%);pointer-events:none}.admin-hero>*{position:relative;z-index:1}.admin-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
   .admin-side-panel{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(13,7,27,.88),rgba(4,2,10,.94));border:1px solid var(--admin-line);box-shadow:0 24px 70px rgba(0,0,0,.34);display:grid;gap:12px;align-content:start}.admin-side-panel h2{margin:0}.admin-health{display:grid;gap:10px}.health-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075)}.health-item span{color:var(--muted);font-size:13px;font-weight:800}.health-pill{padding:7px 10px;border-radius:999px;background:rgba(57,255,159,.10);border:1px solid rgba(57,255,159,.18);color:#b9ffd9;font-weight:900;font-size:12px;white-space:nowrap}.health-pill.warn{background:rgba(255,200,87,.10);border-color:rgba(255,200,87,.24);color:#ffe7ad}.health-note{margin:2px 0 0;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;line-height:1.55;color:#b7abc9;word-break:break-word}
-  .admin-stats{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}.admin-stats div{min-height:96px;display:grid;align-content:center;background:linear-gradient(180deg,rgba(255,255,255,.058),rgba(255,255,255,.022))!important;border:1px solid rgba(213,156,255,.15)!important}.admin-stats strong{font-size:clamp(20px,2.2vw,30px)}.admin-stats span{line-height:1.25}
+  .admin-stats{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.admin-stats div{min-height:96px;display:grid;align-content:center;background:linear-gradient(180deg,rgba(255,255,255,.058),rgba(255,255,255,.022))!important;border:1px solid rgba(213,156,255,.15)!important}.admin-stats strong{font-size:clamp(20px,2.2vw,30px)}.admin-stats span{line-height:1.25}
   .admin-tabs{position:sticky;top:105px;z-index:20;display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;padding:9px;border-radius:24px;background:rgba(4,2,10,.82);border:1px solid rgba(213,156,255,.14);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.28)}.admin-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.14);color:#efe3ff;font-weight:950;text-decoration:none;transition:.18s ease}.admin-tab:hover{background:rgba(169,53,255,.14);border-color:rgba(213,156,255,.32);transform:translateY(-1px)}
   .admin-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.admin-section{scroll-margin-top:190px}.admin-card{padding:24px!important;border-radius:30px!important;background:linear-gradient(180deg,rgba(11,6,23,.86),rgba(5,2,12,.92))!important;border:1px solid var(--admin-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.30)!important}.section-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}.section-top h2{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.04em}.muted{color:var(--muted);line-height:1.65}.admin-two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-form-grid .wide{grid-column:1/-1}.check-row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px}.check-row label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.11)}.check-row input{width:auto!important;min-height:auto!important}.admin-page label{color:#f1e7ff;font-weight:900;font-size:13px}.admin-page select,.admin-page input,.admin-page textarea{background:#0b0615!important;color:#fff!important;border-color:rgba(213,156,255,.22)!important}.admin-page select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#d59cff 50%),linear-gradient(135deg,#d59cff 50%,transparent 50%)!important;background-position:calc(100% - 18px) 22px,calc(100% - 12px) 22px!important;background-size:6px 6px,6px 6px!important;background-repeat:no-repeat!important;padding-right:38px!important}.admin-page select option{background:#0b0615!important;color:#f7efff!important}.admin-page select option:checked{background:#251036!important;color:#fff!important}
   .media-grid,.users-grid,.product-list{display:grid;gap:12px}.media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media-item,.user-row,.admin-product{display:grid;gap:13px;padding:16px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.018));border:1px solid rgba(213,156,255,.12)}.media-top{display:flex;gap:14px;align-items:center;min-width:0}.media-preview,.media-file-icon{width:78px;height:78px;flex:0 0 auto;border-radius:20px;border:1px solid rgba(213,156,255,.18);background:#090411}.media-preview{object-fit:cover}.media-file-icon{display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,rgba(169,53,255,.24),rgba(255,68,188,.10))}.copy-field{display:flex;gap:8px}.copy-field input{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis}.copy-field button{white-space:nowrap}
@@ -143,6 +143,7 @@ updatePricingButtons();
     <div><strong>{{ stats.users }}</strong><span>Accounts</span></div>
     <div><strong>{{ stats.media }}</strong><span>Uploads</span></div>
     <div><strong>{{ stats.orders }}</strong><span>Orders</span></div>
+    <div><strong>{{ stats.applications }}</strong><span>Applications</span></div>
     <div><strong>{{ stats.storage }}</strong><span>Storage</span></div>
   </section>
 
@@ -151,6 +152,7 @@ updatePricingButtons();
     <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Create</a>
     <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
     <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
+    <a class="admin-tab" href="#applications"><i class="fas fa-clipboard-list"></i> Applications</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
     <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
     <a class="admin-tab" href="#orders"><i class="fas fa-receipt"></i> Orders</a>
@@ -283,6 +285,70 @@ updatePricingButtons();
 {% endfor %}</textarea><span class="discount-help">One code per line: CODE|percent/fixed|value|label|min subtotal|max uses|expires ISO. Used counts are preserved automatically.</span></label>
         <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save discounts</button>
       </form>
+    </section>
+
+
+    <section class="admin-card admin-section" id="applications">
+      <div class="section-top"><div><div class="eyebrow">custom forms</div><h2>Applications</h2><p class="muted">Create public application listings. Visitors can see open applications, but only logged-in accounts can submit. Each application can send submissions to its own Discord webhook.</p></div><a class="secondary-cta" href="/applications" target="_blank"><i class="fas fa-up-right-from-square"></i> View page</a></div>
+      <div class="admin-two-col">
+        <div class="admin-card">
+          <h3>Add new application</h3>
+          <form class="admin-form-grid" action="/admin/applications" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>Title<input name="title" placeholder="Staff Application" required></label>
+            <label>Slug<input name="slug" placeholder="staff"></label>
+            <label>Badge<input name="badge" placeholder="Open" value="Open"></label>
+            <label>Image URL<input name="image" placeholder="/media/app-banner.png or https://..."></label>
+            <label class="wide">Short card description<textarea name="short_description" rows="2" placeholder="Shown on the applications page."></textarea></label>
+            <label class="wide">Full description<textarea name="description" rows="4" placeholder="Explain who this application is for."></textarea></label>
+            <label class="wide">Instructions<textarea name="instructions" rows="3" placeholder="Tell users what to include or what happens after submission."></textarea></label>
+            <label class="wide">Discord webhook URL<input name="webhook_url" placeholder="https://discord.com/api/webhooks/..." autocomplete="off"></label>
+            <label class="wide">Success message<input name="success_message" value="Your application was submitted successfully."></label>
+            <label class="wide">Questions<textarea name="questions_text" rows="8" placeholder="Discord Username|text|yes||yourname#0000|Your Discord handle&#10;Why do you want this?|textarea|yes|||Be detailed&#10;Experience level|select|yes|Beginner, Intermediate, Advanced||"></textarea><small class="helper-text">One question per line: <code>Label|type|required|choices|placeholder|help</code>. Types: text, textarea, email, number, url, select, radio, checkbox, image_url.</small></label>
+            <div class="check-row"><label><input type="checkbox" name="enabled" checked> Enabled</label><label><input type="checkbox" name="featured"> Featured</label></div>
+            <button class="primary-cta" type="submit"><i class="fas fa-plus"></i> Add application</button>
+          </form>
+        </div>
+        <div class="admin-card">
+          <h3>Recent submissions</h3>
+          <p class="muted">Latest {{ (applications_settings["submissions"] or [])|length }} saved submissions. Full answers are sent to the configured webhook and kept here for backup.</p>
+          <div class="users-grid">
+            {% for sub in (applications_settings["submissions"] or [])[-8:]|reverse %}
+            <article class="user-row">
+              <div class="user-email">{{ sub.application_title }}</div>
+              <p class="muted">{{ sub.user.email }} · {{ sub.created_at }} · webhook {{ 'sent' if sub.webhook_sent else 'not sent' }}</p>
+              <details class="json-editor"><summary>View answers</summary><pre class="detail-preview">{% for ans in sub.answers %}{{ ans.label }}: {{ ans.value }}
+{% endfor %}</pre></details>
+            </article>
+            {% else %}<p class="muted">No applications submitted yet.</p>{% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="product-list" style="margin-top:16px">
+        {% for app in applications_settings["items"] %}
+        <article class="admin-product">
+          <div class="admin-product-main">{% if app.image %}<img src="{{ app.image }}" alt="">{% else %}<img src="{{ url_for('static', filename='logo.png') }}" alt="">{% endif %}<div><h3>{{ app.title }}</h3><p class="muted">/{{ app.slug }} · {{ app.short_description or 'No short description' }}</p><div class="admin-tags"><span>{{ 'Enabled' if app.enabled else 'Disabled' }}</span><span>{{ app.questions|length }} questions</span>{% if app.webhook_url %}<span>Webhook set</span>{% endif %}</div></div></div>
+          <details class="json-editor"><summary>Edit application</summary>
+            <form class="admin-form-grid" action="/admin/applications/{{ app.id }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label>Title<input name="title" value="{{ app.title }}" required></label>
+              <label>Slug<input name="slug" value="{{ app.slug }}" required></label>
+              <label>Badge<input name="badge" value="{{ app.badge }}"></label>
+              <label>Image URL<input name="image" value="{{ app.image }}"></label>
+              <label class="wide">Short card description<textarea name="short_description" rows="2">{{ app.short_description }}</textarea></label>
+              <label class="wide">Full description<textarea name="description" rows="5">{{ app.description }}</textarea></label>
+              <label class="wide">Instructions<textarea name="instructions" rows="3">{{ app.instructions }}</textarea></label>
+              <label class="wide">Discord webhook URL<input name="webhook_url" value="{{ app.webhook_url }}" autocomplete="off"></label>
+              <label class="wide">Success message<input name="success_message" value="{{ app.success_message }}"></label>
+              <label class="wide">Questions<textarea name="questions_text" rows="10">{{ application_questions_to_text(app.questions) }}</textarea><small class="helper-text">Format: <code>Label|type|required|choices|placeholder|help</code></small></label>
+              <div class="check-row"><label><input type="checkbox" name="enabled" {% if app.enabled %}checked{% endif %}> Enabled</label><label><input type="checkbox" name="featured" {% if app.featured %}checked{% endif %}> Featured</label></div>
+              <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save application</button>
+            </form>
+          </details>
+          <form action="/admin/applications/{{ app.id }}/delete" method="post" onsubmit="return confirm('Delete {{ app.title }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete application</button></form>
+        </article>
+        {% else %}<p class="muted">No applications yet. Add your first application above.</p>{% endfor %}
+      </div>
     </section>
 
     <section class="admin-card admin-section" id="products">

@@ -2048,6 +2048,223 @@ def get_allowed_download_files() -> set[str]:
 
 
 
+# -----------------------------------------------------------------------------
+# Applications system
+# -----------------------------------------------------------------------------
+def default_application_question() -> dict:
+    return {"id": secrets.token_hex(4), "label": "Question", "type": "text", "required": True, "choices": [], "placeholder": ""}
+
+
+def default_applications_settings() -> dict:
+    return {"enabled": True, "items": [], "submissions": []}
+
+
+def clean_application_slug(value: str) -> str:
+    value = clean_slug(value or "application")
+    return value[:70] or f"application-{int(utc_now().timestamp())}"
+
+
+def normalize_application_question(q: dict) -> dict:
+    if not isinstance(q, dict):
+        q = {}
+    qtype = str(q.get("type") or "text").strip().lower()
+    allowed = {"text", "textarea", "email", "number", "url", "select", "radio", "checkbox", "image_url"}
+    if qtype not in allowed:
+        qtype = "text"
+    choices = q.get("choices") or []
+    if isinstance(choices, str):
+        choices = [c.strip() for c in choices.split(",") if c.strip()]
+    choices = [str(c).strip()[:80] for c in choices if str(c).strip()][:20]
+    label = str(q.get("label") or "Question").strip()[:120] or "Question"
+    return {
+        "id": str(q.get("id") or clean_slug(label) or secrets.token_hex(4))[:80],
+        "label": label,
+        "type": qtype,
+        "required": bool(q.get("required", True)),
+        "choices": choices,
+        "placeholder": str(q.get("placeholder") or "").strip()[:160],
+        "help": str(q.get("help") or "").strip()[:220],
+    }
+
+
+def parse_application_questions_text(raw: str) -> list[dict]:
+    """Admin textarea format: Label|type|required|choice1,choice2|placeholder|help"""
+    questions = []
+    for line in str(raw or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        label = parts[0] if parts else "Question"
+        qtype = parts[1] if len(parts) > 1 and parts[1] else "text"
+        req_raw = (parts[2] if len(parts) > 2 else "yes").lower()
+        required = req_raw in {"yes", "true", "1", "required", "y"}
+        choices = parts[3] if len(parts) > 3 else ""
+        placeholder = parts[4] if len(parts) > 4 else ""
+        help_text = parts[5] if len(parts) > 5 else ""
+        questions.append(normalize_application_question({
+            "id": clean_slug(label)[:50] or secrets.token_hex(4),
+            "label": label,
+            "type": qtype,
+            "required": required,
+            "choices": choices,
+            "placeholder": placeholder,
+            "help": help_text,
+        }))
+    return questions[:40]
+
+
+def application_questions_to_text(questions: list[dict]) -> str:
+    lines = []
+    for q in questions or []:
+        q = normalize_application_question(q)
+        required = "yes" if q.get("required") else "no"
+        choices = ", ".join(q.get("choices") or [])
+        lines.append(f"{q.get('label')}|{q.get('type')}|{required}|{choices}|{q.get('placeholder') or ''}|{q.get('help') or ''}")
+    return "\n".join(lines)
+
+
+def normalize_application(app_data: dict) -> dict:
+    if not isinstance(app_data, dict):
+        app_data = {}
+    title = str(app_data.get("title") or app_data.get("name") or "Application").strip()[:120] or "Application"
+    slug = clean_application_slug(app_data.get("slug") or title)
+    questions = [normalize_application_question(q) for q in (app_data.get("questions") or []) if isinstance(q, dict)]
+    return {
+        "id": str(app_data.get("id") or slug or secrets.token_hex(8))[:80],
+        "title": title,
+        "slug": slug,
+        "enabled": bool(app_data.get("enabled", True)),
+        "featured": bool(app_data.get("featured", False)),
+        "image": str(app_data.get("image") or "").strip()[:500],
+        "badge": str(app_data.get("badge") or "Open").strip()[:40] or "Open",
+        "short_description": str(app_data.get("short_description") or app_data.get("description") or "").strip()[:260],
+        "description": str(app_data.get("description") or app_data.get("short_description") or "").strip()[:3000],
+        "instructions": str(app_data.get("instructions") or "").strip()[:2000],
+        "webhook_url": str(app_data.get("webhook_url") or "").strip()[:600],
+        "success_message": str(app_data.get("success_message") or "Your application was submitted successfully.").strip()[:300] or "Your application was submitted successfully.",
+        "questions": questions,
+        "created_at": str(app_data.get("created_at") or utc_now().isoformat()),
+        "updated_at": str(app_data.get("updated_at") or utc_now().isoformat()),
+    }
+
+
+def get_applications_settings() -> dict:
+    raw = load_site_settings().get("applications")
+    defaults = default_applications_settings()
+    if isinstance(raw, dict):
+        defaults.update(raw)
+    defaults["items"] = [normalize_application(a) for a in defaults.get("items") or [] if isinstance(a, dict)]
+    defaults["submissions"] = list(defaults.get("submissions") or [])[-200:]
+    return defaults
+
+
+def save_applications_settings(apps_settings: dict) -> None:
+    settings = load_site_settings()
+    merged = default_applications_settings()
+    if isinstance(apps_settings, dict):
+        merged.update(apps_settings)
+    merged["items"] = [normalize_application(a) for a in merged.get("items") or []]
+    merged["submissions"] = list(merged.get("submissions") or [])[-200:]
+    settings["applications"] = merged
+    save_site_settings(settings)
+
+
+def visible_applications(include_disabled: bool = False) -> list[dict]:
+    apps = get_applications_settings()
+    items = apps.get("items") or []
+    if not include_disabled:
+        items = [a for a in items if a.get("enabled")]
+    return sorted(items, key=lambda a: (not a.get("featured"), a.get("title", "").lower()))
+
+
+def find_application(slug: str, include_disabled: bool = False) -> dict | None:
+    slug = clean_application_slug(slug)
+    for app_data in visible_applications(include_disabled=include_disabled):
+        if app_data.get("slug") == slug or app_data.get("id") == slug:
+            return app_data
+    return None
+
+
+def discord_webhook_allowed(url: str) -> bool:
+    try:
+        parsed = urlparse(url or "")
+        host = (parsed.netloc or "").lower()
+        return parsed.scheme == "https" and host in {"discord.com", "discordapp.com"} and parsed.path.startswith("/api/webhooks/")
+    except Exception:
+        return False
+
+
+def send_application_webhook(app_data: dict, submission: dict) -> bool:
+    webhook_url = (app_data or {}).get("webhook_url") or ""
+    if not webhook_url:
+        return False
+    if not discord_webhook_allowed(webhook_url):
+        logger.warning("Rejected invalid application webhook URL for %s", app_data.get("slug"))
+        return False
+    user = submission.get("user") or {}
+    answer_lines = []
+    for ans in submission.get("answers") or []:
+        label = str(ans.get("label") or "Question")[:120]
+        value = ans.get("value")
+        if isinstance(value, list):
+            value = ", ".join(str(v) for v in value)
+        value = str(value or "").strip()[:900] or "—"
+        answer_lines.append({"name": label, "value": value, "inline": False})
+    embed = {
+        "title": f"New application: {app_data.get('title', 'Application')}",
+        "description": f"Submitted by **{user.get('username') or 'user'}** (`{user.get('email') or 'unknown'}`)",
+        "color": 0x9333EA,
+        "fields": answer_lines[:25],
+        "footer": {"text": f"{APP_NAME} Applications"},
+        "timestamp": utc_now().isoformat(),
+    }
+    payload = {"username": f"{APP_NAME} Applications", "embeds": [embed]}
+    try:
+        resp = requests.post(webhook_url, json=payload, timeout=12)
+        if resp.status_code in (200, 204):
+            return True
+        logger.warning("Application webhook failed for %s: %s %s", app_data.get("slug"), resp.status_code, resp.text[:160])
+    except Exception:
+        logger.exception("Application webhook request failed for %s", app_data.get("slug"))
+    return False
+
+
+def build_application_submission(app_data: dict, user: dict, form) -> tuple[dict | None, str | None]:
+    answers = []
+    for q in app_data.get("questions") or []:
+        q = normalize_application_question(q)
+        field = f"q_{q.get('id')}"
+        if q.get("type") == "checkbox":
+            value = [v.strip()[:160] for v in form.getlist(field) if v.strip()]
+            missing = q.get("required") and not value
+        else:
+            value = str(form.get(field, "")).strip()
+            if q.get("type") == "email" and value and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", value):
+                return None, f"{q.get('label')} must be a valid email."
+            if q.get("type") == "url" and value and not re.match(r"^https?://", value, re.I):
+                return None, f"{q.get('label')} must start with http:// or https://."
+            if q.get("type") == "image_url" and value and not re.match(r"^https?://", value, re.I):
+                return None, f"{q.get('label')} must be an image URL starting with http:// or https://."
+            value = value[:2000]
+            missing = q.get("required") and not value
+        if missing:
+            return None, f"{q.get('label')} is required."
+        answers.append({"id": q.get("id"), "label": q.get("label"), "type": q.get("type"), "value": value})
+    submission = {
+        "id": secrets.token_urlsafe(12),
+        "application_id": app_data.get("id"),
+        "application_slug": app_data.get("slug"),
+        "application_title": app_data.get("title"),
+        "user": sanitize_user_for_session(user) or {},
+        "answers": answers,
+        "webhook_sent": False,
+        "created_at": utc_now().isoformat(),
+        "ip_hint": get_remote_address(),
+    }
+    return submission, None
+
+
 def default_discount_settings() -> dict:
     return {
         "enabled": True,
@@ -2069,6 +2286,7 @@ def default_site_settings() -> dict:
         "support_url": "/support",
         "discord_url": "",
         "discounts": default_discount_settings(),
+        "applications": default_applications_settings(),
         "updated_at": utc_now().isoformat(),
     }
 
@@ -2134,6 +2352,7 @@ def inject_global_template_vars():
         "pending_order_max_age_minutes": PENDING_ORDER_MAX_AGE_MINUTES,
         "site_settings": load_site_settings(),
         "using_mongo": using_mongo(),
+        "application_questions_to_text": application_questions_to_text,
     }
 
 
@@ -2330,6 +2549,40 @@ def donate():
 @app.route("/discord")
 def discord():
     return render_template("discord.html", active_page="discord")
+
+
+@app.route("/applications")
+def applications_page():
+    apps = visible_applications(include_disabled=False)
+    return render_template("applications.html", applications=apps, active_page="applications")
+
+
+@app.route("/applications/<slug>", methods=["GET", "POST"])
+@limiter.limit("8 per minute", methods=["POST"])
+def application_detail(slug):
+    app_data = find_application(slug, include_disabled=False)
+    if not app_data:
+        abort(404)
+    if request.method == "POST":
+        user = current_user()
+        if not user:
+            flash("Log in to submit an application.", "warning")
+            return redirect(url_for("login", next=request.path))
+        submission, error = build_application_submission(app_data, user, request.form)
+        if error:
+            flash(error, "danger")
+            return render_template("application_detail.html", application=app_data, active_page="applications")
+        webhook_sent = send_application_webhook(app_data, submission)
+        submission["webhook_sent"] = webhook_sent
+        apps = get_applications_settings()
+        submissions = list(apps.get("submissions") or [])
+        submissions.append(submission)
+        apps["submissions"] = submissions[-200:]
+        save_applications_settings(apps)
+        record_audit("application_submitted", app_data.get("slug", ""), {"user": user.get("email"), "webhook_sent": webhook_sent})
+        flash(app_data.get("success_message") or "Application submitted.", "success")
+        return redirect(url_for("applications_page"))
+    return render_template("application_detail.html", application=app_data, active_page="applications")
 
 
 # -----------------------------------------------------------------------------
@@ -2689,11 +2942,13 @@ def admin_dashboard():
         "users": len(load_admin_users()),
         "media": len(load_media()),
         "orders": len(load_orders_for_user(None)),
+        "applications": len(visible_applications(include_disabled=True)),
+        "application_submissions": len((get_applications_settings().get("submissions") or [])),
         "payments": ("Stripe " if STRIPE_SECRET_KEY else "") + ("PayPal" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "") or "not configured",
         "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
         "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
-    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
+    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), applications_settings=get_applications_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
 
 
 @app.route("/admin/settings", methods=["POST"])
@@ -2808,6 +3063,86 @@ def admin_product_discount_update(slug):
     record_audit("product_discount_update", product.get("slug", slug), discount)
     flash("Product discount updated.", "success")
     return redirect(url_for("admin_dashboard") + "#products")
+
+@app.route("/admin/applications", methods=["POST"])
+@owner_required
+def admin_application_new():
+    apps = get_applications_settings()
+    questions = parse_application_questions_text(request.form.get("questions_text", ""))
+    app_data = normalize_application({
+        "id": secrets.token_hex(8),
+        "title": request.form.get("title", "New Application"),
+        "slug": request.form.get("slug") or request.form.get("title", "New Application"),
+        "enabled": bool(request.form.get("enabled")),
+        "featured": bool(request.form.get("featured")),
+        "badge": request.form.get("badge", "Open"),
+        "image": request.form.get("image", ""),
+        "short_description": request.form.get("short_description", ""),
+        "description": request.form.get("description", ""),
+        "instructions": request.form.get("instructions", ""),
+        "webhook_url": request.form.get("webhook_url", ""),
+        "success_message": request.form.get("success_message", "Your application was submitted successfully."),
+        "questions": questions,
+    })
+    if app_data.get("webhook_url") and not discord_webhook_allowed(app_data.get("webhook_url")):
+        flash("Application webhook must be a Discord webhook URL.", "danger")
+        return redirect(url_for("admin_dashboard") + "#applications")
+    existing_slugs = {a.get("slug") for a in apps.get("items") or []}
+    if app_data.get("slug") in existing_slugs:
+        app_data["slug"] = f"{app_data.get('slug')}-{secrets.token_hex(2)}"
+    apps["items"] = list(apps.get("items") or []) + [app_data]
+    save_applications_settings(apps)
+    record_audit("application_created", app_data.get("slug", ""))
+    flash("Application created.", "success")
+    return redirect(url_for("admin_dashboard") + "#applications")
+
+
+@app.route("/admin/applications/<app_id>", methods=["POST"])
+@owner_required
+def admin_application_update(app_id):
+    apps = get_applications_settings()
+    items = list(apps.get("items") or [])
+    current = next((a for a in items if a.get("id") == app_id or a.get("slug") == app_id), None)
+    if not current:
+        abort(404)
+    questions = parse_application_questions_text(request.form.get("questions_text", ""))
+    updated = normalize_application({
+        **current,
+        "title": request.form.get("title", current.get("title")),
+        "slug": request.form.get("slug", current.get("slug")),
+        "enabled": bool(request.form.get("enabled")),
+        "featured": bool(request.form.get("featured")),
+        "badge": request.form.get("badge", current.get("badge")),
+        "image": request.form.get("image", current.get("image")),
+        "short_description": request.form.get("short_description", current.get("short_description")),
+        "description": request.form.get("description", current.get("description")),
+        "instructions": request.form.get("instructions", current.get("instructions")),
+        "webhook_url": request.form.get("webhook_url", current.get("webhook_url")),
+        "success_message": request.form.get("success_message", current.get("success_message")),
+        "questions": questions,
+        "updated_at": utc_now().isoformat(),
+    })
+    if updated.get("webhook_url") and not discord_webhook_allowed(updated.get("webhook_url")):
+        flash("Application webhook must be a Discord webhook URL.", "danger")
+        return redirect(url_for("admin_dashboard") + "#applications")
+    apps["items"] = [updated if (a.get("id") == app_id or a.get("slug") == app_id) else a for a in items]
+    save_applications_settings(apps)
+    record_audit("application_updated", updated.get("slug", ""))
+    flash("Application updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#applications")
+
+
+@app.route("/admin/applications/<app_id>/delete", methods=["POST"])
+@owner_required
+def admin_application_delete(app_id):
+    apps = get_applications_settings()
+    before = len(apps.get("items") or [])
+    apps["items"] = [a for a in (apps.get("items") or []) if a.get("id") != app_id and a.get("slug") != app_id]
+    save_applications_settings(apps)
+    record_audit("application_deleted", app_id, {"removed": before - len(apps.get("items") or [])})
+    flash("Application deleted.", "success")
+    return redirect(url_for("admin_dashboard") + "#applications")
+
 
 @app.route("/admin/product/new", methods=["POST"])
 @owner_required
