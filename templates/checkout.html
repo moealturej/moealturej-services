@@ -166,6 +166,65 @@
     font-size: 20px;
   }
 
+  .discount-box {
+    margin-top: 14px;
+    display: grid;
+    gap: 9px;
+  }
+
+  .discount-box label {
+    color: rgba(255,255,255,.62);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .discount-input-row {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 8px;
+  }
+
+  .discount-input-row input {
+    min-height: 46px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,.09);
+    background: rgba(0,0,0,.24);
+    color: #fff;
+    padding: 0 13px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .discount-input-row button {
+    border: 0;
+    border-radius: 15px;
+    background: rgba(168,85,247,.18);
+    color: #fff;
+    font-weight: 950;
+    padding: 0 14px;
+  }
+
+  .discount-lines {
+    display: grid;
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .discount-pill {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 14px;
+    background: rgba(35,165,90,.10);
+    border: 1px solid rgba(35,165,90,.18);
+    color: #caffdc;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
   .payment-stack {
     display: grid;
     gap: 10px;
@@ -375,6 +434,11 @@
           </div>
 
           <div class="summary-row-clean">
+            <span>Discounts</span>
+            <strong id="discount">-$0.00</strong>
+          </div>
+
+          <div class="summary-row-clean">
             <span>Fee</span>
             <strong id="fee">$0.00</strong>
           </div>
@@ -383,6 +447,15 @@
             <span>Total</span>
             <strong id="total">$0.00</strong>
           </div>
+        </div>
+
+        <div class="discount-box">
+          <label for="discount-code">Discount code</label>
+          <div class="discount-input-row">
+            <input id="discount-code" maxlength="32" placeholder="SAVE10">
+            <button id="apply-discount" type="button">Apply</button>
+          </div>
+          <div id="discount-lines" class="discount-lines"></div>
         </div>
 
         <div class="payment-stack">
@@ -433,6 +506,7 @@
 const CART_KEY = 'moeCart';
 const CSRF = {{ csrf_token()|tojson }};
 let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+let discountCode = (localStorage.getItem('moeDiscountCode') || '').toUpperCase();
 
 const msg = document.getElementById('pay-message');
 const list = document.getElementById('checkout-list');
@@ -467,7 +541,8 @@ function payload() {
       slug: item.slug,
       option_id: item.optionId || item.uniqid,
       quantity: item.quantity || 1
-    }))
+    })),
+    discount_code: discountCode
   };
 }
 
@@ -515,8 +590,10 @@ async function preview() {
     const checkout = json.cart;
 
     document.getElementById('subtotal').textContent = money(checkout.subtotal);
+    document.getElementById('discount').textContent = '-'+money(checkout.discount || 0);
     document.getElementById('fee').textContent = money(checkout.fee);
     document.getElementById('total').textContent = money(checkout.total);
+    document.getElementById('discount-lines').innerHTML = (checkout.discounts || []).map(d => `<div class="discount-pill"><span>${esc(d.label || 'Discount')}</span><strong>-${money(d.amount || 0)}</strong></div>`).join('');
 
     list.innerHTML = checkout.items.map(item => `
       <div class="checkout-item-clean">
@@ -572,6 +649,14 @@ document.getElementById('paypal-direct-btn')?.addEventListener('click', async ()
     button.disabled = false;
     setMsg(error.message, false, 'error');
   }
+});
+
+const discountInput = document.getElementById('discount-code');
+if (discountInput) discountInput.value = discountCode;
+document.getElementById('apply-discount')?.addEventListener('click', async () => {
+  discountCode = (discountInput.value || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0,32);
+  localStorage.setItem('moeDiscountCode', discountCode);
+  await preview();
 });
 
 preview();

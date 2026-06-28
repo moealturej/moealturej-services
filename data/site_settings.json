@@ -1,0 +1,37 @@
+{
+  "maintenance_enabled": false,
+  "store_enabled": true,
+  "registration_enabled": true,
+  "announcement_enabled": false,
+  "announcement_text": "",
+  "announcement_type": "info",
+  "support_url": "/support",
+  "discord_url": "",
+  "discounts": {
+    "enabled": true,
+    "store_auto": {
+      "enabled": false,
+      "label": "Store discount",
+      "type": "percent",
+      "value": 0,
+      "min_subtotal": 0
+    },
+    "bulk": {
+      "enabled": false,
+      "label": "Bulk discount",
+      "type": "percent",
+      "value": 0,
+      "min_quantity": 2,
+      "min_subtotal": 0
+    },
+    "discord": {
+      "enabled": false,
+      "label": "Discord linked discount",
+      "type": "percent",
+      "value": 0,
+      "min_subtotal": 0
+    },
+    "codes": []
+  },
+  "updated_at": "2026-06-28T14:32:30.606715+00:00"
+}

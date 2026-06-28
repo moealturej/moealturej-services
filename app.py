@@ -39,6 +39,7 @@ UPLOADS_DIR = DATA_DIR / "uploads"
 MEDIA_FILE = DATA_DIR / "media.json"
 ORDERS_FILE = DATA_DIR / "orders.json"
 SETTINGS_FILE = DATA_DIR / "site_settings.json"
+DISCOUNT_CODE_MAX_LEN = 32
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 ALLOWED_FILE_EXTENSIONS = {"zip", "rar", "7z", "pdf", "txt", "json", "png", "jpg", "jpeg", "gif", "webp"}
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "30"))
@@ -1562,7 +1563,150 @@ def object_get(obj, key, default=None):
 
 
 
-def build_checkout_cart(raw_items: list) -> dict:
+def clean_discount_code(code: str) -> str:
+    code = str(code or "").upper().strip()
+    code = re.sub(r"[^A-Z0-9_-]", "", code)
+    return code[:DISCOUNT_CODE_MAX_LEN]
+
+
+def normalize_discount_type(value: str) -> str:
+    return "fixed" if str(value or "").lower() == "fixed" else "percent"
+
+
+def discount_value_cents(discount: dict, base_cents: int) -> int:
+    if not isinstance(discount, dict) or base_cents <= 0:
+        return 0
+    dtype = normalize_discount_type(discount.get("type"))
+    try:
+        raw_value = float(discount.get("value") or 0)
+    except Exception:
+        raw_value = 0
+    if raw_value <= 0:
+        return 0
+    if dtype == "fixed":
+        return min(base_cents, money_to_cents(raw_value))
+    return min(base_cents, int(round(base_cents * (min(raw_value, 95) / 100))))
+
+
+def discount_min_subtotal_cents(discount: dict) -> int:
+    try:
+        return max(0, money_to_cents(discount.get("min_subtotal") or 0))
+    except Exception:
+        return 0
+
+
+def discount_is_active(discount: dict, subtotal_cents: int, quantity: int = 0) -> bool:
+    if not isinstance(discount, dict) or not discount.get("enabled"):
+        return False
+    if subtotal_cents < discount_min_subtotal_cents(discount):
+        return False
+    expires = str(discount.get("expires_at") or "").strip()
+    if expires:
+        try:
+            if datetime.fromisoformat(expires.replace("Z", "+00:00")) < utc_now():
+                return False
+        except Exception:
+            return False
+    if discount.get("max_uses"):
+        try:
+            if int(discount.get("used_count") or 0) >= int(discount.get("max_uses") or 0):
+                return False
+        except Exception:
+            return False
+    if discount.get("min_quantity"):
+        try:
+            if int(quantity or 0) < int(discount.get("min_quantity") or 0):
+                return False
+        except Exception:
+            return False
+    return True
+
+
+def get_discount_settings() -> dict:
+    settings = load_site_settings().get("discounts")
+    defaults = default_discount_settings()
+    if isinstance(settings, dict):
+        merged = defaults
+        for key, value in settings.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key].update(value)
+            else:
+                merged[key] = value
+        return merged
+    return defaults
+
+
+def apply_checkout_discounts(line_items: list, subtotal_cents: int, total_quantity: int, discount_code: str = "", user: dict | None = None) -> tuple[int, list]:
+    discounts = get_discount_settings()
+    if not discounts.get("enabled", True):
+        return 0, []
+    applied = []
+    discount_total = 0
+
+    def add_discount(source: str, discount: dict, base_cents: int, code: str = ""):
+        nonlocal discount_total
+        amount = discount_value_cents(discount, max(0, base_cents))
+        amount = min(amount, max(0, subtotal_cents - discount_total))
+        if amount <= 0:
+            return
+        applied.append({
+            "source": source,
+            "code": code,
+            "label": str(discount.get("label") or discount.get("name") or source.replace("_", " ").title())[:80],
+            "type": normalize_discount_type(discount.get("type")),
+            "value": float(discount.get("value") or 0),
+            "amount_cents": amount,
+            "amount": cents_to_money(amount),
+        })
+        discount_total += amount
+
+    store_auto = discounts.get("store_auto") or {}
+    if discount_is_active(store_auto, subtotal_cents, total_quantity):
+        add_discount("store_auto", store_auto, subtotal_cents)
+
+    bulk = discounts.get("bulk") or {}
+    if discount_is_active(bulk, subtotal_cents, total_quantity):
+        add_discount("bulk", bulk, subtotal_cents)
+
+    if (user or {}).get("discord_id"):
+        discord = discounts.get("discord") or {}
+        if discount_is_active(discord, subtotal_cents, total_quantity):
+            add_discount("discord", discord, subtotal_cents)
+
+    requested_code = clean_discount_code(discount_code)
+    if requested_code:
+        for code_discount in discounts.get("codes") or []:
+            if clean_discount_code(code_discount.get("code")) == requested_code and discount_is_active(code_discount, subtotal_cents, total_quantity):
+                add_discount("code", code_discount, subtotal_cents, requested_code)
+                break
+
+    # Product auto-discounts are calculated per line after global discounts so a single item cannot over-discount the cart.
+    for item in line_items:
+        product_discount = item.get("product_auto_discount") or {}
+        if discount_is_active(product_discount, item.get("line_cents", 0), item.get("quantity", 0)):
+            add_discount("product_auto", product_discount, item.get("line_cents", 0), str(item.get("slug", "")))
+
+    return discount_total, applied
+
+
+def increment_discount_code_usage(cart: dict):
+    applied_codes = {clean_discount_code(d.get("code")) for d in (cart or {}).get("discounts", []) if d.get("source") == "code" and d.get("code")}
+    if not applied_codes:
+        return
+    settings = load_site_settings()
+    discounts = settings.get("discounts") if isinstance(settings.get("discounts"), dict) else default_discount_settings()
+    changed = False
+    for code_discount in discounts.get("codes") or []:
+        if clean_discount_code(code_discount.get("code")) in applied_codes:
+            code_discount["used_count"] = int(code_discount.get("used_count") or 0) + 1
+            changed = True
+    if changed:
+        settings["discounts"] = discounts
+        save_site_settings(settings)
+
+
+
+def build_checkout_cart(raw_items: list, discount_code: str = "", user: dict | None = None) -> dict:
     if not isinstance(raw_items, list) or not raw_items:
         raise ValueError("Your cart is empty.")
     line_items = []
@@ -1606,21 +1750,30 @@ def build_checkout_cart(raw_items: list) -> dict:
             "line_cents": line_total,
             "line_amount": cents_to_money(line_total),
             "auto_delivery": item_auto_delivery_config(product, option),
+            "product_auto_discount": (product.get("store") or {}).get("autoDiscount") or {},
         })
     if not line_items:
         raise ValueError("No valid products are in the cart.")
-    fee_cents = int(round(subtotal_cents * (PROCESSING_FEE_PERCENT / 100)))
-    total_cents = subtotal_cents + fee_cents
+    discount_cents, applied_discounts = apply_checkout_discounts(line_items, subtotal_cents, total_quantity, discount_code, user)
+    taxable_cents = max(0, subtotal_cents - discount_cents)
+    fee_cents = int(round(taxable_cents * (PROCESSING_FEE_PERCENT / 100)))
+    total_cents = taxable_cents + fee_cents
+    for item in line_items:
+        item.pop("product_auto_discount", None)
     return {
         "items": line_items,
         "subtotal_cents": subtotal_cents,
+        "discount_cents": discount_cents,
         "fee_cents": fee_cents,
         "total_cents": total_cents,
         "subtotal": cents_to_money(subtotal_cents),
+        "discount": cents_to_money(discount_cents),
         "fee": cents_to_money(fee_cents),
         "total": cents_to_money(total_cents),
         "currency": STRIPE_CURRENCY.upper(),
         "quantity": total_quantity,
+        "discount_code": clean_discount_code(discount_code),
+        "discounts": applied_discounts,
     }
 
 
@@ -1759,6 +1912,25 @@ def find_order_by_provider_order(provider_order_id: str) -> dict | None:
             return order
     return None
 
+
+def order_amount_matches(order: dict, paid_cents: int | None, currency: str | None = None) -> bool:
+    if paid_cents is None:
+        return False
+    if str(currency or order.get("currency", "")).upper() != str(order.get("currency", "")).upper():
+        return False
+    return int(paid_cents) == int(order.get("amount_cents") or 0)
+
+
+def extract_paypal_paid_amount_cents(data: dict) -> tuple[int | None, str | None]:
+    try:
+        units = data.get("purchase_units") or []
+        captures = (((units[0] or {}).get("payments") or {}).get("captures") or []) if units else []
+        amount = (captures[0] or {}).get("amount") or {} if captures else {}
+        return money_to_cents(amount.get("value")), amount.get("currency_code")
+    except Exception:
+        return None, None
+
+
 def update_order_status(order_id: str, status: str, details: dict | None = None):
     order_id = (order_id or "").strip()
     if not order_id:
@@ -1772,12 +1944,15 @@ def update_order_status(order_id: str, status: str, details: dict | None = None)
     if order_is_expired_pending(existing) and str(status).lower() != "paid":
         delete_order(order_id)
         return None
+    previous_status = str(existing.get("status", "")).lower()
     was_notified = bool(existing.get("owner_notified_at"))
     existing["status"] = status
     existing["updated_at"] = utc_now().isoformat()
     if details:
         existing.update(details)
     if str(status).lower() == "paid":
+        if previous_status != "paid":
+            increment_discount_code_usage(existing.get("cart") or {})
         existing = process_auto_delivery(existing)
     should_notify_owner = str(status).lower() == "paid" and not was_notified
     if should_notify_owner:
@@ -1849,6 +2024,16 @@ def get_allowed_download_files() -> set[str]:
 
 
 
+def default_discount_settings() -> dict:
+    return {
+        "enabled": True,
+        "store_auto": {"enabled": False, "label": "Store discount", "type": "percent", "value": 0, "min_subtotal": 0},
+        "bulk": {"enabled": False, "label": "Bulk discount", "type": "percent", "value": 0, "min_quantity": 2, "min_subtotal": 0},
+        "discord": {"enabled": False, "label": "Discord linked discount", "type": "percent", "value": 0, "min_subtotal": 0},
+        "codes": [],
+    }
+
+
 def default_site_settings() -> dict:
     return {
         "maintenance_enabled": False,
@@ -1859,6 +2044,7 @@ def default_site_settings() -> dict:
         "announcement_type": "info",
         "support_url": "/support",
         "discord_url": "",
+        "discounts": default_discount_settings(),
         "updated_at": utc_now().isoformat(),
     }
 
@@ -1946,6 +2132,13 @@ def cleanup_stale_pending_orders_before_request():
 @app.before_request
 def set_session_timeout():
     session.permanent = True
+    user = current_user()
+    if user and using_mongo():
+        fresh = get_user_by_email(user.get("email"))
+        if not fresh or fresh.get("status") == "suspended":
+            session.clear()
+            abort(403, description="This account is not allowed to access the site.")
+        session["user"] = sanitize_user_for_session(fresh)
     if request.method == "POST" and not request.path.startswith("/api/") and not request.path.startswith("/webhooks/"):
         if not verify_csrf():
             abort(403, description="Security token expired. Refresh the page and try again.")
@@ -2062,8 +2255,15 @@ def checkout_success():
             checkout_session = stripe.checkout.Session.retrieve(stripe_session_id)
             if object_get(checkout_session, "payment_status") == "paid":
                 metadata = object_get(checkout_session, "metadata", {}) or {}
-                update_order_status(order_id or object_get(metadata, "order_id", ""), "paid", {"provider_payment_id": stripe_session_id})
-                flash("Payment confirmed. Your order is ready in your account.", "success")
+                resolved_order_id = order_id or object_get(metadata, "order_id", "")
+                order = find_order_by_id(resolved_order_id)
+                paid_cents = object_get(checkout_session, "amount_total")
+                paid_currency = str(object_get(checkout_session, "currency", "")).upper()
+                if order and str(order.get("provider_session_id", "")) == str(stripe_session_id) and str(order.get("user_email", "")).lower() == str((current_user() or {}).get("email", "")).lower() and order_amount_matches(order, paid_cents, paid_currency):
+                    update_order_status(resolved_order_id, "paid", {"provider_payment_id": stripe_session_id})
+                    flash("Payment confirmed. Your order is ready in your account.", "success")
+                else:
+                    logger.warning("Rejected Stripe success verification for order=%s session=%s", resolved_order_id, stripe_session_id)
         except Exception as exc:
             logger.warning("Could not verify Stripe success session: %s", exc)
     return render_template("checkout_success.html", active_page="products", order_id=order_id)
@@ -2491,6 +2691,100 @@ def admin_site_settings():
     flash("Site settings updated.", "success")
     return redirect(url_for("admin_dashboard") + "#owner")
 
+
+@app.route("/admin/discounts", methods=["POST"])
+@owner_required
+def admin_discounts_update():
+    settings = load_site_settings()
+    codes = []
+    seen = set()
+    for raw in request.form.get("codes_text", "").splitlines():
+        parts = [p.strip() for p in raw.split("|")]
+        if not parts or not clean_discount_code(parts[0]):
+            continue
+        code = clean_discount_code(parts[0])
+        if code in seen:
+            continue
+        seen.add(code)
+        dtype = normalize_discount_type(parts[1] if len(parts) > 1 else "percent")
+        try:
+            value = max(0, float(parts[2] if len(parts) > 2 else 0))
+        except Exception:
+            value = 0
+        label = (parts[3] if len(parts) > 3 and parts[3] else f"Code {code}")[:80]
+        try:
+            min_subtotal = max(0, float(parts[4] if len(parts) > 4 and parts[4] else 0))
+        except Exception:
+            min_subtotal = 0
+        try:
+            max_uses = max(0, int(parts[5] if len(parts) > 5 and parts[5] else 0))
+        except Exception:
+            max_uses = 0
+        expires_at = (parts[6] if len(parts) > 6 else "").strip()[:40]
+        old = next((c for c in ((settings.get("discounts") or {}).get("codes") or []) if clean_discount_code(c.get("code")) == code), {})
+        codes.append({"enabled": True, "code": code, "type": dtype, "value": value, "label": label, "min_subtotal": min_subtotal, "max_uses": max_uses, "used_count": int(old.get("used_count") or 0), "expires_at": expires_at})
+
+    def pack(prefix: str, default_label: str, extra: dict | None = None):
+        d = {
+            "enabled": bool(request.form.get(f"{prefix}_enabled")),
+            "label": request.form.get(f"{prefix}_label", default_label).strip()[:80] or default_label,
+            "type": normalize_discount_type(request.form.get(f"{prefix}_type")),
+            "value": max(0, float(request.form.get(f"{prefix}_value") or 0)),
+            "min_subtotal": max(0, float(request.form.get(f"{prefix}_min_subtotal") or 0)),
+        }
+        if extra:
+            d.update(extra)
+        return d
+
+    try:
+        discounts = {
+            "enabled": bool(request.form.get("discounts_enabled")),
+            "store_auto": pack("store_auto", "Store discount"),
+            "bulk": pack("bulk", "Bulk discount", {"min_quantity": max(1, int(request.form.get("bulk_min_quantity") or 2))}),
+            "discord": pack("discord", "Discord linked discount"),
+            "codes": codes,
+        }
+    except Exception as exc:
+        flash(f"Discount settings were invalid: {exc}", "danger")
+        return redirect(url_for("admin_dashboard") + "#discounts")
+    settings["discounts"] = discounts
+    save_site_settings(settings)
+    record_audit("discounts_update", "site", {"code_count": len(codes)})
+    flash("Discount settings updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#discounts")
+
+
+@app.route("/admin/product/<slug>/discount", methods=["POST"])
+@owner_required
+def admin_product_discount_update(slug):
+    products = load_products()
+    product = next((p for p in products if str(p.get("slug")) == slug), None)
+    if not product:
+        abort(404)
+    store = product.setdefault("store", {})
+    try:
+        value = max(0, float(request.form.get("product_discount_value") or 0))
+        discount = {
+            "enabled": bool(request.form.get("product_discount_enabled")),
+            "label": request.form.get("product_discount_label", "Product discount").strip()[:80] or "Product discount",
+            "type": normalize_discount_type(request.form.get("product_discount_type")),
+            "value": value,
+            "min_subtotal": max(0, float(request.form.get("product_discount_min_subtotal") or 0)),
+            "min_quantity": max(1, int(request.form.get("product_discount_min_quantity") or 1)),
+        }
+    except Exception as exc:
+        flash(f"Product discount settings were invalid: {exc}", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+    store["autoDiscount"] = discount
+    product = normalize_product(product)
+    if using_mongo():
+        products_col.update_one({"slug": product["slug"]}, {"$set": {"store": product["store"]}})
+    else:
+        save_products_file(products)
+    record_audit("product_discount_update", product.get("slug", slug), discount)
+    flash("Product discount updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#products")
+
 @app.route("/admin/product/new", methods=["POST"])
 @owner_required
 def admin_product_new():
@@ -2828,7 +3122,7 @@ def media_file(filename):
 def api_checkout_preview():
     try:
         payload = request.get_json(silent=True) or {}
-        cart = build_checkout_cart(payload.get("items") or [])
+        cart = build_checkout_cart(payload.get("items") or [], payload.get("discount_code") or payload.get("code") or "", current_user())
         return jsonify({"ok": True, "cart": cart})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
@@ -2846,22 +3140,32 @@ def checkout_stripe():
         import stripe
         stripe.api_key = STRIPE_SECRET_KEY
         payload = request.get_json(silent=True) or {}
-        cart = build_checkout_cart(payload.get("items") or [])
+        cart = build_checkout_cart(payload.get("items") or [], payload.get("discount_code") or payload.get("code") or "", current_user())
         user = current_user() or {}
         order_id = f"ord_{secrets.token_hex(10)}"
         stripe_lines = []
-        for item in cart["items"]:
+        if cart.get("discount_cents", 0) > 0:
             stripe_lines.append({
-                "quantity": item["quantity"],
+                "quantity": 1,
                 "price_data": {
                     "currency": STRIPE_CURRENCY,
-                    "unit_amount": item["unit_cents"],
-                    "product_data": {
-                        "name": f"{item['product_name']} — {item['option_name']}",
-                        "images": [request.url_root.rstrip("/") + item["image"]] if str(item.get("image", "")).startswith("/") else [],
-                    },
+                    "unit_amount": max(0, cart["subtotal_cents"] - cart.get("discount_cents", 0)),
+                    "product_data": {"name": f"{APP_NAME} order after discounts"},
                 },
             })
+        else:
+            for item in cart["items"]:
+                stripe_lines.append({
+                    "quantity": item["quantity"],
+                    "price_data": {
+                        "currency": STRIPE_CURRENCY,
+                        "unit_amount": item["unit_cents"],
+                        "product_data": {
+                            "name": f"{item['product_name']} — {item['option_name']}",
+                            "images": [request.url_root.rstrip("/") + item["image"]] if str(item.get("image", "")).startswith("/") else [],
+                        },
+                    },
+                })
         if cart["fee_cents"] > 0:
             stripe_lines.append({
                 "quantity": 1,
@@ -2924,7 +3228,7 @@ def checkout_paypal_create():
         return jsonify({"ok": False, "error": "PayPal is not configured."}), 400
     try:
         payload = request.get_json(silent=True) or {}
-        cart = build_checkout_cart(payload.get("items") or [])
+        cart = build_checkout_cart(payload.get("items") or [], payload.get("discount_code") or payload.get("code") or "", current_user())
         user = current_user() or {}
         order_id = f"ord_{secrets.token_hex(10)}"
         token = paypal_access_token()
@@ -3007,6 +3311,11 @@ def checkout_paypal_return():
             return redirect(url_for("checkout"))
         data = resp.json()
         status = "paid" if data.get("status") == "COMPLETED" else "pending"
+        paid_cents, paid_currency = extract_paypal_paid_amount_cents(data)
+        if status == "paid" and not order_amount_matches(order, paid_cents, paid_currency):
+            logger.warning("Rejected PayPal return amount mismatch for order=%s", order.get("order_id"))
+            flash("PayPal amount verification failed. Contact support before retrying.", "error")
+            return redirect(url_for("checkout"))
         update_order_status(order.get("order_id"), status, {"provider_payment_id": paypal_order_id, "paypal_capture": data})
         if status == "paid":
             flash("PayPal payment confirmed. Your order is ready in your account.", "success")
@@ -3041,6 +3350,12 @@ def checkout_paypal_capture():
         data = resp.json()
         status = "paid" if data.get("status") == "COMPLETED" else "pending"
         if internal_order_id:
+            order = find_order_by_id(internal_order_id)
+            if not order or str(order.get("provider_order_id", "")) != paypal_order_id or str(order.get("user_email", "")).lower() != str((current_user() or {}).get("email", "")).lower():
+                return jsonify({"ok": False, "error": "PayPal order verification failed."}), 403
+            paid_cents, paid_currency = extract_paypal_paid_amount_cents(data)
+            if status == "paid" and not order_amount_matches(order, paid_cents, paid_currency):
+                return jsonify({"ok": False, "error": "PayPal amount verification failed."}), 403
             update_order_status(internal_order_id, status, {"provider_payment_id": paypal_order_id, "paypal_capture": data})
         return jsonify({"ok": True, "status": status, "order_id": internal_order_id})
     except RuntimeError as exc:
@@ -3062,6 +3377,9 @@ def stripe_webhook():
         sig_header = request.headers.get("Stripe-Signature")
         if STRIPE_WEBHOOK_SECRET:
             event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        elif IS_PRODUCTION:
+            logger.warning("Stripe webhook rejected because STRIPE_WEBHOOK_SECRET is missing in production.")
+            return jsonify({"ok": False}), 400
         else:
             event = request.get_json(force=True)
         if object_get(event, "type") == "checkout.session.completed":
@@ -3070,7 +3388,13 @@ def stripe_webhook():
             metadata = object_get(session_obj, "metadata", {}) or {}
             order_id = object_get(metadata, "order_id", "")
             if order_id:
-                update_order_status(order_id, "paid", {"provider_payment_id": object_get(session_obj, "id")})
+                order = find_order_by_id(order_id)
+                paid_cents = object_get(session_obj, "amount_total")
+                paid_currency = str(object_get(session_obj, "currency", "")).upper()
+                if order and str(order.get("provider_session_id", "")) == str(object_get(session_obj, "id")) and order_amount_matches(order, paid_cents, paid_currency):
+                    update_order_status(order_id, "paid", {"provider_payment_id": object_get(session_obj, "id")})
+                else:
+                    logger.warning("Rejected Stripe webhook amount/session mismatch for order=%s", order_id)
         return jsonify({"received": True})
     except Exception as exc:
         logger.warning("Stripe webhook rejected: %s", exc)
@@ -3143,6 +3467,7 @@ def admin_api_diagnostics():
         "reselling_pro": bool(RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY),
         "maintenance": is_maintenance_mode(),
         "store_enabled": bool(load_site_settings().get("store_enabled", True)),
+        "discounts_enabled": bool(get_discount_settings().get("enabled", True)),
     })
 
 # -----------------------------------------------------------------------------

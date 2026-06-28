@@ -98,8 +98,8 @@ updatePricingButtons();
   .pricing-row .auto-url-field{min-width:0}.auto-toggle{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(57,229,140,.055);border:1px solid rgba(57,229,140,.16);white-space:nowrap}.auto-toggle input{width:auto!important;min-height:auto!important}
   .auto-delivery-editor{margin-top:10px;border-radius:18px;border:1px solid rgba(57,229,140,.16);background:linear-gradient(180deg,rgba(57,229,140,.055),rgba(255,255,255,.018));overflow:hidden}
   .auto-delivery-editor summary{cursor:pointer;padding:13px 15px;font-weight:950;color:#d9ffe9;list-style:none}.auto-delivery-editor summary::-webkit-details-marker{display:none}.auto-delivery-editor summary i{color:#85ffbd;margin-right:8px}
-  .auto-delivery-grid{display:grid;grid-template-columns:1fr 220px;gap:10px;padding:0 15px 15px}.auto-delivery-grid .wide{grid-column:1/-1}.auto-delivery-grid label{display:grid;gap:7px;margin:0!important}.auto-delivery-grid input{min-height:42px!important;border-radius:13px!important}.auto-delivery-note{padding:12px 13px;border-radius:16px;background:rgba(0,0,0,.20);border:1px solid rgba(57,229,140,.13);color:#b9abca;font-size:12px;line-height:1.6}.option-api-list{display:grid;gap:10px}.option-api-row{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:10px;align-items:end;padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}.option-api-row strong{display:block;color:#fff}.option-api-row small{display:block;margin-top:4px;color:#998aae}.inline-check{display:flex!important;align-items:center;gap:8px}.inline-check input{width:auto!important;min-height:auto!important}
-  @media(max-width:1100px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pricing-row,.option-api-row,.auto-delivery-grid{grid-template-columns:1fr!important}.auto-toggle{justify-content:flex-start}}
+  .auto-delivery-grid{display:grid;grid-template-columns:1fr 220px;gap:10px;padding:0 15px 15px}.auto-delivery-grid .wide{grid-column:1/-1}.auto-delivery-grid label{display:grid;gap:7px;margin:0!important}.auto-delivery-grid input{min-height:42px!important;border-radius:13px!important}.auto-delivery-note{padding:12px 13px;border-radius:16px;background:rgba(0,0,0,.20);border:1px solid rgba(57,229,140,.13);color:#b9abca;font-size:12px;line-height:1.6}.discount-admin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.discount-admin-grid .wide{grid-column:1/-1}.discount-admin-grid label,.discount-panel label{display:grid;gap:7px;margin:0!important}.discount-panel{padding:13px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(213,156,255,.12);display:grid;gap:10px}.discount-help{color:#a99bbd;font-size:12px;line-height:1.55}.option-api-list{display:grid;gap:10px}.option-api-row{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:10px;align-items:end;padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}.option-api-row strong{display:block;color:#fff}.option-api-row small{display:block;margin-top:4px;color:#998aae}.inline-check{display:flex!important;align-items:center;gap:8px}.inline-check input{width:auto!important;min-height:auto!important}
+  @media(max-width:1100px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pricing-row,.option-api-row,.auto-delivery-grid,.discount-admin-grid{grid-template-columns:1fr!important}.auto-toggle{justify-content:flex-start}}
   @media(max-width:760px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-command{grid-template-columns:1fr}.pricing-row{gap:8px}.auto-delivery-note{font-size:11px}}
 
 </style>
@@ -150,6 +150,7 @@ updatePricingButtons();
     <a class="admin-tab" href="#owner"><i class="fas fa-sliders"></i> Owner</a>
     <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Create</a>
     <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
+    <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
     <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
     <a class="admin-tab" href="#orders"><i class="fas fa-receipt"></i> Orders</a>
@@ -240,6 +241,50 @@ updatePricingButtons();
       </div>
     </section>
 
+    <section class="admin-card admin-section" id="discounts">
+      {% set discounts = site_settings.discounts if site_settings.discounts is defined else {} %}
+      {% set store_auto = discounts.store_auto if discounts.store_auto is defined else {} %}
+      {% set bulk = discounts.bulk if discounts.bulk is defined else {} %}
+      {% set discord = discounts.discord if discounts.discord is defined else {} %}
+      <div class="section-top"><div><div class="eyebrow">discount engine</div><h2>Discounts & promos</h2><p class="muted">Everything here is applied on the server during checkout. Customers can type codes in checkout, but the final amount is rebuilt from product IDs, account status, and these rules.</p></div></div>
+      <form class="discount-admin-grid" action="{{ url_for('admin_discounts_update') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="inline-check wide"><input type="checkbox" name="discounts_enabled" {% if discounts.enabled is not defined or discounts.enabled %}checked{% endif %}> Enable all discount logic</label>
+
+        <div class="discount-panel">
+          <h3>Store-wide automatic</h3>
+          <label class="inline-check"><input type="checkbox" name="store_auto_enabled" {% if store_auto.enabled %}checked{% endif %}> Enabled</label>
+          <label>Label<input name="store_auto_label" value="{{ store_auto.label or 'Store discount' }}"></label>
+          <label>Type<select name="store_auto_type"><option value="percent" {% if store_auto.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if store_auto.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
+          <label>Value<input name="store_auto_value" type="number" min="0" step="0.01" value="{{ store_auto.value or 0 }}"></label>
+          <label>Minimum subtotal<input name="store_auto_min_subtotal" type="number" min="0" step="0.01" value="{{ store_auto.min_subtotal or 0 }}"></label>
+        </div>
+
+        <div class="discount-panel">
+          <h3>Bulk buy automatic</h3>
+          <label class="inline-check"><input type="checkbox" name="bulk_enabled" {% if bulk.enabled %}checked{% endif %}> Enabled</label>
+          <label>Label<input name="bulk_label" value="{{ bulk.label or 'Bulk discount' }}"></label>
+          <label>Type<select name="bulk_type"><option value="percent" {% if bulk.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if bulk.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
+          <label>Value<input name="bulk_value" type="number" min="0" step="0.01" value="{{ bulk.value or 0 }}"></label>
+          <label>Minimum quantity<input name="bulk_min_quantity" type="number" min="1" step="1" value="{{ bulk.min_quantity or 2 }}"></label>
+          <label>Minimum subtotal<input name="bulk_min_subtotal" type="number" min="0" step="0.01" value="{{ bulk.min_subtotal or 0 }}"></label>
+        </div>
+
+        <div class="discount-panel">
+          <h3>Discord linked account</h3>
+          <label class="inline-check"><input type="checkbox" name="discord_enabled" {% if discord.enabled %}checked{% endif %}> Enabled</label>
+          <label>Label<input name="discord_label" value="{{ discord.label or 'Discord linked discount' }}"></label>
+          <label>Type<select name="discord_type"><option value="percent" {% if discord.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if discord.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
+          <label>Value<input name="discord_value" type="number" min="0" step="0.01" value="{{ discord.value or 0 }}"></label>
+          <label>Minimum subtotal<input name="discord_min_subtotal" type="number" min="0" step="0.01" value="{{ discord.min_subtotal or 0 }}"></label>
+        </div>
+
+        <label class="wide">Discount codes<textarea name="codes_text" rows="7" placeholder="SAVE10|percent|10|Launch sale|5|100|2026-12-31T23:59:59+00:00">{% for c in discounts.codes or [] %}{{ c.code }}|{{ c.type or 'percent' }}|{{ c.value or 0 }}|{{ c.label or c.code }}|{{ c.min_subtotal or 0 }}|{{ c.max_uses or 0 }}|{{ c.expires_at or '' }}
+{% endfor %}</textarea><span class="discount-help">One code per line: CODE|percent/fixed|value|label|min subtotal|max uses|expires ISO. Used counts are preserved automatically.</span></label>
+        <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save discounts</button>
+      </form>
+    </section>
+
     <section class="admin-card admin-section" id="products">
       <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Edit quick status inline, or open JSON for full control.</p></div></div>
       <div class="product-list">
@@ -290,6 +335,20 @@ updatePricingButtons();
                 {% endfor %}
               </div>
               <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save auto-delivery</button>
+            </form>
+          </details>
+          <details class="auto-delivery-editor">
+            <summary><i class="fas fa-tags"></i> Product auto-discount</summary>
+            {% set pd = product.store.autoDiscount if product.store and product.store.autoDiscount is defined else {} %}
+            <form class="auto-delivery-grid" action="{{ url_for('admin_product_discount_update', slug=product.slug) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label class="inline-check wide"><input type="checkbox" name="product_discount_enabled" {% if pd.enabled %}checked{% endif %}> Enable auto discount for this product</label>
+              <label>Label<input name="product_discount_label" value="{{ pd.label or 'Product discount' }}"></label>
+              <label>Type<select name="product_discount_type"><option value="percent" {% if pd.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if pd.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
+              <label>Value<input name="product_discount_value" type="number" min="0" step="0.01" value="{{ pd.value or 0 }}"></label>
+              <label>Minimum quantity<input name="product_discount_min_quantity" type="number" min="1" step="1" value="{{ pd.min_quantity or 1 }}"></label>
+              <label class="wide">Minimum product line subtotal<input name="product_discount_min_subtotal" type="number" min="0" step="0.01" value="{{ pd.min_subtotal or 0 }}"></label>
+              <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save product discount</button>
             </form>
           </details>
           <details class="json-editor"><summary>Edit full product JSON</summary><form action="/admin/product/{{ product.slug }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="product_json" rows="18">{{ product|tojson(indent=2) }}</textarea><div class="admin-actions"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save JSON</button></div></form></details>
