@@ -62,6 +62,20 @@ function clearDetailPreview(){
   if(preview){ preview.hidden=true; preview.textContent=''; }
 }
 updatePricingButtons();
+
+(function(){
+  const tabs=[...document.querySelectorAll('.admin-tab')];
+  const sections=tabs.map(tab=>document.querySelector(tab.getAttribute('href'))).filter(Boolean);
+  if(!tabs.length || !sections.length) return;
+  const setActive=(id)=>tabs.forEach(tab=>tab.classList.toggle('is-active', tab.getAttribute('href') === '#'+id));
+  const observer=new IntersectionObserver((entries)=>{
+    const visible=entries.filter(entry=>entry.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+    if(visible) setActive(visible.target.id);
+  },{rootMargin:'-150px 0px -62% 0px',threshold:[0,.2,.55,1]});
+  sections.forEach(section=>observer.observe(section));
+  tabs.forEach(tab=>tab.addEventListener('click',()=>setActive(tab.getAttribute('href').slice(1))));
+  setActive(sections[0].id);
+})();
 </script>
 {% endblock %}
 {% block extra_head %}
@@ -148,14 +162,14 @@ updatePricingButtons();
   </section>
 
   <nav class="admin-tabs" aria-label="Admin sections">
-    <a class="admin-tab" href="#owner"><i class="fas fa-sliders"></i> Owner</a>
-    <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Create</a>
+    <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
+    <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Add product</a>
+    <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
+    <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
+    <a class="admin-tab" href="#applications"><i class="fas fa-clipboard-list"></i> Applications</a>
     <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
     <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
-    <a class="admin-tab" href="#applications"><i class="fas fa-clipboard-list"></i> Applications</a>
-    <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
     <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
-    <a class="admin-tab" href="#orders"><i class="fas fa-receipt"></i> Orders</a>
     <a class="admin-tab" href="#security"><i class="fas fa-shield-halved"></i> Security</a>
   </nav>
 
