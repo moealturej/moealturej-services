@@ -1,32 +1,42 @@
 {% extends "base.html" %}
-{% block title %}Terms | moealturej{% endblock %}
-{% block extra_head %}
-<style>
-  .legal-doc-page{padding:42px 0 74px}.doc-shell{width:min(860px,100%);margin:0 auto;padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
-  .doc-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.doc-shell h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:-1.5px}.doc-intro{margin:14px 0 24px;max-width:650px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}.doc-content{display:grid;gap:12px}.doc-block{padding:17px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.doc-content h2{margin:0 0 7px;font-size:15px;letter-spacing:-.25px}.doc-content p{margin:0;color:rgba(255,255,255,.54);font-size:12.8px;line-height:1.55}.doc-back{display:inline-flex;align-items:center;gap:8px;margin-top:22px;color:#d8b4fe;font-size:13px;font-weight:900;text-decoration:none}.doc-back:hover{color:#fff}
-  @media(max-width:640px){.doc-shell{padding:24px 20px}}
-</style>
-{% endblock %}
-
+{% block title %}Terms of Service | moealturej{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/legal-docs.css') }}">{% endblock %}
 {% block content %}
 <section class="page-section legal-doc-page">
   <div class="container">
-    <div class="doc-shell">
-      <div class="doc-kicker">Legal</div>
+    <article class="doc-shell">
+      <div class="doc-kicker"><i class="fas fa-scale-balanced"></i> Legal</div>
       <h1>Terms of Service</h1>
-      <p class="doc-intro">The basic rules for using moealturej Services, purchases, accounts, and downloads.</p>
-      <div class="doc-content">
-        <div class="doc-block"><h2>Acceptance</h2><p>By using the site or buying a product, you agree to these terms.</p></div>
-        <div class="doc-block"><h2>Products</h2><p>Products and downloads may be updated, changed, limited, or removed when needed.</p></div>
-        <div class="doc-block"><h2>Accounts</h2><p>Keep your account details accurate and do not attempt to access another account.</p></div>
-        <div class="doc-block"><h2>Payments</h2><p>Purchases must be completed through approved checkout methods with accurate information.</p></div>
-        <div class="doc-block"><h2>Refunds</h2><p>Refund requests are handled under the Refund Policy.</p></div>
-        <div class="doc-block"><h2>Ownership</h2><p>Branding, content, design, and products remain owned by moealturej unless stated otherwise.</p></div>
-        <div class="doc-block"><h2>Availability</h2><p>Services are provided as available and may not be uninterrupted at all times.</p></div>
-        <div class="doc-block"><h2>Updates</h2><p>These terms may change. Continued use means you accept the current version.</p></div>
+      <p class="doc-intro">Rules for using moealturej Services, accounts, purchases, keys, downloads, support, and connected features.</p>
+      <div class="doc-meta">
+        <span class="doc-pill"><i class="fas fa-calendar-check"></i> Last updated: July 7, 2026</span>
+        <span class="doc-pill"><i class="fas fa-store"></i> moealturej Services</span>
       </div>
-      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal</a>
-    </div>
+      <div class="doc-links">
+        <a href="/terms"><i class="fas fa-file-contract"></i> Terms</a>
+        <a href="/privacy"><i class="fas fa-user-shield"></i> Privacy</a>
+        <a href="/refund-policy"><i class="fas fa-rotate-left"></i> Refunds</a>
+        <a href="/cookie-policy"><i class="fas fa-cookie-bite"></i> Cookies</a>
+        <a href="/license"><i class="fas fa-key"></i> License</a>
+        <a href="/acceptable-use"><i class="fas fa-shield-halved"></i> Acceptable Use</a>
+      </div>
+      <div class="doc-content">
+        <div class="doc-block"><h2>Agreement to these Terms</h2><p>By accessing moealturej Services, creating an account, logging in through email, Google, Discord, or another supported method, browsing products, submitting applications, purchasing, downloading, or using any product, you agree to these Terms and the other policies linked in the Legal Center.</p></div>
+        <div class="doc-block"><h2>Accounts and security</h2><p>You are responsible for the accuracy of your account information, the security of your login, and all activity under your account. Do not share access, bypass security, impersonate another person, abuse login systems, or attempt to access another account.</p></div>
+        <div class="doc-block"><h2>Purchases and checkout</h2><p>Purchases must be made through approved checkout methods only. Pricing, availability, discounts, product details, warranty statements, delivery methods, processing fees, and checkout options may change at any time before purchase. You agree to provide accurate payment and contact information.</p></div>
+        <div class="doc-block"><h2>Digital delivery, keys, and downloads</h2><p>Digital products may be delivered instantly, manually, by account unlock, by downloadable file, by license key, by email, by Discord DM when connected, or by another listed delivery method. You are responsible for checking your account, email, spam folder, and connected Discord account after purchase.</p></div>
+        <div class="doc-block"><h2>Product access and changes</h2><p>Products, downloads, keys, support, dashboards, applications, status pages, and account features may be updated, replaced, limited, paused, discontinued, or removed for security, compatibility, legal, operational, or business reasons. Access is provided as available unless a product page states a specific guaranteed term.</p></div>
+        <div class="doc-block"><h2>No misuse</h2><p>You may not use the site or products for unlawful activity, fraud, abuse, unauthorized access, harassment, scraping, malware distribution, spam, chargeback abuse, attempts to bypass licensing, or violations of third-party rules. We may restrict, suspend, or terminate access if we believe there is misuse.</p></div>
+        <div class="doc-block"><h2>Support and communications</h2><p>Support may be provided through the site, email, Discord, or other listed channels. We may send transactional messages about accounts, orders, verification, keys, downloads, refunds, policy changes, support, security, or service updates.</p></div>
+        <div class="doc-block"><h2>Chargebacks and payment disputes</h2><p>Before opening a chargeback or payment dispute, contact support so the issue can be reviewed. Fraudulent, abusive, or false disputes may result in account limits, cancelled access, revoked keys, blocked future purchases, and evidence submitted to payment processors.</p></div>
+        <div class="doc-block"><h2>Third-party services</h2><p>Payments, email, Discord login/DMs, Google login, hosting, analytics, download storage, anti-abuse tools, and other integrations may be provided by third parties. We are not responsible for downtime, rules, account actions, processor decisions, or failures controlled by those services.</p></div>
+        <div class="doc-block"><h2>Disclaimers</h2><p>To the maximum extent permitted by law, moealturej Services and all products are provided “as is” and “as available.” We do not promise uninterrupted access, compatibility with every device, future availability, specific results, or that third-party platforms will continue allowing any product or feature.</p></div>
+        <div class="doc-block"><h2>Limitation of liability</h2><p>To the maximum extent permitted by law, moealturej Services is not liable for indirect, incidental, special, consequential, punitive, lost-profit, lost-data, account-action, third-party-ban, platform-enforcement, or business-interruption damages arising from site use, product use, downloads, keys, or support decisions.</p></div>
+        <div class="doc-block"><h2>Updates to these Terms</h2><p>We may update these Terms when the site, products, account systems, payment methods, cookies, legal requirements, or business operations change. The Last updated date shows the current version. Continued use after an update means you accept the updated Terms.</p></div>
+      </div>
+      <div class="doc-callout">These policies are designed to be clear and protective for digital products, accounts, downloads, keys, payments, support, and site access. Nothing here limits rights that cannot legally be limited.</div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal center</a>
+    </article>
   </div>
 </section>
 {% endblock %}

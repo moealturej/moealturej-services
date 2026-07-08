@@ -1,29 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Legal | moealturej{% endblock %}
-{% block extra_head %}
-<style>
-  .legal-page{padding:42px 0 74px}.legal-shell{width:min(1060px,100%);margin:0 auto;display:grid;gap:18px}.legal-hero{padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
-  .legal-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.legal-hero h1{margin:0;font-size:clamp(34px,5.5vw,56px);line-height:1;letter-spacing:-1.6px}.legal-hero p{margin:14px 0 0;max-width:620px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}
-  .legal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.legal-card{display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);transition:.18s ease;text-decoration:none}.legal-card:hover{transform:translateY(-2px);border-color:rgba(216,180,254,.20);background:rgba(255,255,255,.045)}.legal-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.18);color:#d8b4fe}.legal-card h3{margin:0;color:#fff;font-size:15px;letter-spacing:-.25px}.legal-card p{margin:0;color:rgba(255,255,255,.50);font-size:12.5px;line-height:1.5}
-  @media(max-width:900px){.legal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){.legal-hero{padding:24px}.legal-grid{grid-template-columns:1fr}}
-</style>
-{% endblock %}
+{% block title %}Legal Center | moealturej{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/legal-docs.css') }}">{% endblock %}
 {% block content %}
 <section class="page-section legal-page">
   <div class="container">
     <div class="legal-shell">
       <div class="legal-hero">
-        <div class="legal-kicker">Legal</div>
-        <h1>Simple terms. Clear policies.</h1>
-        <p>Review how purchases, downloads, privacy, refunds, and product access are handled.</p>
+        <div class="legal-kicker"><i class="fas fa-scale-balanced"></i> Legal Center</div>
+        <h1>Clear policies for every order.</h1>
+        <p>Review the current policies for accounts, purchases, downloads, keys, refunds, cookies, privacy, product licenses, and acceptable use.</p>
+        <div class="legal-meta">
+          <span class="legal-pill"><i class="fas fa-calendar-check"></i> Current policy set: July 7, 2026</span>
+          <span class="legal-pill"><i class="fas fa-shield-halved"></i> Digital products and account access</span>
+        </div>
       </div>
       <div class="legal-grid">
-        <a href="/terms" class="legal-card"><div class="legal-icon"><i class="fas fa-file-contract"></i></div><h3>Terms</h3><p>Site use, accounts, purchases, and access rules.</p></a>
-        <a href="/privacy" class="legal-card"><div class="legal-icon"><i class="fas fa-user-shield"></i></div><h3>Privacy</h3><p>How account and order information is handled.</p></a>
-        <a href="/refund-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-rotate-left"></i></div><h3>Refunds</h3><p>How digital refund requests are reviewed.</p></a>
-        <a href="/cookie-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-cookie-bite"></i></div><h3>Cookies</h3><p>Basic site cookies and browser preferences.</p></a>
-        <a href="/license" class="legal-card"><div class="legal-icon"><i class="fas fa-key"></i></div><h3>License</h3><p>Rules for product use, sharing, and access.</p></a>
-        <a href="/support" class="legal-card"><div class="legal-icon"><i class="fas fa-headset"></i></div><h3>Support</h3><p>Need help with an order or download?</p></a>
+        <a href="/terms" class="legal-card"><div class="legal-icon"><i class="fas fa-file-contract"></i></div><h3>Terms of Service</h3><p>Accounts, checkout, purchases, delivery, service availability, limitations, and policy updates.</p></a>
+        <a href="/privacy" class="legal-card"><div class="legal-icon"><i class="fas fa-user-shield"></i></div><h3>Privacy Policy</h3><p>Account data, orders, payments, emails, Discord/Google login, security logs, and retention.</p></a>
+        <a href="/refund-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-rotate-left"></i></div><h3>Refund Policy</h3><p>Digital delivery, keys, downloads, duplicate purchases, delivery issues, and chargebacks.</p></a>
+        <a href="/cookie-policy" class="legal-card"><div class="legal-icon"><i class="fas fa-cookie-bite"></i></div><h3>Cookie Policy</h3><p>Login sessions, checkout, cart behavior, preferences, analytics, and security cookies.</p></a>
+        <a href="/license" class="legal-card"><div class="legal-icon"><i class="fas fa-key"></i></div><h3>License Agreement</h3><p>Personal product use, account-bound access, no resale, no redistribution, and revocation rules.</p></a>
+        <a href="/acceptable-use" class="legal-card"><div class="legal-icon"><i class="fas fa-shield-halved"></i></div><h3>Acceptable Use</h3><p>Rules against fraud, abuse, unlawful use, account misuse, scraping, and security bypassing.</p></a>
+        <a href="/dmca" class="legal-card"><div class="legal-icon"><i class="fas fa-copyright"></i></div><h3>Copyright / DMCA</h3><p>How intellectual property or copyright concerns can be submitted and reviewed.</p></a>
+        <a href="/support" class="legal-card"><div class="legal-icon"><i class="fas fa-headset"></i></div><h3>Support</h3><p>Need help with an order, key, download, account, or policy question?</p></a>
       </div>
     </div>
   </div>

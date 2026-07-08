@@ -4014,6 +4014,16 @@ def license_page():
     return render_template("license.html", active_page="legal")
 
 
+@app.route("/acceptable-use")
+def acceptable_use():
+    return render_template("acceptable_use.html", active_page="legal")
+
+
+@app.route("/dmca")
+def dmca_policy():
+    return render_template("dmca.html", active_page="legal")
+
+
 # -----------------------------------------------------------------------------
 # API routes
 # -----------------------------------------------------------------------------

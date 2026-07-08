@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Acceptable Use Policy | moealturej{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/legal-docs.css') }}">{% endblock %}
+{% block content %}
+<section class="page-section legal-doc-page">
+  <div class="container">
+    <article class="doc-shell">
+      <div class="doc-kicker"><i class="fas fa-scale-balanced"></i> Legal</div>
+      <h1>Acceptable Use Policy</h1>
+      <p class="doc-intro">Clear boundaries for lawful use, account behavior, checkout behavior, downloads, keys, support, and product access.</p>
+      <div class="doc-meta">
+        <span class="doc-pill"><i class="fas fa-calendar-check"></i> Last updated: July 7, 2026</span>
+        <span class="doc-pill"><i class="fas fa-store"></i> moealturej Services</span>
+      </div>
+      <div class="doc-links">
+        <a href="/terms"><i class="fas fa-file-contract"></i> Terms</a>
+        <a href="/privacy"><i class="fas fa-user-shield"></i> Privacy</a>
+        <a href="/refund-policy"><i class="fas fa-rotate-left"></i> Refunds</a>
+        <a href="/cookie-policy"><i class="fas fa-cookie-bite"></i> Cookies</a>
+        <a href="/license"><i class="fas fa-key"></i> License</a>
+        <a href="/acceptable-use"><i class="fas fa-shield-halved"></i> Acceptable Use</a>
+      </div>
+      <div class="doc-content">
+        <div class="doc-block"><h2>Allowed use</h2><p>Use moealturej Services only for lawful, authorized, and respectful purposes. Follow all product instructions, site rules, payment rules, and applicable third-party platform rules.</p></div>
+        <div class="doc-block"><h2>Prohibited activity</h2><p>You may not use the site, accounts, applications, checkout, downloads, keys, support, emails, Discord integrations, or products for fraud, spam, harassment, abuse, malware, unauthorized access, credential theft, evading bans, attacking systems, scraping, exploiting bugs, or violating laws.</p></div>
+        <div class="doc-block"><h2>Third-party platforms</h2><p>You are responsible for understanding and following any rules that apply to third-party platforms, games, software, services, payment systems, Discord servers, or accounts you use. We are not responsible for actions taken by third parties.</p></div>
+        <div class="doc-block"><h2>Security testing</h2><p>Do not probe, scan, stress test, DDoS, exploit, bypass authentication, bypass licensing, or attempt to break the site or product systems without written permission.</p></div>
+        <div class="doc-block"><h2>Enforcement</h2><p>We may remove content, reject applications, cancel orders, revoke keys, suspend or terminate accounts, block purchases, limit support, preserve evidence, or report abuse when we believe this policy is violated.</p></div>
+      </div>
+      <div class="doc-callout">These policies are designed to be clear and protective for digital products, accounts, downloads, keys, payments, support, and site access. Nothing here limits rights that cannot legally be limited.</div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal center</a>
+    </article>
+  </div>
+</section>
+{% endblock %}

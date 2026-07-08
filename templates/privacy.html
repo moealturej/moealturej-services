@@ -1,31 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Privacy Policy | moealturej{% endblock %}
-{% block extra_head %}
-<style>
-  .legal-doc-page{padding:42px 0 74px}.doc-shell{width:min(860px,100%);margin:0 auto;padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
-  .doc-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.doc-shell h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:-1.5px}.doc-intro{margin:14px 0 24px;max-width:650px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}.doc-content{display:grid;gap:12px}.doc-block{padding:17px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.doc-content h2{margin:0 0 7px;font-size:15px;letter-spacing:-.25px}.doc-content p{margin:0;color:rgba(255,255,255,.54);font-size:12.8px;line-height:1.55}.doc-back{display:inline-flex;align-items:center;gap:8px;margin-top:22px;color:#d8b4fe;font-size:13px;font-weight:900;text-decoration:none}.doc-back:hover{color:#fff}
-  @media(max-width:640px){.doc-shell{padding:24px 20px}}
-</style>
-{% endblock %}
-
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/legal-docs.css') }}">{% endblock %}
 {% block content %}
 <section class="page-section legal-doc-page">
   <div class="container">
-    <div class="doc-shell">
-      <div class="doc-kicker">Legal</div>
+    <article class="doc-shell">
+      <div class="doc-kicker"><i class="fas fa-scale-balanced"></i> Legal</div>
       <h1>Privacy Policy</h1>
-      <p class="doc-intro">How moealturej Services handles account, order, and support information.</p>
-      <div class="doc-content">
-        <div class="doc-block"><h2>Information</h2><p>We may collect account details, order details, technical data, and support messages.</p></div>
-        <div class="doc-block"><h2>Use</h2><p>Information is used to deliver products, process orders, provide support, and protect the site.</p></div>
-        <div class="doc-block"><h2>Security</h2><p>Reasonable steps are used to protect information, but no system is fully guaranteed.</p></div>
-        <div class="doc-block"><h2>Services</h2><p>Payments, hosting, analytics, and communication tools may process data separately.</p></div>
-        <div class="doc-block"><h2>Retention</h2><p>Information may be kept as long as needed for support, operations, or legal reasons.</p></div>
-        <div class="doc-block"><h2>Choices</h2><p>Contact support for questions about account data or privacy concerns.</p></div>
-        <div class="doc-block"><h2>Changes</h2><p>This policy may be updated as the site or services change.</p></div>
+      <p class="doc-intro">How account, order, payment, cookie, support, email, Discord, Google login, and security information may be collected and used.</p>
+      <div class="doc-meta">
+        <span class="doc-pill"><i class="fas fa-calendar-check"></i> Last updated: July 7, 2026</span>
+        <span class="doc-pill"><i class="fas fa-store"></i> moealturej Services</span>
       </div>
-      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal</a>
-    </div>
+      <div class="doc-links">
+        <a href="/terms"><i class="fas fa-file-contract"></i> Terms</a>
+        <a href="/privacy"><i class="fas fa-user-shield"></i> Privacy</a>
+        <a href="/refund-policy"><i class="fas fa-rotate-left"></i> Refunds</a>
+        <a href="/cookie-policy"><i class="fas fa-cookie-bite"></i> Cookies</a>
+        <a href="/license"><i class="fas fa-key"></i> License</a>
+        <a href="/acceptable-use"><i class="fas fa-shield-halved"></i> Acceptable Use</a>
+      </div>
+      <div class="doc-content">
+        <div class="doc-block"><h2>Information we collect</h2><p>We may collect information you provide, such as name, email address, account details, Discord or Google login identifiers, support messages, application submissions, order details, product access records, download records, license/key delivery records, and admin communication preferences.</p></div>
+        <div class="doc-block"><h2>Payment information</h2><p>Payments are processed by third-party payment providers. We may receive limited payment status details, order identifiers, fraud/risk signals, billing contact details, and transaction metadata, but we do not need to store full card numbers.</p></div>
+        <div class="doc-block"><h2>Cookies and device data</h2><p>We may collect cookies, session identifiers, IP address, browser/device details, timestamps, referrers, pages visited, checkout events, and security logs to keep accounts logged in, protect the site, process purchases, improve performance, and prevent abuse.</p></div>
+        <div class="doc-block"><h2>How information is used</h2><p>Information may be used to create and secure accounts, send OTP or reset codes, process purchases, deliver products and keys, manage downloads, provide support, send policy or service updates, prevent fraud, enforce terms, improve the site, and comply with legal or payment requirements.</p></div>
+        <div class="doc-block"><h2>Emails and notifications</h2><p>We may send transactional emails or messages related to verification, password resets, orders, product keys, downloads, support, refunds, security, policy updates, and important service notices. Marketing-style messages may include an unsubscribe or preference method when required.</p></div>
+        <div class="doc-block"><h2>Sharing and processors</h2><p>We may share necessary information with service providers such as payment processors, hosting providers, email providers, database/storage providers, analytics/security tools, Discord/Google integrations, and support tools. These providers process data according to their own terms and privacy practices.</p></div>
+        <div class="doc-block"><h2>Security</h2><p>We use reasonable technical and organizational safeguards, but no website, database, payment flow, email system, Discord integration, or hosting provider can be guaranteed 100% secure. You should use a strong password and keep your email/Discord account secure.</p></div>
+        <div class="doc-block"><h2>Retention</h2><p>We may keep account, order, support, fraud-prevention, tax, accounting, legal, and security records as long as needed for operations, compliance, dispute handling, backups, and enforcement. Deleted accounts may still leave limited retained records where necessary.</p></div>
+        <div class="doc-block"><h2>Your choices</h2><p>You can contact support to request help with account information, privacy questions, data correction, or account deletion. Some requests may be limited where records are needed for orders, security, fraud prevention, legal reasons, or payment disputes.</p></div>
+        <div class="doc-block"><h2>Policy updates</h2><p>This Privacy Policy may be updated when features, integrations, payment methods, account systems, cookies, or legal requirements change. The Last updated date shows the current version.</p></div>
+      </div>
+      <div class="doc-callout">These policies are designed to be clear and protective for digital products, accounts, downloads, keys, payments, support, and site access. Nothing here limits rights that cannot legally be limited.</div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal center</a>
+    </article>
   </div>
 </section>
 {% endblock %}

@@ -1,29 +1,36 @@
 {% extends "base.html" %}
-{% block title %}License | moealturej{% endblock %}
-{% block extra_head %}
-<style>
-  .legal-doc-page{padding:42px 0 74px}.doc-shell{width:min(860px,100%);margin:0 auto;padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
-  .doc-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.doc-shell h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:-1.5px}.doc-intro{margin:14px 0 24px;max-width:650px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}.doc-content{display:grid;gap:12px}.doc-block{padding:17px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.doc-content h2{margin:0 0 7px;font-size:15px;letter-spacing:-.25px}.doc-content p{margin:0;color:rgba(255,255,255,.54);font-size:12.8px;line-height:1.55}.doc-back{display:inline-flex;align-items:center;gap:8px;margin-top:22px;color:#d8b4fe;font-size:13px;font-weight:900;text-decoration:none}.doc-back:hover{color:#fff}
-  @media(max-width:640px){.doc-shell{padding:24px 20px}}
-</style>
-{% endblock %}
-
+{% block title %}License Agreement | moealturej{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/legal-docs.css') }}">{% endblock %}
 {% block content %}
 <section class="page-section legal-doc-page">
   <div class="container">
-    <div class="doc-shell">
-      <div class="doc-kicker">Legal</div>
-      <h1>License</h1>
-      <p class="doc-intro">How purchased or downloaded products from moealturej Services may be used.</p>
-      <div class="doc-content">
-        <div class="doc-block"><h2>Use</h2><p>Products are licensed for personal or approved use unless stated otherwise.</p></div>
-        <div class="doc-block"><h2>No resale</h2><p>Do not resell, redistribute, leak, repackage, or claim products as your own.</p></div>
-        <div class="doc-block"><h2>Changes</h2><p>Private modification may be allowed only when the specific product permits it.</p></div>
-        <div class="doc-block"><h2>Access</h2><p>Access may be removed if license rules or site terms are violated.</p></div>
-        <div class="doc-block"><h2>Extra terms</h2><p>Some products may include additional rules listed on the product page.</p></div>
+    <article class="doc-shell">
+      <div class="doc-kicker"><i class="fas fa-scale-balanced"></i> Legal</div>
+      <h1>License Agreement</h1>
+      <p class="doc-intro">Rules for purchased products, downloaded files, license keys, account-bound access, updates, and redistribution.</p>
+      <div class="doc-meta">
+        <span class="doc-pill"><i class="fas fa-calendar-check"></i> Last updated: July 7, 2026</span>
+        <span class="doc-pill"><i class="fas fa-store"></i> moealturej Services</span>
       </div>
-      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal</a>
-    </div>
+      <div class="doc-links">
+        <a href="/terms"><i class="fas fa-file-contract"></i> Terms</a>
+        <a href="/privacy"><i class="fas fa-user-shield"></i> Privacy</a>
+        <a href="/refund-policy"><i class="fas fa-rotate-left"></i> Refunds</a>
+        <a href="/cookie-policy"><i class="fas fa-cookie-bite"></i> Cookies</a>
+        <a href="/license"><i class="fas fa-key"></i> License</a>
+        <a href="/acceptable-use"><i class="fas fa-shield-halved"></i> Acceptable Use</a>
+      </div>
+      <div class="doc-content">
+        <div class="doc-block"><h2>License grant</h2><p>When you purchase or download a product, you receive a limited, revocable, non-exclusive, non-transferable license to use that product according to the product page, these terms, and any additional product-specific rules.</p></div>
+        <div class="doc-block"><h2>No resale or redistribution</h2><p>You may not resell, share, leak, upload, redistribute, sublicense, rent, trade, repackage, reverse engineer for redistribution, or claim any product, file, key, design, content, branding, or download as your own.</p></div>
+        <div class="doc-block"><h2>Personal/account-bound access</h2><p>Unless a product page clearly says otherwise, access is for the purchasing account only. Keys, downloads, and account benefits may be limited by account, email, device, Discord account, IP, duration, or other license controls.</p></div>
+        <div class="doc-block"><h2>Updates and compatibility</h2><p>Products may receive updates, patches, replacement files, new instructions, or discontinued access. Compatibility with every device, operating system, third-party platform, game, app, browser, or future update is not guaranteed unless specifically stated.</p></div>
+        <div class="doc-block"><h2>Violations</h2><p>License violations, chargeback abuse, sharing access, bypassing protections, or misuse may result in revoked keys, removed downloads, suspended accounts, blocked purchases, and loss of support.</p></div>
+        <div class="doc-block"><h2>Ownership</h2><p>All site content, product materials, design, branding, text, images, code, downloads, documentation, and related assets remain owned by moealturej Services or their respective owners unless expressly stated otherwise.</p></div>
+      </div>
+      <div class="doc-callout">These policies are designed to be clear and protective for digital products, accounts, downloads, keys, payments, support, and site access. Nothing here limits rights that cannot legally be limited.</div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal center</a>
+    </article>
   </div>
 </section>
 {% endblock %}

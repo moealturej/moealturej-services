@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Copyright / DMCA Policy | moealturej{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/legal-docs.css') }}">{% endblock %}
+{% block content %}
+<section class="page-section legal-doc-page">
+  <div class="container">
+    <article class="doc-shell">
+      <div class="doc-kicker"><i class="fas fa-scale-balanced"></i> Legal</div>
+      <h1>Copyright / DMCA Policy</h1>
+      <p class="doc-intro">How copyright or intellectual property concerns can be submitted and reviewed.</p>
+      <div class="doc-meta">
+        <span class="doc-pill"><i class="fas fa-calendar-check"></i> Last updated: July 7, 2026</span>
+        <span class="doc-pill"><i class="fas fa-store"></i> moealturej Services</span>
+      </div>
+      <div class="doc-links">
+        <a href="/terms"><i class="fas fa-file-contract"></i> Terms</a>
+        <a href="/privacy"><i class="fas fa-user-shield"></i> Privacy</a>
+        <a href="/refund-policy"><i class="fas fa-rotate-left"></i> Refunds</a>
+        <a href="/cookie-policy"><i class="fas fa-cookie-bite"></i> Cookies</a>
+        <a href="/license"><i class="fas fa-key"></i> License</a>
+        <a href="/acceptable-use"><i class="fas fa-shield-halved"></i> Acceptable Use</a>
+      </div>
+      <div class="doc-content">
+        <div class="doc-block"><h2>Copyright respect</h2><p>If you believe content on moealturej Services infringes your copyright or intellectual property rights, contact support with enough information for us to review the claim.</p></div>
+        <div class="doc-block"><h2>Required notice details</h2><p>Include your name, contact email, the copyrighted work you claim is being infringed, the exact URL or product/page involved, a statement that you believe the use is unauthorized, and a statement that your notice is accurate.</p></div>
+        <div class="doc-block"><h2>Review process</h2><p>We may remove, restrict, or disable access to content while reviewing a claim. We may request more information, reject incomplete claims, or restore content if a claim appears invalid.</p></div>
+        <div class="doc-block"><h2>False claims</h2><p>Submitting false, misleading, or abusive takedown claims may have legal consequences and may result in blocked contact or account restrictions.</p></div>
+      </div>
+      <div class="doc-callout">These policies are designed to be clear and protective for digital products, accounts, downloads, keys, payments, support, and site access. Nothing here limits rights that cannot legally be limited.</div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal center</a>
+    </article>
+  </div>
+</section>
+{% endblock %}

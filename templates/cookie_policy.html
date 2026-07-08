@@ -1,29 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Cookie Policy | moealturej{% endblock %}
-{% block extra_head %}
-<style>
-  .legal-doc-page{padding:42px 0 74px}.doc-shell{width:min(860px,100%);margin:0 auto;padding:32px;border-radius:24px;background:rgba(12,8,22,.62);border:1px solid rgba(255,255,255,.075);box-shadow:0 18px 55px rgba(0,0,0,.24);backdrop-filter:blur(16px)}
-  .doc-kicker{display:inline-flex;align-items:center;margin-bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(168,85,247,.10);border:1px solid rgba(168,85,247,.18);color:#e9d5ff;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.doc-shell h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:-1.5px}.doc-intro{margin:14px 0 24px;max-width:650px;color:rgba(255,255,255,.58);font-size:14px;line-height:1.6}.doc-content{display:grid;gap:12px}.doc-block{padding:17px 18px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.doc-content h2{margin:0 0 7px;font-size:15px;letter-spacing:-.25px}.doc-content p{margin:0;color:rgba(255,255,255,.54);font-size:12.8px;line-height:1.55}.doc-back{display:inline-flex;align-items:center;gap:8px;margin-top:22px;color:#d8b4fe;font-size:13px;font-weight:900;text-decoration:none}.doc-back:hover{color:#fff}
-  @media(max-width:640px){.doc-shell{padding:24px 20px}}
-</style>
-{% endblock %}
-
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/legal-docs.css') }}">{% endblock %}
 {% block content %}
 <section class="page-section legal-doc-page">
   <div class="container">
-    <div class="doc-shell">
-      <div class="doc-kicker">Legal</div>
+    <article class="doc-shell">
+      <div class="doc-kicker"><i class="fas fa-scale-balanced"></i> Legal</div>
       <h1>Cookie Policy</h1>
-      <p class="doc-intro">How cookies and similar browser tools may be used on moealturej Services.</p>
-      <div class="doc-content">
-        <div class="doc-block"><h2>Cookies</h2><p>Cookies are small files that help the site function and remember basic settings.</p></div>
-        <div class="doc-block"><h2>Use</h2><p>They may support login, checkout, preferences, analytics, performance, or security.</p></div>
-        <div class="doc-block"><h2>Third parties</h2><p>Some connected services may use their own cookies depending on the feature.</p></div>
-        <div class="doc-block"><h2>Control</h2><p>You can manage cookies in your browser, but some features may work differently.</p></div>
-        <div class="doc-block"><h2>Updates</h2><p>This policy may change as site tools are updated.</p></div>
+      <p class="doc-intro">How cookies, sessions, local storage, checkout tools, analytics, preferences, and security technologies may be used.</p>
+      <div class="doc-meta">
+        <span class="doc-pill"><i class="fas fa-calendar-check"></i> Last updated: July 7, 2026</span>
+        <span class="doc-pill"><i class="fas fa-store"></i> moealturej Services</span>
       </div>
-      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal</a>
-    </div>
+      <div class="doc-links">
+        <a href="/terms"><i class="fas fa-file-contract"></i> Terms</a>
+        <a href="/privacy"><i class="fas fa-user-shield"></i> Privacy</a>
+        <a href="/refund-policy"><i class="fas fa-rotate-left"></i> Refunds</a>
+        <a href="/cookie-policy"><i class="fas fa-cookie-bite"></i> Cookies</a>
+        <a href="/license"><i class="fas fa-key"></i> License</a>
+        <a href="/acceptable-use"><i class="fas fa-shield-halved"></i> Acceptable Use</a>
+      </div>
+      <div class="doc-content">
+        <div class="doc-block"><h2>What cookies are</h2><p>Cookies and similar storage technologies are small browser records used to keep the site working, remember preferences, secure sessions, and understand basic performance.</p></div>
+        <div class="doc-block"><h2>Essential cookies</h2><p>Essential cookies may be used for login sessions, CSRF protection, cart behavior, checkout flow, account security, rate limiting, fraud prevention, and remembering whether certain notices were dismissed. These are needed for core site functions.</p></div>
+        <div class="doc-block"><h2>Preference and performance cookies</h2><p>We may use cookies or local storage for theme behavior, cart data, UI preferences, analytics, performance measurement, and error/security logging.</p></div>
+        <div class="doc-block"><h2>Third-party cookies</h2><p>Payment providers, Discord, Google, email/security tools, analytics providers, hosting/CDN services, and embedded checkout tools may set or read their own cookies when their features are used. Their policies control their cookies.</p></div>
+        <div class="doc-block"><h2>Managing cookies</h2><p>You can block or delete cookies through your browser. Some features, including login, cart, checkout, security checks, account pages, and product delivery, may not work correctly without required cookies.</p></div>
+        <div class="doc-block"><h2>Updates</h2><p>This Cookie Policy may be updated as the site, checkout methods, analytics, account systems, or security tools change. The Last updated date shows the current version.</p></div>
+      </div>
+      <div class="doc-callout">These policies are designed to be clear and protective for digital products, accounts, downloads, keys, payments, support, and site access. Nothing here limits rights that cannot legally be limited.</div>
+      <a href="/legal" class="doc-back"><i class="fas fa-arrow-left"></i> Back to legal center</a>
+    </article>
   </div>
 </section>
 {% endblock %}
