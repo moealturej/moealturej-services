@@ -957,25 +957,34 @@ def build_admin_broadcast_email(subject: str, message: str, cta_label: str = "Op
 
 
 def parse_admin_email_recipients() -> list[str]:
+    """Collect valid recipients for the admin email sender without allowing bad form/user data to crash the request."""
     mode = (request.form.get("recipient_mode") or "manual").strip().lower()
     manual = request.form.get("manual_recipients") or ""
     selected = request.form.getlist("selected_recipients")
     recipients: set[str] = set()
+
+    def add_email(value):
+        email = str(value or "").strip().lower()
+        if email and "@" in email and len(email) <= 254:
+            recipients.add(email)
+
     if mode == "all":
-        for user in load_admin_users():
-            email = str(user.get("email") or "").strip().lower()
-            if email and "@" in email and user.get("status") != "suspended":
-                recipients.add(email)
+        try:
+            admin_users = load_admin_users()
+        except Exception:
+            logger.exception("Could not load users for admin bulk email")
+            admin_users = []
+        for user in admin_users:
+            if not isinstance(user, dict):
+                continue
+            if user.get("status") != "suspended":
+                add_email(user.get("email"))
     elif mode == "selected":
         for email in selected:
-            email = str(email or "").strip().lower()
-            if email and "@" in email:
-                recipients.add(email)
+            add_email(email)
     else:
         for email in re.split(r"[\s,;]+", manual):
-            email = email.strip().lower()
-            if email and "@" in email:
-                recipients.add(email)
+            add_email(email)
     return sorted(recipients)
 
 
@@ -3054,31 +3063,47 @@ def admin_site_settings():
 def admin_custom_email_send():
     if not verify_csrf():
         abort(400)
-    subject = (request.form.get("email_subject") or "").strip()
-    message = (request.form.get("email_message") or "").strip()
-    cta_label = (request.form.get("email_cta_label") or "Open moealturej").strip()[:60]
-    cta_url = (request.form.get("email_cta_url") or APP_URL).strip() or APP_URL
-    recipients = parse_admin_email_recipients()
-    if not subject or not message:
-        flash("Add a subject and message before sending.", "danger")
-        return redirect(url_for("admin_dashboard") + "#emails")
-    if not recipients:
-        flash("Choose at least one recipient.", "danger")
-        return redirect(url_for("admin_dashboard") + "#emails")
-    built_subject, text, html_body = build_admin_broadcast_email(subject, message, cta_label, cta_url)
-    sent = 0
-    failed = 0
-    for email in recipients[:500]:
-        if send_html_email(email, built_subject, text, html_body, "Notifications"):
-            sent += 1
+    try:
+        subject = (request.form.get("email_subject") or "").strip()
+        message = (request.form.get("email_message") or "").strip()
+        cta_label = (request.form.get("email_cta_label") or "Open moealturej").strip()[:60]
+        cta_url = (request.form.get("email_cta_url") or APP_URL).strip() or APP_URL
+        if not (cta_url.startswith("https://") or cta_url.startswith("http://")):
+            cta_url = APP_URL
+
+        if not subject or not message:
+            flash("Add a subject and message before sending.", "danger")
+            return redirect(url_for("admin_dashboard") + "#emails")
+
+        recipients = parse_admin_email_recipients()
+        if not recipients:
+            flash("Choose at least one recipient.", "danger")
+            return redirect(url_for("admin_dashboard") + "#emails")
+
+        built_subject, text, html_body = build_admin_broadcast_email(subject, message, cta_label, cta_url)
+        sent = 0
+        failed = 0
+        # Use the same verified sender group as OTP/security emails to avoid no-reply sender issues on Resend.
+        for email in recipients[:500]:
+            try:
+                ok = send_html_email(email, built_subject, text, html_body, "Security")
+            except Exception:
+                logger.exception("Admin email send crashed for recipient %s", email)
+                ok = False
+            if ok:
+                sent += 1
+            else:
+                failed += 1
+        record_audit("email.broadcast", "admin", {"subject": built_subject, "sent": sent, "failed": failed, "requested": len(recipients)})
+        if failed:
+            flash(f"Custom email sent to {sent} recipient(s). {failed} failed. Check Render logs or Resend if delivery failed.", "warning")
         else:
-            failed += 1
-    record_audit("email.broadcast", "admin", {"subject": built_subject, "sent": sent, "failed": failed, "requested": len(recipients)})
-    if failed:
-        flash(f"Custom email sent to {sent} recipient(s). {failed} failed; check Render logs/Resend.", "warning")
-    else:
-        flash(f"Custom email sent to {sent} recipient(s).", "success")
-    return redirect(url_for("admin_dashboard") + "#emails")
+            flash(f"Custom email sent to {sent} recipient(s).", "success")
+        return redirect(url_for("admin_dashboard") + "#emails")
+    except Exception:
+        logger.exception("Admin custom email sender failed")
+        flash("The email sender hit a server error. Nothing else on the site was changed. Check Render logs for the exact Resend/Mongo error.", "danger")
+        return redirect(url_for("admin_dashboard") + "#emails")
 
 
 @app.route("/admin/discounts", methods=["POST"])
