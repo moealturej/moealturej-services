@@ -64,6 +64,82 @@ function clearDetailPreview(){
 updatePricingButtons();
 
 (function(){
+  const subject=document.getElementById('emailSubject');
+  const message=document.getElementById('emailMessage');
+  const cta=document.getElementById('emailCtaLabel');
+  const ps=document.getElementById('emailPreviewSubject');
+  const pm=document.getElementById('emailPreviewMessage');
+  const pb=document.getElementById('emailPreviewButton');
+  function refresh(){
+    if(ps) ps.textContent=(subject&&subject.value.trim())||'Terms of Service update';
+    if(pm) pm.textContent=(message&&message.value.trim())||'Your message preview will show here while you type.';
+    if(pb) pb.textContent=(cta&&cta.value.trim())||'Open moealturej';
+  }
+  [subject,message,cta].forEach(el=>el&&el.addEventListener('input',refresh));
+  refresh();
+
+})();
+
+(function(){
+  const list=document.getElementById('productOrderList');
+  const input=document.getElementById('productOrderInput');
+  const form=document.getElementById('productOrderForm');
+  const saveBar=document.getElementById('productOrderSaveBar');
+  const cancelBtn=document.getElementById('productOrderCancel');
+  const resetBtn=document.getElementById('productOrderReset');
+  if(!list || !input || !form) return;
+  const original=[...list.querySelectorAll('.admin-product')].map(card=>card.dataset.slug);
+  let dragEl=null;
+  function updateInput(){
+    const order=[...list.querySelectorAll('.admin-product')].map(card=>card.dataset.slug).filter(Boolean);
+    input.value=order.join(',');
+    const dirty=order.join('|') !== original.join('|');
+    [...list.querySelectorAll('.admin-product')].forEach((card, index)=>{
+      const badge=card.querySelector('.order-number');
+      if(badge) badge.textContent=String(index + 1);
+    });
+    if(saveBar) saveBar.hidden=!dirty;
+    list.classList.toggle('is-reordered', dirty);
+  }
+  function move(card, dir){
+    if(!card) return;
+    if(dir < 0 && card.previousElementSibling) list.insertBefore(card, card.previousElementSibling);
+    if(dir > 0 && card.nextElementSibling) list.insertBefore(card.nextElementSibling, card);
+    card.scrollIntoView({block:'nearest',behavior:'smooth'});
+    updateInput();
+  }
+  list.addEventListener('click', (event)=>{
+    const up=event.target.closest('[data-order-up]');
+    const down=event.target.closest('[data-order-down]');
+    if(up || down) move(event.target.closest('.admin-product'), up ? -1 : 1);
+  });
+  list.querySelectorAll('.admin-product').forEach(card=>{
+    card.draggable=true;
+    card.addEventListener('dragstart',()=>{ dragEl=card; card.classList.add('is-dragging'); });
+    card.addEventListener('dragend',()=>{ card.classList.remove('is-dragging'); dragEl=null; updateInput(); });
+  });
+  list.addEventListener('dragover',(event)=>{
+    event.preventDefault();
+    const after=[...list.querySelectorAll('.admin-product:not(.is-dragging)')].find(child=>{
+      const box=child.getBoundingClientRect();
+      return event.clientY < box.top + box.height / 2;
+    });
+    if(!dragEl) return;
+    if(after) list.insertBefore(dragEl, after); else list.appendChild(dragEl);
+  });
+  [cancelBtn, document.getElementById('productOrderCancel2')].filter(Boolean).forEach(btn=>btn.addEventListener('click',()=>{
+    original.map(slug=>[...list.querySelectorAll('.admin-product')].find(card=>card.dataset.slug===slug)).filter(Boolean).forEach(card=>list.appendChild(card));
+    updateInput();
+  }));
+  if(resetBtn) resetBtn.addEventListener('click',()=>{
+    [...list.querySelectorAll('.admin-product')].sort((a,b)=>(a.dataset.name||'').localeCompare(b.dataset.name||'')).forEach(card=>list.appendChild(card));
+    updateInput();
+  });
+  form.addEventListener('submit', updateInput);
+  updateInput();
+})();
+
+(function(){
   const tabs=[...document.querySelectorAll('.admin-tab')];
   const sections=tabs.map(tab=>document.querySelector(tab.getAttribute('href'))).filter(Boolean);
   if(!tabs.length || !sections.length) return;
@@ -85,13 +161,15 @@ updatePricingButtons();
   .admin-hero{position:relative;overflow:hidden;min-height:240px}.admin-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% 12%,rgba(213,156,255,.22),transparent 34%),radial-gradient(circle at 8% 92%,rgba(169,53,255,.14),transparent 32%);pointer-events:none}.admin-hero>*{position:relative;z-index:1}.admin-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
   .admin-side-panel{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(13,7,27,.88),rgba(4,2,10,.94));border:1px solid var(--admin-line);box-shadow:0 24px 70px rgba(0,0,0,.34);display:grid;gap:12px;align-content:start}.admin-side-panel h2{margin:0}.admin-health{display:grid;gap:10px}.health-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075)}.health-item span{color:var(--muted);font-size:13px;font-weight:800}.health-pill{padding:7px 10px;border-radius:999px;background:rgba(57,255,159,.10);border:1px solid rgba(57,255,159,.18);color:#b9ffd9;font-weight:900;font-size:12px;white-space:nowrap}.health-pill.warn{background:rgba(255,200,87,.10);border-color:rgba(255,200,87,.24);color:#ffe7ad}.health-note{margin:2px 0 0;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;line-height:1.55;color:#b7abc9;word-break:break-word}
   .admin-stats{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.admin-stats div{min-height:96px;display:grid;align-content:center;background:linear-gradient(180deg,rgba(255,255,255,.058),rgba(255,255,255,.022))!important;border:1px solid rgba(213,156,255,.15)!important}.admin-stats strong{font-size:clamp(20px,2.2vw,30px)}.admin-stats span{line-height:1.25}
-  .admin-tabs{position:sticky;top:105px;z-index:20;display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;padding:9px;border-radius:24px;background:rgba(4,2,10,.82);border:1px solid rgba(213,156,255,.14);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.28)}.admin-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.14);color:#efe3ff;font-weight:950;text-decoration:none;transition:.18s ease}.admin-tab:hover{background:rgba(169,53,255,.14);border-color:rgba(213,156,255,.32);transform:translateY(-1px)}
+  .admin-tabs{position:sticky;top:105px;z-index:20;display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;padding:9px;border-radius:24px;background:rgba(4,2,10,.82);border:1px solid rgba(213,156,255,.14);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.28)}.admin-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.14);color:#efe3ff;font-weight:950;text-decoration:none;transition:.18s ease}.admin-tab:hover,.admin-tab.is-active{background:rgba(169,53,255,.14);border-color:rgba(213,156,255,.32);transform:translateY(-1px)}
+  .email-compose{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:16px;align-items:start}.email-preview-card{position:sticky;top:180px;border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid rgba(213,156,255,.14);padding:18px}.recipient-tools{display:grid;gap:10px}.recipient-mode{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.recipient-mode label{display:flex!important;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.13);cursor:pointer}.recipient-mode input{width:auto!important;min-height:auto!important}.select-users-box{min-height:170px!important}.email-mock{border-radius:22px;background:#05020a;border:1px solid rgba(255,255,255,.1);padding:14px}.email-mock-head{display:flex;gap:12px;align-items:center;padding:10px 8px 16px;border-bottom:1px solid rgba(255,255,255,.08)}.email-mock-logo{width:44px;height:44px;border-radius:14px;object-fit:cover;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:grid;place-items:center;font-weight:950}.email-mock h3{margin:16px 0 8px;font-size:24px;letter-spacing:-.04em}.email-mock p{color:#b9a8d8;line-height:1.65;white-space:pre-wrap}.email-mock-btn{display:inline-flex;margin-top:10px;padding:12px 15px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:950}.admin-polish-note{display:none!important}
+
   .admin-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.admin-section{scroll-margin-top:190px}.admin-card{padding:24px!important;border-radius:30px!important;background:linear-gradient(180deg,rgba(11,6,23,.86),rgba(5,2,12,.92))!important;border:1px solid var(--admin-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.30)!important}.section-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}.section-top h2{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.04em}.muted{color:var(--muted);line-height:1.65}.admin-two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-form-grid .wide{grid-column:1/-1}.check-row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px}.check-row label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.11)}.check-row input{width:auto!important;min-height:auto!important}.admin-page label{color:#f1e7ff;font-weight:900;font-size:13px}.admin-page select,.admin-page input,.admin-page textarea{background:#0b0615!important;color:#fff!important;border-color:rgba(213,156,255,.22)!important}.admin-page select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#d59cff 50%),linear-gradient(135deg,#d59cff 50%,transparent 50%)!important;background-position:calc(100% - 18px) 22px,calc(100% - 12px) 22px!important;background-size:6px 6px,6px 6px!important;background-repeat:no-repeat!important;padding-right:38px!important}.admin-page select option{background:#0b0615!important;color:#f7efff!important}.admin-page select option:checked{background:#251036!important;color:#fff!important}
   .media-grid,.users-grid,.product-list{display:grid;gap:12px}.media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media-item,.user-row,.admin-product{display:grid;gap:13px;padding:16px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.018));border:1px solid rgba(213,156,255,.12)}.media-top{display:flex;gap:14px;align-items:center;min-width:0}.media-preview,.media-file-icon{width:78px;height:78px;flex:0 0 auto;border-radius:20px;border:1px solid rgba(213,156,255,.18);background:#090411}.media-preview{object-fit:cover}.media-file-icon{display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,rgba(169,53,255,.24),rgba(255,68,188,.10))}.copy-field{display:flex;gap:8px}.copy-field input{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis}.copy-field button{white-space:nowrap}
   .product-list{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-product-main{display:flex;gap:14px;align-items:center}.admin-product-main img{width:82px;height:82px;border-radius:21px;object-fit:cover;border:1px solid rgba(213,156,255,.18);background:#08040f}.admin-product-main h3{margin:0 0 5px}.admin-product-main p{margin:0}.admin-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.admin-tags span,.owner-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(169,53,255,.11);border:1px solid rgba(169,53,255,.18);font-size:12px;font-weight:900;color:#eadfff}.status-mini{display:grid;grid-template-columns:auto 170px 1fr auto;gap:10px;align-items:center}.status-mini input[type=checkbox]{width:auto!important;min-height:auto!important}.status-mini button,.small-btn,.danger-btn{border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.05);color:#fff;font-weight:900;cursor:pointer;transition:.18s ease}.small-btn:hover,.status-mini button:hover{background:rgba(169,53,255,.13);border-color:rgba(213,156,255,.28);transform:translateY(-1px)}.danger-btn{background:rgba(255,55,95,.10);border-color:rgba(255,55,95,.28);color:#ffd8df}.danger-btn:hover{background:rgba(255,55,95,.16);transform:translateY(-1px)}.danger-btn.compact{margin-top:0}.json-editor{margin-top:2px}.json-editor summary{cursor:pointer;color:#dca8ff;font-weight:900}.json-editor textarea{margin-top:12px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5}.admin-actions{margin-top:10px}.pricing-builder{display:grid;gap:10px}.pricing-row{display:grid;grid-template-columns:1fr 130px auto;gap:10px;align-items:end;padding:12px;border:1px solid rgba(213,156,255,.14);background:rgba(255,255,255,.035);border-radius:18px}.parser-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.detail-preview{white-space:pre-wrap;margin-top:10px;padding:14px;border-radius:18px;background:rgba(6,3,12,.72);border:1px dashed rgba(213,156,255,.22);font-size:12px;color:#d7cdea;max-height:260px;overflow:auto}.helper-text{display:block;margin-top:6px;color:#9b91ad;font-size:12px;line-height:1.45}
   .user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}.user-email{font-weight:950;color:#fff}.user-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.owner-badge{background:rgba(255,198,75,.12);border-color:rgba(255,198,75,.25);color:#ffe3a3}.suspended-badge{background:rgba(255,70,101,.13);border-color:rgba(255,70,101,.32);color:#ffd3dc}.active-badge{background:rgba(57,255,159,.10);border-color:rgba(57,255,159,.22);color:#b8ffd8}.discord-badge{background:rgba(88,101,242,.14);border-color:rgba(88,101,242,.32);color:#dfe2ff}.user-forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.inline-form{display:flex;gap:8px;align-items:center;padding:10px;border-radius:18px;background:rgba(255,255,255,.026);border:1px solid rgba(213,156,255,.10)}.inline-form select,.inline-form input{flex:1 1 160px;min-width:0}.security-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.security-item{display:flex;gap:12px;align-items:flex-start;padding:15px;border-radius:20px;background:rgba(255,255,255,.034);border:1px solid rgba(213,156,255,.12)}.security-item i{color:#dca8ff;margin-top:2px;font-size:20px}.admin-page code{color:#e6c7ff;background:rgba(169,53,255,.12);border:1px solid rgba(213,156,255,.15);padding:2px 7px;border-radius:9px}.secondary-cta{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:0 16px;border-radius:999px;border:1px solid rgba(213,156,255,.22);background:rgba(255,255,255,.035);font-weight:900;color:#fff}.secondary-cta:hover{background:rgba(169,53,255,.12)}.delivery-form{display:grid;grid-template-columns:170px minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:12px;padding:12px;border-radius:18px;background:rgba(57,229,140,.05);border:1px solid rgba(57,229,140,.12)}.delivery-form label{margin:0!important}.delivery-form textarea{min-height:46px!important;height:46px!important;resize:vertical}.delivery-status{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.delivery-key-preview{padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.24);border:1px dashed rgba(213,156,255,.28);font-family:ui-monospace,Consolas,monospace;color:#fff;word-break:break-all;font-size:12px}.order-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;color:var(--muted);font-size:13px;padding:10px;border-radius:15px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}.order-line strong{color:#fff}.order-line small{display:block;color:#8f80ad;margin-top:4px}@media(max-width:880px){.delivery-form{grid-template-columns:1fr}.order-line{grid-template-columns:1fr}}
   @media(max-width:1100px){.admin-command,.admin-two-col{grid-template-columns:1fr}.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.product-list,.media-grid{grid-template-columns:1fr}.admin-tabs{top:96px}}
-  @media(max-width:760px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs{position:relative;top:auto}.admin-tab{flex:1;justify-content:center}.admin-form-grid,.user-forms,.security-grid{grid-template-columns:1fr}.inline-form,.copy-field,.status-mini{display:grid;grid-template-columns:1fr}.admin-product-main{align-items:flex-start}.admin-hero{min-height:auto}.admin-side-panel,.admin-card{border-radius:24px!important}}
+  @media(max-width:760px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs{position:relative;top:auto}.admin-tab{flex:1;justify-content:center}.admin-form-grid,.user-forms,.security-grid,.email-compose,.recipient-mode{grid-template-columns:1fr}.inline-form,.copy-field,.status-mini{display:grid;grid-template-columns:1fr}.admin-product-main{align-items:flex-start}.admin-hero{min-height:auto}.admin-side-panel,.admin-card{border-radius:24px!important}.email-preview-card{position:relative;top:auto}.select-users-box{min-height:130px!important}}
 
   .download-editor{margin-top:10px;border-radius:18px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.026);overflow:hidden}
   .download-editor summary{cursor:pointer;padding:13px 15px;font-weight:900;color:#f3eaff;list-style:none}
@@ -108,13 +186,20 @@ updatePricingButtons();
   .admin-product{padding:18px!important;gap:14px!important}
   .admin-product-main{padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07)}
   .admin-product-main h3{font-size:20px;letter-spacing:-.02em}
-  .pricing-row{grid-template-columns:minmax(150px,1fr) 120px minmax(260px,1.5fr) auto auto!important}
+  .product-order-shell{display:grid;gap:12px;margin-bottom:16px;padding:14px;border-radius:24px;background:linear-gradient(180deg,rgba(169,53,255,.09),rgba(255,255,255,.025));border:1px solid rgba(213,156,255,.18)}
+  .product-order-header{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}.product-order-header h3{margin:0;font-size:20px;letter-spacing:-.03em}.product-order-header p{margin:5px 0 0;color:#a99bbd;font-size:13px;line-height:1.45}
+  .product-order-actions,.product-order-savebar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.product-order-savebar{position:sticky;bottom:16px;z-index:25;justify-content:space-between;padding:12px 14px;border-radius:20px;background:rgba(8,3,17,.92);border:1px solid rgba(213,156,255,.26);box-shadow:0 16px 42px rgba(0,0,0,.38);backdrop-filter:blur(16px)}.product-order-savebar[hidden]{display:none}.product-order-savebar span{color:#eadfff;font-weight:900}
+  .admin-product{position:relative}.admin-product[draggable=true]{cursor:grab}.admin-product.is-dragging{opacity:.55;transform:scale(.985);border-color:rgba(213,156,255,.38)!important}.product-list.is-reordered .admin-product{border-color:rgba(213,156,255,.20)}
+  .product-order-control{display:flex;align-items:center;gap:8px;margin-left:auto}.drag-handle{display:inline-flex;align-items:center;gap:8px;padding:9px 11px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(213,156,255,.14);color:#d8c7ef;font-weight:950;user-select:none}.move-btn{width:38px;height:38px;border-radius:13px;border:1px solid rgba(213,156,255,.16);background:rgba(255,255,255,.045);color:#fff;cursor:pointer;font-weight:950}.move-btn:hover{background:rgba(169,53,255,.16);border-color:rgba(213,156,255,.30)}
+  .order-number{position:absolute;top:14px;right:14px;min-width:30px;height:30px;padding:0 9px;border-radius:999px;display:grid;place-items:center;background:rgba(169,53,255,.16);border:1px solid rgba(213,156,255,.22);color:#f4eaff;font-weight:950;font-size:12px}
+
+    .pricing-row{grid-template-columns:minmax(150px,1fr) 120px minmax(260px,1.5fr) auto auto!important}
   .pricing-row .auto-url-field{min-width:0}.auto-toggle{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(57,229,140,.055);border:1px solid rgba(57,229,140,.16);white-space:nowrap}.auto-toggle input{width:auto!important;min-height:auto!important}
   .auto-delivery-editor{margin-top:10px;border-radius:18px;border:1px solid rgba(57,229,140,.16);background:linear-gradient(180deg,rgba(57,229,140,.055),rgba(255,255,255,.018));overflow:hidden}
   .auto-delivery-editor summary{cursor:pointer;padding:13px 15px;font-weight:950;color:#d9ffe9;list-style:none}.auto-delivery-editor summary::-webkit-details-marker{display:none}.auto-delivery-editor summary i{color:#85ffbd;margin-right:8px}
   .auto-delivery-grid{display:grid;grid-template-columns:1fr 220px;gap:10px;padding:0 15px 15px}.auto-delivery-grid .wide{grid-column:1/-1}.auto-delivery-grid label{display:grid;gap:7px;margin:0!important}.auto-delivery-grid input{min-height:42px!important;border-radius:13px!important}.auto-delivery-note{padding:12px 13px;border-radius:16px;background:rgba(0,0,0,.20);border:1px solid rgba(57,229,140,.13);color:#b9abca;font-size:12px;line-height:1.6}.discount-admin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.discount-admin-grid .wide{grid-column:1/-1}.discount-admin-grid label,.discount-panel label{display:grid;gap:7px;margin:0!important}.discount-panel{padding:13px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(213,156,255,.12);display:grid;gap:10px}.discount-help{color:#a99bbd;font-size:12px;line-height:1.55}.option-api-list{display:grid;gap:10px}.option-api-row{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:10px;align-items:end;padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}.option-api-row strong{display:block;color:#fff}.option-api-row small{display:block;margin-top:4px;color:#998aae}.inline-check{display:flex!important;align-items:center;gap:8px}.inline-check input{width:auto!important;min-height:auto!important}
   @media(max-width:1100px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pricing-row,.option-api-row,.auto-delivery-grid,.discount-admin-grid{grid-template-columns:1fr!important}.auto-toggle{justify-content:flex-start}}
-  @media(max-width:760px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-command{grid-template-columns:1fr}.pricing-row{gap:8px}.auto-delivery-note{font-size:11px}}
+  @media(max-width:760px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-command{grid-template-columns:1fr}.pricing-row{gap:8px}.auto-delivery-note{font-size:11px}.product-order-header{display:grid}.product-order-actions,.product-order-savebar{display:grid;grid-template-columns:1fr}.product-order-actions .small-btn,.product-order-savebar button{width:100%}.product-order-control{width:100%;margin-left:0;justify-content:space-between}.drag-handle{flex:1;justify-content:center}.order-number{top:10px;right:10px}}
 
 </style>
 {% endblock %}
@@ -125,7 +210,7 @@ updatePricingButtons();
       <div>
         <div class="eyebrow">owner control</div>
         <h1>Site command center</h1>
-        <p>Clean control for products, downloads, uploads, live status, users, roles, security, and Discord login.</p>
+        <p>Production controls for products, orders, customers, emails, uploads, status, and account safety.</p>
         <div class="admin-hero-actions">
           <a class="primary-cta" href="#products"><i class="fas fa-box"></i> Manage products</a>
           <a class="secondary-cta" href="/" target="_blank"><i class="fas fa-arrow-up-right-from-square"></i> View site</a>
@@ -134,14 +219,14 @@ updatePricingButtons();
       </div>
     </section>
     <aside class="admin-side-panel">
-      <div><div class="eyebrow">system health</div><h2>Setup status</h2><p class="muted">Use this to catch broken config before going public.</p></div>
+      <div><div class="eyebrow">system health</div><h2>Setup status</h2></div>
       <div class="admin-health">
         <div class="health-item"><span>Storage</span><b class="health-pill {{ '' if using_mongo else 'warn' }}">{{ 'MongoDB connected' if using_mongo else 'Local JSON fallback' }}</b></div>
         <p class="health-note">{{ mongo_status_reason }}</p>
         <div class="health-item"><span>Email codes</span><b class="health-pill">{{ 'Resend ready' if config.RESEND_ENABLED else ('SMTP selected' if config.EMAIL_PROVIDER == 'smtp' else 'Email not configured') }}</b></div>
         <div class="health-item"><span>Discord OAuth</span><b class="health-pill {{ '' if discord_oauth_enabled else 'warn' }}">{{ 'Enabled' if discord_oauth_enabled else 'Missing OAuth keys' }}</b></div>
         <div class="health-item"><span>Discord server join</span><b class="health-pill {{ '' if discord_guild_join_enabled else 'warn' }}">{{ 'Enabled' if discord_guild_join_enabled else 'Not enabled' }}</b></div>
-        <p class="health-note">Guild ID: {{ discord_guild_id or 'not set' }}. Requires <code>guilds.join</code> OAuth scope and a bot already in that server.</p>
+        <p class="health-note">Guild ID: {{ discord_guild_id or 'not set' }}</p>
         <div class="health-item"><span>Uploads</span><b class="health-pill">Limited + safe names</b></div>
         <div class="health-item"><span>Payments</span><b class="health-pill {{ '' if stripe_enabled or paypal_enabled else 'warn' }}">{{ stats.payments }}</b></div>
         <div class="health-item"><span>Auto delivery</span><b class="health-pill {{ '' if stats.auto_delivery == 'ready' else 'warn' }}">{{ stats.auto_delivery }}</b></div>
@@ -163,6 +248,7 @@ updatePricingButtons();
 
   <nav class="admin-tabs" aria-label="Admin sections">
     <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
+    <a class="admin-tab" href="#emails"><i class="fas fa-envelope-open-text"></i> Email sender</a>
     <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Add product</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
     <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
@@ -194,6 +280,45 @@ updatePricingButtons();
       <div class="security-grid" style="margin-top:16px">
         <div class="security-item"><i class="fas fa-database"></i><span><strong>Storage:</strong> {{ stats.storage }}<br><small>{{ mongo_status_reason if mongo_status_reason is defined else 'Open diagnostics for details.' }}</small></span></div>
         <div class="security-item"><i class="fas fa-money-check-dollar"></i><span><strong>Payments:</strong> {{ stats.payments }}<br><small>Stripe/PayPal checkout is signed-in-only and server validated.</small></span></div>
+      </div>
+    </section>
+
+    <section class="admin-card admin-section" id="emails">
+      <div class="section-top"><div><div class="eyebrow">customer communication</div><h2>Custom email sender</h2><p class="muted">Send a clean branded email to one person, selected customers, or every active account. Uses the same logo/branding as OTP emails.</p></div></div>
+      <div class="email-compose">
+        <form class="admin-form-grid" action="/admin/email/send" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="wide recipient-tools">
+            <label>Recipients</label>
+            <div class="recipient-mode">
+              <label><input type="radio" name="recipient_mode" value="manual" checked> Manual</label>
+              <label><input type="radio" name="recipient_mode" value="selected"> Select users</label>
+              <label><input type="radio" name="recipient_mode" value="all"> Send to all</label>
+            </div>
+          </div>
+          <label class="wide">Manual recipients<input name="manual_recipients" placeholder="customer@email.com, second@email.com"></label>
+          <label class="wide">Select customers
+            <select class="select-users-box" name="selected_recipients" multiple>
+              {% for user in users %}
+              {% if user.email %}<option value="{{ user.email }}">{{ user.email }}{% if user.username %} · @{{ user.username }}{% endif %}</option>{% endif %}
+              {% endfor %}
+            </select>
+          </label>
+          <label class="wide">Subject<input id="emailSubject" name="email_subject" maxlength="120" placeholder="Terms of Service update" required></label>
+          <label class="wide">Message<textarea id="emailMessage" name="email_message" rows="8" placeholder="Write the update customers should receive..." required></textarea></label>
+          <label>Button label<input id="emailCtaLabel" name="email_cta_label" value="Open moealturej" maxlength="60"></label>
+          <label>Button URL<input id="emailCtaUrl" name="email_cta_url" value="{{ config.APP_URL if config.APP_URL is defined else 'https://moealturej.com' }}"></label>
+          <div class="admin-actions wide"><button class="primary-cta" type="submit" onclick="return confirm('Send this branded email now?')"><i class="fas fa-paper-plane"></i> Send email</button></div>
+        </form>
+        <aside class="email-preview-card">
+          <div class="eyebrow">live preview</div>
+          <div class="email-mock">
+            <div class="email-mock-head"><div class="email-mock-logo">{% if config.BRAND_LOGO_URL %}<img src="{{ config.BRAND_LOGO_URL }}" alt="moealturej" style="width:44px;height:44px;border-radius:14px;object-fit:cover">{% else %}m{% endif %}</div><div><strong>moealturej</strong><br><span class="muted">Account update</span></div></div>
+            <h3 id="emailPreviewSubject">Terms of Service update</h3>
+            <p id="emailPreviewMessage">Your message preview will show here while you type.</p>
+            <span class="email-mock-btn" id="emailPreviewButton">Open moealturej</span>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -366,11 +491,23 @@ updatePricingButtons();
     </section>
 
     <section class="admin-card admin-section" id="products">
-      <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Edit quick status inline, or open JSON for full control.</p></div></div>
-      <div class="product-list">
+      <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Drag products into the order you want customers to see, then save. You can also edit status, downloads, auto-delivery, discounts, or full JSON below.</p></div></div>
+      <form id="productOrderForm" class="product-order-shell" action="{{ url_for('admin_products_reorder') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" id="productOrderInput" name="product_order" value="">
+        <div class="product-order-header">
+          <div><h3><i class="fas fa-up-down-left-right"></i> Visual product order</h3><p>Drag cards, or use the arrow buttons on mobile. Save applies the order to the store, downloads, status page, and admin list.</p></div>
+          <div class="product-order-actions">
+            <button class="small-btn" type="button" id="productOrderReset"><i class="fas fa-arrow-down-a-z"></i> Sort A-Z</button>
+            <button class="danger-btn" type="button" id="productOrderCancel"><i class="fas fa-xmark"></i> Cancel</button>
+          </div>
+        </div>
+      </form>
+      <div class="product-list" id="productOrderList">
         {% for product in products %}
-        <article class="admin-product">
-          <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div></div>
+        <article class="admin-product" data-slug="{{ product.slug }}" data-name="{{ product.name|lower }}">
+          <span class="order-number">{{ loop.index }}</span>
+          <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Order: {{ product.displayOrder if product.displayOrder is defined else loop.index0 }}</span><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div><div class="product-order-control"><span class="drag-handle"><i class="fas fa-grip-vertical"></i> Drag</span><button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button><button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button></div></div>
           <form class="status-mini" action="/admin/status/{{ product.slug }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label><input type="checkbox" name="enabled" {% if product.status.enabled %}checked{% endif %}> Track</label>
@@ -435,6 +572,13 @@ updatePricingButtons();
           <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete item</button></form>
         </article>
         {% else %}<p class="muted">No products yet. Add your first item above.</p>{% endfor %}
+      </div>
+      <div id="productOrderSaveBar" class="product-order-savebar" hidden>
+        <span><i class="fas fa-sparkles"></i> Product order changed</span>
+        <div class="product-order-actions">
+          <button class="danger-btn" type="button" id="productOrderCancel2"><i class="fas fa-xmark"></i> Cancel</button>
+          <button class="primary-cta" form="productOrderForm" type="submit"><i class="fas fa-floppy-disk"></i> Save product order</button>
+        </div>
       </div>
     </section>
 

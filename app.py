@@ -221,6 +221,10 @@ def normalize_product(product: dict) -> dict:
     product.setdefault("image", "/static/logo.png")
     product.setdefault("category", "general")
     product.setdefault("type", "product")
+    try:
+        product["displayOrder"] = int(product.get("displayOrder", product.get("sortOrder", product.get("order", 9999))))
+    except (TypeError, ValueError):
+        product["displayOrder"] = 9999
     product.setdefault("featured", False)
     product.setdefault("features", [])
     product.setdefault("store", {"enabled": True, "stockStatus": "In Stock", "options": []})
@@ -239,6 +243,8 @@ def seed_products_if_needed():
         except Exception:
             logger.exception("Could not seed MongoDB from products.json")
     products = [normalize_product(p) for p in products if isinstance(p, dict)]
+    for idx, product in enumerate(products):
+        product.setdefault("displayOrder", idx)
     if products:
         products_col.insert_many(products)
         logger.info("Seeded %d products into MongoDB", len(products))
@@ -385,6 +391,8 @@ app.config.update(
     DOWNLOADS_FROM_EMAIL=DOWNLOADS_FROM_EMAIL,
     SUPPORT_FROM_EMAIL=SUPPORT_FROM_EMAIL,
     RESEND_ENABLED=bool(RESEND_API_KEY),
+    APP_URL=APP_URL,
+    BRAND_LOGO_URL=BRAND_LOGO_URL,
 )
 
 # -----------------------------------------------------------------------------
@@ -676,13 +684,54 @@ def send_email_message(to_email: str, subject: str, text: str, html_body: str, s
         return False
 
 
+
+def brand_logo_html(size: int = 46) -> str:
+    """Return the same brand mark used by security/OTP emails."""
+    safe_app = html_escape.escape(APP_NAME)
+    if safe_logo:
+        return (
+            f'<img src="{safe_logo}" alt="{safe_app}" width="{size}" height="{size}" '
+            f'style="display:block;width:{size}px;height:{size}px;border-radius:14px;object-fit:cover;box-shadow:0 12px 30px rgba(172,89,255,.35);">'
+        )
+    initial = html_escape.escape((APP_NAME[:1] or "m").lower())
+    return (
+        f'<div style="width:{size}px;height:{size}px;border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#ec4899);'
+        f'display:grid;place-items:center;color:#fff;font-weight:900;font-size:20px;box-shadow:0 12px 30px rgba(172,89,255,.35);">{initial}</div>'
+    )
+
+
+def branded_email_shell(title: str, eyebrow: str, intro: str, body_html: str, cta_label: str = "Open account", cta_url: str | None = None, footer: str | None = None) -> str:
+    """Reusable production email layout so OTP, keys, password reset, and admin broadcasts match."""
+    safe_app = html_escape.escape(APP_NAME)
+    safe_app_url = html_escape.escape(APP_URL)
+    safe_title = html_escape.escape(title)
+    safe_eyebrow = html_escape.escape(eyebrow)
+    safe_intro = html_escape.escape(intro)
+    safe_cta_label = html_escape.escape(cta_label)
+    safe_cta_url = html_escape.escape(cta_url or APP_URL)
+    safe_footer = footer if footer is not None else f"Need help? Contact <a href='mailto:{html_escape.escape(SUPPORT_EMAIL)}' style='color:#e9d5ff;text-decoration:none;'>{html_escape.escape(SUPPORT_EMAIL)}</a>."
+    logo = brand_logo_html(46)
+    return f"""<!doctype html>
+<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe_title}</title></head>
+<body style=\"margin:0;background:#05020a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;\">
+  <div style=\"display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;\">{safe_intro}</div>
+  <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:radial-gradient(circle at top left,rgba(139,92,246,.25),transparent 34%),radial-gradient(circle at top right,rgba(236,72,153,.18),transparent 32%),#05020a;padding:34px 14px;\"><tr><td align=\"center\">
+    <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:650px;border-collapse:separate;border-spacing:0;background:linear-gradient(180deg,rgba(24,12,39,.98),rgba(8,5,15,.98));border:1px solid rgba(255,255,255,.12);border-radius:28px;overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,.55);\">
+      <tr><td style=\"padding:26px 28px;border-bottom:1px solid rgba(255,255,255,.08);\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td style=\"width:58px;vertical-align:middle;\">{logo}</td><td style=\"vertical-align:middle;\"><div style=\"font-size:20px;line-height:1.2;font-weight:900;letter-spacing:-.03em;color:#fff;\">{safe_app}</div><div style=\"font-size:13px;line-height:1.5;color:#b9a8d8;\">{html_escape.escape(eyebrow)}</div></td></tr></table></td></tr>
+      <tr><td style=\"padding:34px 28px 14px;text-align:center;\"><div style=\"display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(139,92,246,.16);border:1px solid rgba(216,180,254,.22);color:#e9d5ff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;\">{safe_eyebrow}</div><h1 style=\"margin:18px 0 10px;font-size:32px;line-height:1.1;letter-spacing:-.05em;color:#fff;\">{safe_title}</h1><p style=\"margin:0 auto;max-width:460px;color:#b9a8d8;font-size:15px;line-height:1.65;\">{safe_intro}</p></td></tr>
+      <tr><td style=\"padding:18px 28px 24px;\">{body_html}</td></tr>
+      <tr><td style=\"padding:0 28px 34px;text-align:center;\"><a href=\"{safe_cta_url}\" style=\"display:inline-block;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#db2777);padding:14px 22px;border-radius:14px;font-weight:950;box-shadow:0 16px 35px rgba(124,58,237,.28);\">{safe_cta_label}</a><p style=\"margin:20px 0 0;color:#8f80ad;font-size:12px;line-height:1.6;\">{safe_footer}</p></td></tr>
+    </table>
+    <div style=\"max-width:620px;margin:16px auto 0;color:#6f6288;font-size:11px;line-height:1.6;text-align:center;\">This email was sent by {safe_app}. Never share account codes or product keys with anyone you do not trust.</div>
+  </td></tr></table>
+</body></html>"""
+
 def send_security_email(to_email: str, code: str, purpose: str) -> bool:
     safe_purpose = html_escape.escape(str(purpose or "security").strip().title())
     safe_code = html_escape.escape(str(code))
     safe_app = html_escape.escape(APP_NAME)
     safe_app_url = html_escape.escape(APP_URL)
     safe_support = html_escape.escape(SUPPORT_EMAIL)
-    safe_logo = html_escape.escape(BRAND_LOGO_URL)
     subject = f"{APP_NAME} security code: {code}"
     text = (
         f"Your {APP_NAME} {purpose} code is: {code}\n\n"
@@ -690,12 +739,7 @@ def send_security_email(to_email: str, code: str, purpose: str) -> bool:
         f"Open {APP_URL} if you requested this.\n\n"
         f"If this was not you, ignore this email and contact {SUPPORT_EMAIL}."
     )
-    logo_html = (
-        f'<img src="{safe_logo}" alt="{safe_app}" width="46" height="46" '
-        'style="display:block;border-radius:14px;object-fit:cover;box-shadow:0 12px 30px rgba(172,89,255,.35);">'
-        if safe_logo else
-        f'<div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:grid;place-items:center;color:#fff;font-weight:900;font-size:20px;box-shadow:0 12px 30px rgba(172,89,255,.35);">m</div>'
-    )
+    logo_html = brand_logo_html(46)
     html = f"""<!doctype html>
 <html lang="en">
   <head>
@@ -882,7 +926,9 @@ def send_password_reset_email(to_email: str, reset_url: str) -> bool:
         f"Reset your {APP_NAME} password using this secure link: {reset_url}\n\n"
         "This link expires in 20 minutes. If you did not request it, ignore this email."
     )
-    html = f"""<!doctype html><html><body style='margin:0;background:#05020a;color:#fff;font-family:Arial,sans-serif;'><table width='100%' cellpadding='0' cellspacing='0' style='padding:34px 14px;background:#05020a;'><tr><td align='center'><table width='100%' cellpadding='0' cellspacing='0' style='max-width:620px;background:linear-gradient(180deg,#160b28,#07030d);border:1px solid rgba(255,255,255,.12);border-radius:26px;overflow:hidden;'><tr><td style='padding:28px;border-bottom:1px solid rgba(255,255,255,.08);'><div style='font-size:22px;font-weight:900;letter-spacing:-.03em;'>{safe_app}</div><div style='color:#b9a8d8;font-size:13px;margin-top:5px;'>Password recovery</div></td></tr><tr><td style='padding:34px 28px;text-align:center;'><div style='display:inline-block;padding:8px 13px;border:1px solid rgba(216,180,254,.28);border-radius:999px;color:#e9d5ff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;'>Secure reset</div><h1 style='font-size:32px;line-height:1.1;margin:18px 0 10px;color:#fff;'>Reset your password</h1><p style='color:#b9a8d8;line-height:1.65;margin:0 auto 24px;max-width:420px;'>Use the button below to create a new password. This link expires in 20 minutes.</p><a href='{safe_url}' style='display:inline-block;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#db2777);padding:14px 22px;border-radius:14px;font-weight:900;'>Reset password</a><p style='margin:24px 0 0;color:#7e7191;font-size:12px;line-height:1.6;'>Did not request this? Ignore this email or contact {safe_support}.</p></td></tr></table></td></tr></table></body></html>"""
+    body_html = f"""<div style='border-radius:22px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);padding:20px;text-align:center;'><p style='margin:0;color:#d9c5ff;line-height:1.65;'>Click the button below to create a new password. This secure link expires in 20 minutes.</p></div>"""
+    html = branded_email_shell("Reset your password", "Password recovery", "Use this secure link to reset your password for your moealturej account.", body_html, "Reset password", reset_url)
+
     return send_email_message(to_email, subject, text, html, "Security")
 
 
@@ -898,6 +944,41 @@ def send_html_email(to_email: str, subject: str, text: str, html_body: str, send
     return send_email_message(to_email, subject, text, html_body, sender_label)
 
 
+def build_admin_broadcast_email(subject: str, message: str, cta_label: str = "Open moealturej", cta_url: str | None = None) -> tuple[str, str, str]:
+    clean_subject = str(subject or "moealturej update").strip()[:120] or "moealturej update"
+    clean_message = str(message or "").strip()
+    safe_lines = "".join(f"<p style='margin:0 0 14px;color:#d9c5ff;line-height:1.7;'>{html_escape.escape(line)}</p>" for line in clean_message.splitlines() if line.strip())
+    if not safe_lines:
+        safe_lines = "<p style='margin:0;color:#d9c5ff;line-height:1.7;'>There is a new account update from moealturej.</p>"
+    body_html = f"<div style='border-radius:22px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);padding:20px;'>{safe_lines}</div>"
+    text = f"{clean_subject}\n\n{clean_message}\n\n{APP_URL}"
+    html = branded_email_shell(clean_subject, "Account update", "A new update from moealturej.", body_html, cta_label or "Open moealturej", cta_url or APP_URL)
+    return clean_subject, text, html
+
+
+def parse_admin_email_recipients() -> list[str]:
+    mode = (request.form.get("recipient_mode") or "manual").strip().lower()
+    manual = request.form.get("manual_recipients") or ""
+    selected = request.form.getlist("selected_recipients")
+    recipients: set[str] = set()
+    if mode == "all":
+        for user in load_admin_users():
+            email = str(user.get("email") or "").strip().lower()
+            if email and "@" in email and user.get("status") != "suspended":
+                recipients.add(email)
+    elif mode == "selected":
+        for email in selected:
+            email = str(email or "").strip().lower()
+            if email and "@" in email:
+                recipients.add(email)
+    else:
+        for email in re.split(r"[\s,;]+", manual):
+            email = email.strip().lower()
+            if email and "@" in email:
+                recipients.add(email)
+    return sorted(recipients)
+
+
 def build_key_delivery_email(to_email: str, order: dict, item: dict, product_key: str, note: str = "") -> tuple[str, str, str]:
     safe_app = html_escape.escape(APP_NAME)
     safe_support = html_escape.escape(SUPPORT_EMAIL)
@@ -906,7 +987,7 @@ def build_key_delivery_email(to_email: str, order: dict, item: dict, product_key
     safe_option = html_escape.escape(str(item.get("option_name", "")))
     safe_key = html_escape.escape(str(product_key))
     safe_note = html_escape.escape(str(note or ""))
-    safe_url = html_escape.escape(APP_URL + "/account")
+    safe_url = APP_URL + "/account"
     subject = f"Your {safe_product} key is ready"
     text = (
         f"Your {APP_NAME} product key is ready.\n\n"
@@ -916,14 +997,9 @@ def build_key_delivery_email(to_email: str, order: dict, item: dict, product_key
         f"View it in your account: {APP_URL}/account\n"
         f"Need help? Contact {SUPPORT_EMAIL}."
     )
-    html = f"""<!doctype html><html><body style='margin:0;background:#05020a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;'>
-<table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='background:radial-gradient(circle at top left,rgba(139,92,246,.28),transparent 34%),#05020a;padding:34px 14px;'><tr><td align='center'>
-<table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='max-width:650px;background:linear-gradient(180deg,#180c2c,#07030d);border:1px solid rgba(255,255,255,.12);border-radius:28px;overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,.55);'>
-<tr><td style='padding:26px 28px;border-bottom:1px solid rgba(255,255,255,.08);'><div style='font-size:22px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:#fff;'>{safe_app}</div><div style='color:#b9a8d8;font-size:13px;margin-top:6px;'>Digital product delivery</div></td></tr>
-<tr><td style='padding:34px 28px;text-align:center;'><div style='display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(57,229,140,.12);border:1px solid rgba(57,229,140,.24);color:#c8ffe0;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;'>Key ready</div><h1 style='margin:18px 0 10px;font-size:34px;line-height:1.08;letter-spacing:-.05em;'>Your product key is ready</h1><p style='margin:0 auto;color:#b9a8d8;line-height:1.65;max-width:460px;'>Thanks for your purchase. Your key is also saved securely inside your account order history.</p></td></tr>
-<tr><td style='padding:0 28px 28px;'><div style='border-radius:22px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);padding:20px;'><div style='font-size:13px;color:#a999c3;font-weight:800;text-transform:uppercase;letter-spacing:.08em;'>Product</div><div style='font-size:19px;font-weight:900;margin-top:6px;'>{safe_product} <span style='color:#b9a8d8;font-size:14px;'>— {safe_option}</span></div><div style='font-size:13px;color:#a999c3;margin-top:8px;'>Order {safe_order}</div><div style='margin-top:18px;padding:16px;border-radius:16px;background:#08040f;border:1px dashed rgba(216,180,254,.35);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:18px;font-weight:900;letter-spacing:.04em;word-break:break-all;color:#fff;'>{safe_key}</div>{('<p style="margin:14px 0 0;color:#d9c5ff;line-height:1.6;">' + safe_note + '</p>') if safe_note else ''}</div></td></tr>
-<tr><td style='padding:0 28px 34px;text-align:center;'><a href='{safe_url}' style='display:inline-block;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#db2777);padding:14px 22px;border-radius:14px;font-weight:950;'>Open account</a><p style='margin:20px 0 0;color:#8f80ad;font-size:12px;line-height:1.6;'>Need help? Contact <a href='mailto:{safe_support}' style='color:#e9d5ff;text-decoration:none;'>{safe_support}</a>.</p></td></tr>
-</table></td></tr></table></body></html>"""
+    body_html = f"""<div style='border-radius:22px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);padding:20px;'><div style='font-size:13px;color:#a999c3;font-weight:800;text-transform:uppercase;letter-spacing:.08em;'>Product</div><div style='font-size:19px;font-weight:900;margin-top:6px;color:#fff;'>{safe_product} <span style='color:#b9a8d8;font-size:14px;'>— {safe_option}</span></div><div style='font-size:13px;color:#a999c3;margin-top:8px;'>Order {safe_order}</div><div style='margin-top:18px;padding:16px;border-radius:16px;background:#08040f;border:1px dashed rgba(216,180,254,.35);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:18px;font-weight:900;letter-spacing:.04em;word-break:break-all;color:#fff;'>{safe_key}</div>{('<p style="margin:14px 0 0;color:#d9c5ff;line-height:1.6;">' + safe_note + '</p>') if safe_note else ''}</div>"""
+    html = branded_email_shell("Your product key is ready", "Digital product delivery", "Thanks for your purchase. Your key is saved securely inside your account order history.", body_html, "Open account", safe_url)
+
     return subject, text, html
 
 
@@ -1475,7 +1551,8 @@ def load_products() -> list:
     """Load product data from MongoDB when configured, otherwise JSON."""
     if using_mongo():
         try:
-            return [normalize_product(p) for p in products_col.find({}, {"_id": 0}).sort("name", 1)]
+            products = [normalize_product(p) for p in products_col.find({}, {"_id": 0})]
+            return sorted(products, key=lambda p: (int(p.get("displayOrder", 9999)), str(p.get("name", "")).lower()))
         except Exception:
             logger.exception("Failed to read products from MongoDB. Falling back to JSON.")
 
@@ -1489,7 +1566,8 @@ def load_products() -> list:
         if not isinstance(data, list):
             logger.warning("Products JSON is not a list.")
             return []
-        return [normalize_product(p) for p in data if isinstance(p, dict)]
+        products = [normalize_product(p) for p in data if isinstance(p, dict)]
+        return sorted(products, key=lambda p: (int(p.get("displayOrder", 9999)), str(p.get("name", "")).lower()))
     except json.JSONDecodeError:
         logger.exception("Failed to decode products JSON.")
         return []
@@ -2971,6 +3049,38 @@ def admin_site_settings():
     return redirect(url_for("admin_dashboard") + "#owner")
 
 
+@app.route("/admin/email/send", methods=["POST"])
+@owner_required
+def admin_custom_email_send():
+    if not verify_csrf():
+        abort(400)
+    subject = (request.form.get("email_subject") or "").strip()
+    message = (request.form.get("email_message") or "").strip()
+    cta_label = (request.form.get("email_cta_label") or "Open moealturej").strip()[:60]
+    cta_url = (request.form.get("email_cta_url") or APP_URL).strip() or APP_URL
+    recipients = parse_admin_email_recipients()
+    if not subject or not message:
+        flash("Add a subject and message before sending.", "danger")
+        return redirect(url_for("admin_dashboard") + "#emails")
+    if not recipients:
+        flash("Choose at least one recipient.", "danger")
+        return redirect(url_for("admin_dashboard") + "#emails")
+    built_subject, text, html_body = build_admin_broadcast_email(subject, message, cta_label, cta_url)
+    sent = 0
+    failed = 0
+    for email in recipients[:500]:
+        if send_html_email(email, built_subject, text, html_body, "Notifications"):
+            sent += 1
+        else:
+            failed += 1
+    record_audit("email.broadcast", "admin", {"subject": built_subject, "sent": sent, "failed": failed, "requested": len(recipients)})
+    if failed:
+        flash(f"Custom email sent to {sent} recipient(s). {failed} failed; check Render logs/Resend.", "warning")
+    else:
+        flash(f"Custom email sent to {sent} recipient(s).", "success")
+    return redirect(url_for("admin_dashboard") + "#emails")
+
+
 @app.route("/admin/discounts", methods=["POST"])
 @owner_required
 def admin_discounts_update():
@@ -3144,6 +3254,46 @@ def admin_application_delete(app_id):
     return redirect(url_for("admin_dashboard") + "#applications")
 
 
+
+@app.route("/admin/products/reorder", methods=["POST"])
+@owner_required
+def admin_products_reorder():
+    raw_order = request.form.get("product_order", "").strip()
+    slugs = [clean_slug(item) for item in raw_order.split(",") if clean_slug(item)]
+    if not slugs:
+        flash("No product order was submitted.", "warning")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    products = load_products()
+    product_map = {str(p.get("slug", "")).lower(): p for p in products}
+    missing = [slug for slug in slugs if slug not in product_map]
+    if missing:
+        flash("Some products could not be found, so the order was not saved.", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    touched = set()
+    for index, slug in enumerate(slugs):
+        product = product_map[slug]
+        product["displayOrder"] = index
+        touched.add(slug)
+
+    next_index = len(slugs)
+    for product in products:
+        slug = str(product.get("slug", "")).lower()
+        if slug not in touched:
+            product["displayOrder"] = next_index
+            next_index += 1
+
+    if using_mongo():
+        for product in products:
+            products_col.update_one({"slug": product["slug"]}, {"$set": {"displayOrder": int(product.get("displayOrder", 9999))}})
+    else:
+        save_products_file(sorted(products, key=lambda p: (int(p.get("displayOrder", 9999)), str(p.get("name", "")).lower())))
+
+    record_audit("products.reordered", "products", {"count": len(slugs), "order": slugs})
+    flash("Product order saved.", "success")
+    return redirect(url_for("admin_dashboard") + "#products")
+
 @app.route("/admin/product/new", methods=["POST"])
 @owner_required
 def admin_product_new():
@@ -3166,6 +3316,7 @@ def admin_product_new():
         "image": request.form.get("image", "/static/logo.png"),
         "category": request.form.get("category", "general"),
         "type": "product",
+        "displayOrder": len(load_products()),
         "featured": bool(request.form.get("featured")),
         "features": [],
         "store": {"enabled": bool(request.form.get("store_enabled")), "stockStatus": "In Stock", "options": store_options},
