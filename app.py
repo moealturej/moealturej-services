@@ -686,8 +686,14 @@ def send_email_message(to_email: str, subject: str, text: str, html_body: str, s
 
 
 def brand_logo_html(size: int = 46) -> str:
-    """Return the same brand mark used by security/OTP emails."""
+    """Return the same brand mark used by security/OTP emails.
+
+    Email clients need an absolute image URL. Prefer BRAND_LOGO_URL from .env,
+    otherwise fall back to the public /static/logo.png on APP_URL.
+    """
     safe_app = html_escape.escape(APP_NAME)
+    logo_url = (BRAND_LOGO_URL or f"{APP_URL}/static/logo.png").strip()
+    safe_logo = html_escape.escape(logo_url, quote=True) if logo_url else ""
     if safe_logo:
         return (
             f'<img src="{safe_logo}" alt="{safe_app}" width="{size}" height="{size}" '
