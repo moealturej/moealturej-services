@@ -242,6 +242,7 @@ updatePricingButtons();
     <div><strong>{{ stats.users }}</strong><span>Accounts</span></div>
     <div><strong>{{ stats.media }}</strong><span>Uploads</span></div>
     <div><strong>{{ stats.orders }}</strong><span>Orders</span></div>
+    <div><strong>{{ stats.support_tickets }}</strong><span>Support tickets</span></div>
     <div><strong>{{ stats.applications }}</strong><span>Applications</span></div>
     <div><strong>{{ stats.storage }}</strong><span>Storage</span></div>
   </section>
@@ -252,6 +253,7 @@ updatePricingButtons();
     <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Add product</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
     <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
+    <a class="admin-tab" href="#support"><i class="fas fa-headset"></i> Support</a>
     <a class="admin-tab" href="#applications"><i class="fas fa-clipboard-list"></i> Applications</a>
     <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
     <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
@@ -582,6 +584,23 @@ updatePricingButtons();
       </div>
     </section>
 
+    <section class="admin-card admin-section" id="support">
+      <div class="section-top"><div><div class="eyebrow">purchase support</div><h2>Support tickets</h2><p class="muted">Tickets are locked to paid orders and product rows. Assign users the <strong>Support only</strong> role so they can handle this inbox without product/account admin access.</p></div><a class="secondary-cta" href="{{ url_for('support_staff') }}"><i class="fas fa-up-right-from-square"></i> Open staff inbox</a></div>
+      <div class="users-grid">
+        {% for ticket in support_tickets[:25] %}
+        <article class="user-row">
+          <div class="user-head"><div><div class="user-email">{{ ticket.ticket_id }} · {{ ticket.subject }}</div><p class="muted">{{ ticket.user_email }} · {{ ticket.product_name }} / {{ ticket.option_name }} · order {{ ticket.order_id }}</p><div class="user-meta"><span class="owner-badge {{ 'active-badge' if ticket.status in ['open','waiting'] else '' }}">{{ ticket.status }}</span><span class="owner-badge"><i class="fas fa-paperclip"></i> {{ (ticket.messages or [])|length }} messages</span></div></div></div>
+          <div class="user-forms">
+            <a class="small-btn" href="{{ url_for('support_ticket_detail', ticket_id=ticket.ticket_id) }}"><i class="fas fa-reply"></i> View / reply</a>
+            <form class="inline-form" action="{{ url_for('support_ticket_status', ticket_id=ticket.ticket_id) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status"><option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Open</option><option value="waiting" {% if ticket.status == 'waiting' %}selected{% endif %}>Waiting</option><option value="answered" {% if ticket.status == 'answered' %}selected{% endif %}>Answered</option><option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Closed</option></select><button class="small-btn" type="submit">Status</button></form>
+            <form class="inline-form" action="{{ url_for('support_ticket_delete', ticket_id=ticket.ticket_id) }}" method="post" onsubmit="return confirm('Delete ticket and all uploaded support files?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn compact" type="submit"><i class="fas fa-trash"></i> Delete + files</button></form>
+          </div>
+        </article>
+        {% else %}<p class="muted">No support tickets yet.</p>{% endfor %}
+      </div>
+    </section>
+
+
     <section class="admin-card admin-section" id="accounts">
       <div class="section-top"><div><div class="eyebrow">account control</div><h2>Users & permissions</h2><p class="muted">Change roles, suspend accounts, reset passwords, or delete users. MongoDB is required for real account management.</p></div></div>
       <div class="users-grid">
@@ -589,7 +608,7 @@ updatePricingButtons();
         <article class="user-row">
           <div class="user-head"><div><div class="user-email">{{ user.email }}</div><p class="muted">@{{ user.username or user.discord_global_name or 'user' }} · role {{ user.role or 'user' }}</p><div class="user-meta">{% if user.is_owner %}<span class="owner-badge"><i class="fas fa-crown"></i> Owner</span>{% endif %}<span class="owner-badge {{ 'suspended-badge' if user.status == 'suspended' else 'active-badge' }}">{{ user.status or 'active' }}</span>{% if user.discord_id %}<span class="owner-badge discord-badge"><i class="fab fa-discord"></i> Discord linked</span>{% endif %}</div></div></div>
           <div class="user-forms">
-            <form class="inline-form" action="{{ url_for('admin_user_role', email=user.email) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="role"><option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option><option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option><option value="owner" {% if user.role == 'owner' %}selected{% endif %}>Owner</option></select><button class="small-btn" type="submit">Save role</button></form>
+            <form class="inline-form" action="{{ url_for('admin_user_role', email=user.email) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="role"><option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option><option value="support" {% if user.role == 'support' %}selected{% endif %}>Support only</option><option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option><option value="owner" {% if user.role == 'owner' %}selected{% endif %}>Owner</option></select><button class="small-btn" type="submit">Save role</button></form>
             <form class="inline-form" action="{{ url_for('admin_user_status', email=user.email) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status"><option value="active" {% if user.status != 'suspended' %}selected{% endif %}>Active</option><option value="suspended" {% if user.status == 'suspended' %}selected{% endif %}>Suspended</option></select><button class="small-btn" type="submit">Save status</button></form>
             <form class="inline-form" action="{{ url_for('admin_user_password', email=user.email) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="password" type="password" minlength="8" placeholder="New password"><button class="small-btn" type="submit">Reset pass</button></form>
             <form class="inline-form" action="{{ url_for('admin_user_delete', email=user.email) }}" method="post" onsubmit="return confirm('Delete {{ user.email }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn compact" type="submit"><i class="fas fa-user-slash"></i> Delete</button></form>

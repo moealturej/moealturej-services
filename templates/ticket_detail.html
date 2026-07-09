@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.ticket_id }} | Support{% endblock %}
+{% block extra_head %}
+<style>
+.ticket-page{padding-top:28px}.ticket-shell{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px}.ticket-main,.ticket-side{padding:22px;border-radius:28px;background:linear-gradient(180deg,rgba(18,9,33,.74),rgba(7,3,15,.66));border:1px solid rgba(216,180,254,.14);box-shadow:0 22px 70px rgba(0,0,0,.30);backdrop-filter:blur(16px)}.ticket-title{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}.ticket-title h1{margin:6px 0 6px;font-size:clamp(30px,5vw,54px);line-height:1;letter-spacing:-.06em}.status-pill{padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#eadfff;font-size:11px;font-weight:950;text-transform:uppercase}.messages{display:grid;gap:12px}.msg{padding:14px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}.msg.staff{background:linear-gradient(180deg,rgba(168,85,247,.12),rgba(255,255,255,.03));border-color:rgba(216,180,254,.18)}.msg-head{display:flex;justify-content:space-between;gap:10px;color:#d8b4fe;font-size:12px;font-weight:950;text-transform:uppercase}.msg-body{margin-top:9px;color:#efe7ff;line-height:1.65;white-space:pre-wrap}.attach-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.attach-list a{padding:8px 10px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);color:#fff;text-decoration:none;font-size:12px;font-weight:850}.reply-form{display:grid;gap:12px;margin-top:16px}.reply-form textarea,.reply-form input,.ticket-side select{width:100%;border-radius:16px;border:1px solid rgba(216,180,254,.14);background:rgba(0,0,0,.22);color:#fff;padding:12px;outline:none}.ticket-product{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:center}.ticket-product img{width:72px;height:72px;border-radius:18px;object-fit:cover}.ticket-product h3{margin:0;color:#fff}.ticket-product p,.ticket-side p{color:var(--muted);line-height:1.55}.side-actions{display:grid;gap:10px;margin-top:14px}.side-actions form{display:grid;gap:8px}@media(max-width:900px){.ticket-shell{grid-template-columns:1fr}.ticket-title{display:grid}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="page-section ticket-page"><div class="container"><div class="ticket-shell">
+  <main class="ticket-main">
+    <div class="ticket-title"><div><div class="eyebrow">{{ ticket.ticket_id }}</div><h1>{{ ticket.subject }}</h1><p class="muted">{{ ticket.product_name }} · {{ ticket.option_name }} · Order {{ ticket.order_id }}</p></div><span class="status-pill">{{ ticket.status }}</span></div>
+    <div class="messages">
+      {% for msg in ticket.messages %}
+      <article class="msg {{ 'staff' if msg.actor_kind == 'staff' else 'customer' }}"><div class="msg-head"><span>{{ 'Staff' if msg.actor_kind == 'staff' else 'Customer' }} · {{ msg.actor.username or msg.actor.email }}</span><span>{{ msg.created_at }}</span></div><div class="msg-body">{{ msg.body }}</div>{% if msg.attachments %}<div class="attach-list">{% for file in msg.attachments %}<a href="{{ file.url }}" target="_blank"><i class="fas fa-paperclip"></i> {{ file.original_name }}</a>{% endfor %}</div>{% endif %}</article>
+      {% endfor %}
+    </div>
+    {% if ticket.status != 'closed' or staff_view %}
+    <form class="reply-form" action="{{ url_for('support_ticket_reply', ticket_id=ticket.ticket_id) }}" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="message" rows="5" maxlength="3000" required placeholder="Write a reply..."></textarea>
+      <input type="file" name="attachments" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.txt,.pdf,.zip,.rar,.7z,.json">
+      <button class="primary-cta" type="submit"><i class="fas fa-paper-plane"></i> Send reply</button>
+    </form>
+    {% else %}<p class="muted">This ticket is closed.</p>{% endif %}
+  </main>
+  <aside class="ticket-side">
+    <div class="ticket-product"><img src="{{ ticket.product_image or '/static/logo.png' }}" alt=""><div><h3>{{ ticket.product_name }}</h3><p>{{ ticket.option_name }}</p></div></div>
+    <p><strong>Customer:</strong><br>{{ ticket.user_email }}</p><p><strong>Last updated:</strong><br>{{ ticket.updated_at }}</p>
+    <div class="side-actions"><a class="secondary-cta" href="{{ url_for('support') }}"><i class="fas fa-arrow-left"></i> My support</a>{% if staff_view %}<a class="secondary-cta" href="{{ url_for('support_staff') }}"><i class="fas fa-inbox"></i> Staff inbox</a><form action="{{ url_for('support_ticket_status', ticket_id=ticket.ticket_id) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status"><option value="open" {% if ticket.status=='open' %}selected{% endif %}>Open</option><option value="waiting" {% if ticket.status=='waiting' %}selected{% endif %}>Waiting</option><option value="answered" {% if ticket.status=='answered' %}selected{% endif %}>Answered</option><option value="closed" {% if ticket.status=='closed' %}selected{% endif %}>Closed</option></select><button class="small-btn" type="submit">Update status</button></form><form action="{{ url_for('support_ticket_delete', ticket_id=ticket.ticket_id) }}" method="post" onsubmit="return confirm('Delete this ticket and uploaded files?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete ticket/files</button></form>{% endif %}</div>
+  </aside>
+</div></div></section>
+{% endblock %}

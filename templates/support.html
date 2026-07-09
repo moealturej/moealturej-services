@@ -1,180 +1,43 @@
 {% extends "base.html" %}
 {% block title %}Support | moealturej{% endblock %}
-
 {% block extra_head %}
 <style>
-  .support-page {
-    padding-top: 24px;
-  }
-
-  .support-shell {
-    padding: 34px;
-    text-align: center;
-    max-width: 940px;
-    margin: 0 auto;
-    border: 1px solid rgba(88, 101, 242, 0.18);
-    box-shadow:
-      0 24px 60px rgba(0,0,0,0.35),
-      0 0 60px rgba(88, 101, 242, 0.08);
-  }
-
-  .support-shell h1 {
-    margin: 18px 0 14px;
-    font-size: clamp(44px, 7vw, 78px);
-  }
-
-  .support-shell p {
-    max-width: 660px;
-    margin: 0 auto 24px;
-    font-size: 15px;
-  }
-
-  .discord-card {
-    margin-top: 20px;
-    padding: 28px;
-    border-radius: 28px;
-    background:
-      radial-gradient(circle at top center, rgba(88, 101, 242, 0.18), transparent 45%),
-      linear-gradient(180deg, rgba(20, 24, 42, 0.96), rgba(10, 12, 22, 0.98));
-    border: 1px solid rgba(88, 101, 242, 0.22);
-    display: grid;
-    gap: 18px;
-    justify-items: center;
-    box-shadow:
-      0 20px 50px rgba(0,0,0,0.30),
-      0 0 40px rgba(88, 101, 242, 0.10);
-  }
-
-  .discord-icon {
-    width: 84px;
-    height: 84px;
-    border-radius: 24px;
-    display: grid;
-    place-items: center;
-    font-size: 34px;
-    color: #fff;
-    background: linear-gradient(180deg, #5865F2, #4752C4);
-    box-shadow: 0 18px 40px rgba(88, 101, 242, 0.35);
-  }
-
-  .discord-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 22px;
-    border-radius: 18px;
-    font-size: 15px;
-    font-weight: 900;
-    background: linear-gradient(180deg, #5865F2, #4752C4);
-    color: white;
-    box-shadow: 0 14px 32px rgba(88, 101, 242, 0.30);
-  }
-
-  .discord-link:hover {
-    transform: translateY(-2px);
-  }
-
-  .discord-note {
-    color: #b8c0ff;
-    font-size: 13px;
-    font-weight: 700;
-  }
-
-  .support-mini {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0,1fr));
-    gap: 14px;
-    margin-top: 20px;
-  }
-
-  .support-mini-card {
-    padding: 20px;
-    border-radius: 20px;
-    background: rgba(88, 101, 242, 0.06);
-    border: 1px solid rgba(88, 101, 242, 0.14);
-  }
-
-  .support-mini-card h3 {
-    margin: 0 0 8px;
-    font-size: 15px;
-    color: #ffffff;
-  }
-
-  .support-mini-card p {
-    margin: 0;
-    font-size: 13px;
-    color: #c6cbff;
-  }
-
-  @media (max-width: 720px) {
-    .support-shell {
-      padding: 22px 18px;
-    }
-
-    .support-mini {
-      grid-template-columns: 1fr;
-    }
-  }
+.support-page{padding-top:28px}.support-shell{display:grid;gap:18px}.support-hero,.support-panel{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(18,9,33,.76),rgba(7,3,15,.66));border:1px solid rgba(216,180,254,.14);box-shadow:0 24px 70px rgba(0,0,0,.32);backdrop-filter:blur(16px)}.support-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;overflow:hidden;position:relative}.support-hero:before{content:"";position:absolute;inset:-1px;background:radial-gradient(circle at 80% 0%,rgba(168,85,247,.20),transparent 36%);pointer-events:none}.support-hero>*{position:relative}.support-hero h1{margin:8px 0 10px;font-size:clamp(42px,7vw,78px);line-height:.92;letter-spacing:-.075em}.support-hero p,.support-panel p{color:var(--muted);line-height:1.65}.ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.ticket-form{display:grid;gap:12px}.ticket-form label{display:grid;gap:7px;color:#eadfff;font-weight:900;font-size:13px}.ticket-form input,.ticket-form select,.ticket-form textarea{width:100%;min-height:46px;border-radius:16px;border:1px solid rgba(216,180,254,.14);background:rgba(0,0,0,.22);color:#fff;padding:12px 13px;outline:none}.ticket-form textarea{resize:vertical}.ticket-note{padding:13px;border-radius:16px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.15);color:#d9c5ff;line-height:1.55;font-size:13px}.ticket-list{display:grid;gap:12px}.ticket-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-decoration:none;color:inherit}.ticket-card:hover{border-color:rgba(216,180,254,.25);transform:translateY(-1px)}.ticket-card img{width:56px;height:56px;border-radius:15px;object-fit:cover;background:#08040f}.ticket-card h3{margin:0;color:#fff;font-size:15px}.ticket-card p{margin:5px 0 0;font-size:12px}.ticket-status{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:950;text-transform:uppercase;color:#eadfff;white-space:nowrap}.empty-box{padding:28px 18px;border-radius:22px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075);text-align:center;color:var(--muted)}.empty-box i{font-size:30px;color:#d8b4fe;margin-bottom:10px}@media(max-width:900px){.support-hero,.ticket-grid{grid-template-columns:1fr}.ticket-card{grid-template-columns:48px minmax(0,1fr)}.ticket-status{grid-column:1/-1;width:max-content}}
 </style>
 {% endblock %}
-
 {% block content %}
-<section class="page-section support-page">
-  <div class="container">
-    <section class="hero-shell support-shell">
-      <div class="eyebrow">moealturej support</div>
-
-      <h1>Support via <span style="color:#5865F2;">Discord</span></h1>
-
-      <p>
-        All customer support, purchase help, setup assistance,
-        and product troubleshooting is handled through Discord.
-      </p>
-
-      <div class="discord-card">
-        <div class="discord-icon">
-          <i class="fab fa-discord"></i>
-        </div>
-
-        <div>
-          <h2 style="margin:0 0 10px;font-size:clamp(26px,4vw,40px);">
-            Join the support server
-          </h2>
-          <p style="margin:0;">
-            Open a ticket, ask questions, or get direct assistance from the team.
-          </p>
-        </div>
-
-        <a href="https://discord.gg/moealturej"
-           target="_blank"
-           rel="noopener noreferrer"
-           class="discord-link">
-          <i class="fab fa-discord"></i>
-          discord.gg/moealturej
-        </a>
-
-        <div class="discord-note">
-          Fastest response times and all support handled directly in server.
-        </div>
-      </div>
-
-      <div class="support-mini">
-        <div class="support-mini-card">
-          <h3>Order Help</h3>
-          <p>Purchase issues, account access, and checkout support.</p>
-        </div>
-
-        <div class="support-mini-card">
-          <h3>Product Help</h3>
-          <p>Loader setup, usage questions, and troubleshooting.</p>
-        </div>
-
-        <div class="support-mini-card">
-          <h3>Announcements</h3>
-          <p>Updates, outages, maintenance, and release notes.</p>
-        </div>
+<section class="page-section support-page"><div class="container"><div class="support-shell">
+  <section class="support-hero">
+    <div><div class="eyebrow">purchase support</div><h1>Support tickets</h1><p>Open a ticket only from a paid order, attach screenshots/files, and keep the full conversation tied to the exact product you bought.</p></div>
+    {% if current_user and (current_user.role in ['support','admin','owner'] or current_user.is_owner) %}<a class="secondary-cta" href="{{ url_for('support_staff') }}"><i class="fas fa-inbox"></i> Staff inbox</a>{% endif %}
+  </section>
+  <div class="ticket-grid">
+    <section class="support-panel">
+      <div class="eyebrow">new ticket</div><h2>Create ticket</h2><p>Only paid purchases show here, so support stays clean and you do not get random unsold-product tickets.</p>
+      {% if orders %}
+      <form class="ticket-form" action="{{ url_for('support_ticket_create') }}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Paid order / product<select name="order_item" id="orderItemSelect" onchange="syncOrderItem()">
+          {% for order in orders %}{% for item in order.cart.get('items', []) if order.cart %}<option value="{{ order.order_id }}::{{ loop.index0 }}">{{ item.product_name }} — {{ item.option_name }} · {{ order.order_id }}</option>{% endfor %}{% endfor %}
+        </select></label>
+        <input type="hidden" name="order_id" id="orderIdInput"><input type="hidden" name="item_index" id="itemIndexInput" value="0">
+        <label>Subject<input name="subject" maxlength="120" placeholder="Example: Key not working / loader issue"></label>
+        <label>Message<textarea name="message" rows="6" maxlength="3000" required placeholder="Explain the issue, what you tried, and any error shown."></textarea></label>
+        <label>Helpful files / screenshots<input type="file" name="attachments" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.txt,.pdf,.zip,.rar,.7z,.json"></label>
+        <div class="ticket-note"><i class="fas fa-shield-halved"></i> Max {{ config.MAX_SUPPORT_ATTACHMENT_MB if config.MAX_SUPPORT_ATTACHMENT_MB is defined else 8 }}MB per file and only safe support file types are allowed.</div>
+        <button class="primary-cta" type="submit"><i class="fas fa-paper-plane"></i> Create ticket</button>
+      </form>
+      {% else %}<div class="empty-box"><i class="fas fa-lock"></i><strong>No paid purchases yet</strong><p>Buy a product first, then a support button will appear for that exact purchase.</p><a class="primary-cta" href="/store"><i class="fas fa-store"></i> Browse store</a></div>{% endif %}
+    </section>
+    <section class="support-panel">
+      <div class="eyebrow">your inbox</div><h2>Current tickets</h2><p>Email updates are sent when staff replies. Customer replies also ping the Discord support webhook.</p>
+      <div class="ticket-list">
+      {% for ticket in tickets %}
+        <a class="ticket-card" href="{{ url_for('support_ticket_detail', ticket_id=ticket.ticket_id) }}"><img src="{{ ticket.product_image or '/static/logo.png' }}" alt=""><div><h3>{{ ticket.subject }}</h3><p>{{ ticket.product_name }} · {{ ticket.ticket_id }} · {{ ticket.updated_at }}</p></div><span class="ticket-status">{{ ticket.status }}</span></a>
+      {% else %}<div class="empty-box"><i class="fas fa-comments"></i><strong>No tickets yet</strong><p>Open one from a paid order when you need help.</p></div>{% endfor %}
       </div>
     </section>
   </div>
-</section>
+</div></div></section>
+<script>function syncOrderItem(){const s=document.getElementById('orderItemSelect');if(!s)return;const parts=(s.value||'::0').split('::');document.getElementById('orderIdInput').value=parts[0]||'';document.getElementById('itemIndexInput').value=parts[1]||'0';}syncOrderItem();</script>
 {% endblock %}

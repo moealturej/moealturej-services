@@ -38,11 +38,15 @@ FILES_DIR = DATA_DIR / "files"
 UPLOADS_DIR = DATA_DIR / "uploads"
 MEDIA_FILE = DATA_DIR / "media.json"
 ORDERS_FILE = DATA_DIR / "orders.json"
+SUPPORT_TICKETS_FILE = DATA_DIR / "support_tickets.json"
+SUPPORT_UPLOADS_DIR = DATA_DIR / "support_uploads"
 SETTINGS_FILE = DATA_DIR / "site_settings.json"
 DISCOUNT_CODE_MAX_LEN = 32
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 ALLOWED_FILE_EXTENSIONS = {"zip", "rar", "7z", "pdf", "txt", "json", "png", "jpg", "jpeg", "gif", "webp"}
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "30"))
+MAX_SUPPORT_ATTACHMENT_MB = max(1, min(15, int(os.getenv("MAX_SUPPORT_ATTACHMENT_MB", "8"))))
+MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE = max(1, min(5, int(os.getenv("MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE", "3"))))
 
 FLASK_ENV = os.getenv("FLASK_ENV", "development").lower()
 IS_PRODUCTION = FLASK_ENV == "production"
@@ -134,6 +138,7 @@ APP_URL = os.getenv("APP_URL", "https://moealturej.com").strip().rstrip("/")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", RESEND_REPLY_TO or OWNER_EMAIL).strip()
 BRAND_LOGO_URL = os.getenv("BRAND_LOGO_URL", "").strip()
 OWNER_ORDER_WEBHOOK_URL = env_first("OWNER_ORDER_WEBHOOK_URL", "ORDER_WEBHOOK_URL", "DISCORD_ORDER_WEBHOOK_URL")
+SUPPORT_TICKET_WEBHOOK_URL = env_first("SUPPORT_TICKET_WEBHOOK_URL", "DISCORD_SUPPORT_WEBHOOK_URL", default="https://discord.com/api/webhooks/1367237331735678986/bGwY8l7JXSksdnys1erTvQ1e7kKv08p7C7Z0odUwuRcx4E3EDlgj3vosmTZMywyDRyso")
 DELIVERY_DM_ENABLED = os.getenv("DELIVERY_DM_ENABLED", "true").lower() == "true"
 
 # Reselling.pro auto key delivery. Keep the API key in .env only. Product/option
@@ -162,11 +167,11 @@ settings_col = None
 media_col = None
 audit_col = None
 orders_col = None
-media_fs = None
+support_tickets_col = None
 media_fs = None
 
 def init_mongo():
-    global mongo_client, db, mongo_status_reason, products_col, users_col, settings_col, media_col, audit_col, orders_col, media_fs
+    global mongo_client, db, mongo_status_reason, products_col, users_col, settings_col, media_col, audit_col, orders_col, support_tickets_col, media_fs
     if not MONGO_URI:
         mongo_status_reason = "MONGO_URI is empty in .env, so the app is using local JSON fallback."
         logger.warning("MONGO_URI is not set. Using local JSON fallback for products and local-only owner login.")
@@ -188,6 +193,7 @@ def init_mongo():
         media_col = db["media"]
         audit_col = db["audit_logs"]
         orders_col = db["orders"]
+        support_tickets_col = db["support_tickets"]
         media_fs = gridfs.GridFS(db, collection="media_files")
         users_col.create_index([("email", ASCENDING)], unique=True)
         products_col.create_index([("slug", ASCENDING)], unique=True)
@@ -195,15 +201,19 @@ def init_mongo():
         audit_col.create_index([("created_at", ASCENDING)])
         orders_col.create_index([("order_id", ASCENDING)], unique=True)
         orders_col.create_index([("user_email", ASCENDING)])
+        support_tickets_col.create_index([("ticket_id", ASCENDING)], unique=True)
+        support_tickets_col.create_index([("user_email", ASCENDING)])
+        support_tickets_col.create_index([("status", ASCENDING), ("updated_at", ASCENDING)])
         mongo_status_reason = f"Connected to MongoDB database {MONGO_DB_NAME}."
         logger.info("Connected to MongoDB database %s", MONGO_DB_NAME)
     except Exception as exc:
         mongo_status_reason = f"MongoDB connection failed: {exc}. Check MONGO_URI, username/password, IP whitelist, and your Atlas cluster hostname."
         logger.error("MongoDB connection failed (%s). Falling back to local JSON mode. Check MONGO_URI in .env.", exc)
-        mongo_client = db = products_col = users_col = settings_col = media_col = audit_col = orders_col = media_fs = None
+        mongo_client = db = products_col = users_col = settings_col = media_col = audit_col = orders_col = support_tickets_col = media_fs = None
 media_col = None
 audit_col = None
 orders_col = None
+support_tickets_col = None
 media_fs = None
 
 def using_mongo() -> bool:
@@ -294,7 +304,7 @@ def sanitize_user_for_session(user: dict | None) -> dict | None:
         "email": email,
         "username": username,
         "is_owner": is_owner,
-        "role": "owner" if is_owner else ("admin" if role == "admin" else "user"),
+        "role": "owner" if is_owner else (role if role in {"admin", "support"} else "user"),
         "auth_provider": str(user.get("auth_provider") or "email"),
         "discord_id": str(user.get("discord_id") or "") or None,
         "discord_username": str(user.get("discord_username") or "") or None,
@@ -310,6 +320,9 @@ def current_user():
 def has_admin_access(user: dict | None) -> bool:
     return bool(user and (user.get("is_owner") or user.get("role") in {"owner", "admin"}))
 
+def has_support_access(user: dict | None) -> bool:
+    return bool(user and (user.get("is_owner") or user.get("role") in {"owner", "admin", "support"}))
+
 def owner_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
@@ -318,6 +331,18 @@ def owner_required(view):
             flash("Log in to access the dashboard.", "warning")
             return redirect(url_for("login", next=request.path))
         if not has_admin_access(user):
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapper
+
+def support_required(view):
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        user = current_user()
+        if not user:
+            flash("Log in to access support tickets.", "warning")
+            return redirect(url_for("login", next=request.path))
+        if not has_support_access(user):
             abort(403)
         return view(*args, **kwargs)
     return wrapper
@@ -381,6 +406,7 @@ app.config.update(
     SESSION_REFRESH_EACH_REQUEST=True,
     JSON_SORT_KEYS=False,
     MAX_CONTENT_LENGTH=MAX_UPLOAD_MB * 1024 * 1024,
+    MAX_SUPPORT_ATTACHMENT_MB=MAX_SUPPORT_ATTACHMENT_MB,
     SEND_FILE_MAX_AGE_DEFAULT=31536000 if IS_PRODUCTION else 300,
     SMTP_EMAIL=SMTP_EMAIL,
     EMAIL_PROVIDER=EMAIL_PROVIDER,
@@ -2030,6 +2056,239 @@ def find_order_by_provider_order(provider_order_id: str) -> dict | None:
     return None
 
 
+# -----------------------------------------------------------------------------
+# Purchase-bound Support Tickets
+# -----------------------------------------------------------------------------
+def normalize_ticket_status(status: str | None) -> str:
+    status = str(status or "open").strip().lower()
+    return status if status in {"open", "waiting", "answered", "closed"} else "open"
+
+
+def support_actor_kind(user: dict | None) -> str:
+    if has_support_access(user):
+        return "staff"
+    return "customer"
+
+
+def ticket_public_id() -> str:
+    return "TKT-" + secrets.token_hex(4).upper()
+
+
+def load_support_tickets(status: str | None = None) -> list:
+    query = {}
+    if status:
+        query["status"] = normalize_ticket_status(status)
+    if using_mongo() and support_tickets_col is not None:
+        return list(support_tickets_col.find(query, {"_id": 0}).sort("updated_at", -1).limit(200))
+    try:
+        tickets = json.loads(SUPPORT_TICKETS_FILE.read_text(encoding="utf-8")) if SUPPORT_TICKETS_FILE.exists() else []
+    except Exception:
+        tickets = []
+    if status:
+        tickets = [t for t in tickets if normalize_ticket_status(t.get("status")) == normalize_ticket_status(status)]
+    return sorted(tickets, key=lambda t: str(t.get("updated_at") or t.get("created_at") or ""), reverse=True)[:200]
+
+
+def load_support_tickets_for_user(email: str | None) -> list:
+    email = (email or "").strip().lower()
+    if not email:
+        return []
+    if using_mongo() and support_tickets_col is not None:
+        return list(support_tickets_col.find({"user_email": email}, {"_id": 0}).sort("updated_at", -1).limit(80))
+    return [t for t in load_support_tickets() if str(t.get("user_email", "")).lower() == email][:80]
+
+
+def find_support_ticket(ticket_id: str) -> dict | None:
+    ticket_id = (ticket_id or "").strip()
+    if not ticket_id:
+        return None
+    if using_mongo() and support_tickets_col is not None:
+        return support_tickets_col.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    return next((t for t in load_support_tickets() if str(t.get("ticket_id")) == ticket_id), None)
+
+
+def save_support_ticket(ticket: dict) -> None:
+    ticket["status"] = normalize_ticket_status(ticket.get("status"))
+    ticket.setdefault("created_at", utc_now().isoformat())
+    ticket["updated_at"] = utc_now().isoformat()
+    if using_mongo() and support_tickets_col is not None:
+        support_tickets_col.update_one({"ticket_id": ticket["ticket_id"]}, {"$set": ticket}, upsert=True)
+        return
+    DATA_DIR.mkdir(exist_ok=True)
+    try:
+        tickets = json.loads(SUPPORT_TICKETS_FILE.read_text(encoding="utf-8")) if SUPPORT_TICKETS_FILE.exists() else []
+    except Exception:
+        tickets = []
+    tickets = [t for t in tickets if str(t.get("ticket_id")) != str(ticket.get("ticket_id"))]
+    tickets.insert(0, ticket)
+    SUPPORT_TICKETS_FILE.write_text(json.dumps(tickets[:1000], indent=2), encoding="utf-8")
+
+
+def delete_support_ticket(ticket_id: str) -> bool:
+    ticket = find_support_ticket(ticket_id)
+    if not ticket:
+        return False
+    cleanup_support_ticket_files(ticket)
+    if using_mongo() and support_tickets_col is not None:
+        result = support_tickets_col.delete_one({"ticket_id": ticket_id})
+        return bool(getattr(result, "deleted_count", 0))
+    try:
+        tickets = json.loads(SUPPORT_TICKETS_FILE.read_text(encoding="utf-8")) if SUPPORT_TICKETS_FILE.exists() else []
+    except Exception:
+        tickets = []
+    tickets = [t for t in tickets if str(t.get("ticket_id")) != str(ticket_id)]
+    SUPPORT_TICKETS_FILE.write_text(json.dumps(tickets[:1000], indent=2), encoding="utf-8")
+    return True
+
+
+def user_can_view_ticket(ticket: dict, user: dict | None) -> bool:
+    if not ticket or not user:
+        return False
+    if has_support_access(user):
+        return True
+    return str(ticket.get("user_email", "")).lower() == str(user.get("email", "")).lower()
+
+
+def order_item_for_ticket(user: dict, order_id: str, item_index: int) -> tuple[dict | None, dict | None, str | None]:
+    order = find_order_by_id(order_id)
+    if not order:
+        return None, None, "That order could not be found."
+    if str(order.get("user_email", "")).lower() != str(user.get("email", "")).lower():
+        return None, None, "That order is not tied to your account."
+    if str(order.get("status", "")).lower() != "paid":
+        return None, None, "Support tickets can only be opened after payment is confirmed."
+    items = ((order.get("cart") or {}).get("items") or [])
+    if item_index < 0 or item_index >= len(items):
+        return None, None, "Choose a valid product from that order."
+    return order, items[item_index], None
+
+
+def has_open_ticket_for_order_item(email: str, order_id: str, item_index: int) -> dict | None:
+    email = (email or "").strip().lower()
+    for t in load_support_tickets_for_user(email):
+        if str(t.get("order_id")) == str(order_id) and int(t.get("item_index", -1)) == int(item_index) and normalize_ticket_status(t.get("status")) != "closed":
+            return t
+    return None
+
+
+def support_upload_allowed(filename: str) -> bool:
+    return allowed_upload(filename, "file")
+
+
+def save_support_attachments(ticket_id: str, files) -> tuple[list[dict], str | None]:
+    saved = []
+    file_list = [f for f in (files or []) if getattr(f, "filename", "")]
+    if len(file_list) > MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE:
+        return [], f"Upload up to {MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE} files per message."
+    if not file_list:
+        return [], None
+    ticket_dir = SUPPORT_UPLOADS_DIR / secure_filename(ticket_id)
+    ticket_dir.mkdir(parents=True, exist_ok=True)
+    for upload in file_list:
+        original = secure_filename(upload.filename or "")
+        if not original or not support_upload_allowed(original):
+            return [], "One attachment type is not allowed. Use images, txt, pdf, zip, rar, 7z, or json."
+        upload.stream.seek(0, os.SEEK_END)
+        size = upload.stream.tell()
+        upload.stream.seek(0)
+        if size > MAX_SUPPORT_ATTACHMENT_MB * 1024 * 1024:
+            return [], f"Each support file must be {MAX_SUPPORT_ATTACHMENT_MB}MB or smaller."
+        ext = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
+        filename = f"{secrets.token_hex(8)}.{ext}"
+        path = ticket_dir / filename
+        upload.save(path)
+        saved.append({
+            "filename": filename,
+            "original_name": original[:120],
+            "size_bytes": int(size),
+            "content_type": mimetypes.guess_type(original)[0] or "application/octet-stream",
+            "url": f"/support/attachments/{ticket_id}/{filename}",
+        })
+    return saved, None
+
+
+def cleanup_support_ticket_files(ticket: dict) -> None:
+    ticket_id = secure_filename(str((ticket or {}).get("ticket_id") or ""))
+    if not ticket_id:
+        return
+    ticket_dir = SUPPORT_UPLOADS_DIR / ticket_id
+    if ticket_dir.exists() and ticket_dir.is_dir():
+        import shutil
+        try:
+            shutil.rmtree(ticket_dir)
+        except Exception:
+            logger.exception("Failed to delete support uploads for %s", ticket_id)
+
+
+def send_support_ticket_email(to_email: str, ticket: dict, message: str, staff_update: bool = False) -> bool:
+    subject = f"Support ticket {ticket.get('ticket_id')} updated"
+    title = "Support reply received" if staff_update else "Support ticket updated"
+    safe_ticket = html_escape.escape(str(ticket.get("ticket_id", "")))
+    safe_subject = html_escape.escape(str(ticket.get("subject", "Support ticket")))
+    safe_message = html_escape.escape((message or "").strip()[:1200]).replace("\n", "<br>")
+    ticket_url = f"{APP_URL}/support/tickets/{ticket.get('ticket_id')}"
+    body_html = f"""
+    <p style='margin:0 0 12px;color:#d9c5ff;line-height:1.7;'>Ticket <strong style='color:#fff;'>{safe_ticket}</strong> for <strong style='color:#fff;'>{safe_subject}</strong> has a new update.</p>
+    <div style='margin:14px 0;padding:14px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);color:#efe7ff;line-height:1.65;'>{safe_message or 'Open your ticket to view the latest update.'}</div>
+    """
+    text = f"Ticket {ticket.get('ticket_id')} updated\n\n{ticket.get('subject')}\n\n{message}\n\nOpen: {ticket_url}"
+    return send_html_email(to_email, subject, text, branded_email_shell(title, "Support ticket", "Your support conversation was updated.", body_html, "Open ticket", ticket_url), "Support")
+
+
+def send_support_discord_webhook(ticket: dict, message: dict) -> bool:
+    if not SUPPORT_TICKET_WEBHOOK_URL or not discord_webhook_allowed(SUPPORT_TICKET_WEBHOOK_URL):
+        return False
+    actor = message.get("actor") or {}
+    attachments = message.get("attachments") or []
+    desc = str(message.get("body") or "").strip()[:1500] or "New support update."
+    embed = {
+        "title": f"Support ticket: {ticket.get('subject') or ticket.get('ticket_id')}",
+        "description": desc,
+        "color": 0xA855F7,
+        "fields": [
+            {"name": "Ticket", "value": str(ticket.get("ticket_id", "—")), "inline": True},
+            {"name": "Customer", "value": str(ticket.get("user_email", "—")), "inline": True},
+            {"name": "Order", "value": str(ticket.get("order_id", "—")), "inline": True},
+            {"name": "Product", "value": str(ticket.get("product_name", "—"))[:100], "inline": True},
+            {"name": "Sender", "value": f"{actor.get('username') or 'user'} ({actor.get('email') or 'unknown'})", "inline": False},
+        ],
+        "timestamp": utc_now().isoformat(),
+        "footer": {"text": f"{APP_NAME} Support"},
+    }
+    if attachments:
+        embed["fields"].append({"name": "Attachments", "value": "\n".join(f"[{a.get('original_name')}]({APP_URL}{a.get('url')})" for a in attachments[:5]), "inline": False})
+    payload = {"username": f"{APP_NAME} Support", "embeds": [embed]}
+    try:
+        resp = requests.post(SUPPORT_TICKET_WEBHOOK_URL, json=payload, timeout=12)
+        return resp.status_code in (200, 204)
+    except Exception:
+        logger.exception("Support ticket webhook failed for %s", ticket.get("ticket_id"))
+        return False
+
+
+def append_ticket_message(ticket: dict, user: dict, body: str, attachments: list[dict] | None = None) -> dict:
+    actor_kind = support_actor_kind(user)
+    msg = {
+        "id": secrets.token_urlsafe(10),
+        "body": (body or "").strip()[:3000],
+        "actor_kind": actor_kind,
+        "actor": sanitize_user_for_session(user) or {},
+        "attachments": attachments or [],
+        "created_at": utc_now().isoformat(),
+    }
+    ticket.setdefault("messages", []).append(msg)
+    ticket["last_message_by"] = actor_kind
+    if normalize_ticket_status(ticket.get("status")) != "closed":
+        ticket["status"] = "answered" if actor_kind == "staff" else "waiting"
+    save_support_ticket(ticket)
+    # Discord webhook only for customer/non-staff messages, so it notifies you without admin/support reply spam.
+    if actor_kind != "staff":
+        send_support_discord_webhook(ticket, msg)
+        send_support_ticket_email(OWNER_EMAIL, ticket, msg.get("body"), staff_update=False)
+    else:
+        send_support_ticket_email(ticket.get("user_email"), ticket, msg.get("body"), staff_update=True)
+    return msg
+
 def order_amount_matches(order: dict, paid_cents: int | None, currency: str | None = None) -> bool:
     if paid_cents is None:
         return False
@@ -2446,6 +2705,7 @@ def inject_global_template_vars():
         "site_settings": load_site_settings(),
         "using_mongo": using_mongo(),
         "application_questions_to_text": application_questions_to_text,
+        "support_webhook_configured": bool(SUPPORT_TICKET_WEBHOOK_URL),
     }
 
 
@@ -2498,7 +2758,7 @@ def check_maintenance():
         return None
 
     user = current_user() or {}
-    if user.get("is_owner") or user.get("role") == "admin":
+    if has_admin_access(user) or has_support_access(user):
         return None
 
     if request.path not in allowed_paths:
@@ -2627,7 +2887,154 @@ def status():
 
 @app.route("/support")
 def support():
-    return render_template("support.html", active_page="support")
+    if not current_user():
+        flash("Log in to create purchase support tickets.", "warning")
+        return redirect(url_for("login", next=request.path))
+    user = current_user() or {}
+    if has_support_access(user) and request.args.get("staff") == "1":
+        return redirect(url_for("support_staff"))
+    orders = [o for o in load_orders_for_user(user.get("email")) if str(o.get("status", "")).lower() == "paid"]
+    tickets = load_support_tickets_for_user(user.get("email"))
+    return render_template("support.html", active_page="support", orders=orders, tickets=tickets)
+
+
+@app.route("/support/tickets", methods=["POST"])
+@login_required
+@limiter.limit("8 per hour")
+def support_ticket_create():
+    user = current_user() or {}
+    try:
+        item_index = int(request.form.get("item_index", "0"))
+    except ValueError:
+        item_index = 0
+    order_id = request.form.get("order_id", "").strip()
+    subject = request.form.get("subject", "").strip()[:120]
+    body = request.form.get("message", "").strip()[:3000]
+    if len(body) < 8:
+        flash("Add a short message explaining what you need help with.", "warning")
+        return redirect(url_for("support"))
+    order, item, error = order_item_for_ticket(user, order_id, item_index)
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("support"))
+    existing = has_open_ticket_for_order_item(user.get("email"), order_id, item_index)
+    if existing:
+        flash("You already have an open ticket for that exact purchase. Add a reply there instead.", "warning")
+        return redirect(url_for("support_ticket_detail", ticket_id=existing.get("ticket_id")))
+    ticket_id = ticket_public_id()
+    attachments, upload_error = save_support_attachments(ticket_id, request.files.getlist("attachments"))
+    if upload_error:
+        cleanup_support_ticket_files({"ticket_id": ticket_id})
+        flash(upload_error, "danger")
+        return redirect(url_for("support"))
+    ticket = {
+        "ticket_id": ticket_id,
+        "status": "open",
+        "priority": "normal",
+        "subject": subject or f"Support for {item.get('product_name', 'purchase')}",
+        "user_email": user.get("email"),
+        "user": sanitize_user_for_session(user) or {},
+        "order_id": order.get("order_id"),
+        "provider": order.get("provider"),
+        "item_index": item_index,
+        "product_name": item.get("product_name", "Product"),
+        "option_name": item.get("option_name", "Option"),
+        "product_image": item.get("image", "/static/logo.png"),
+        "created_at": utc_now().isoformat(),
+        "messages": [],
+    }
+    save_support_ticket(ticket)
+    append_ticket_message(ticket, user, body, attachments)
+    record_audit("support.ticket_created", ticket_id, {"order_id": order_id, "item_index": item_index})
+    flash("Support ticket created. We’ll reply here and by email.", "success")
+    return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
+
+
+@app.route("/support/tickets/<ticket_id>")
+@login_required
+def support_ticket_detail(ticket_id):
+    ticket = find_support_ticket(ticket_id)
+    user = current_user() or {}
+    if not user_can_view_ticket(ticket, user):
+        abort(404)
+    return render_template("ticket_detail.html", active_page="support", ticket=ticket, staff_view=has_support_access(user))
+
+
+@app.route("/support/tickets/<ticket_id>/reply", methods=["POST"])
+@login_required
+@limiter.limit("20 per hour")
+def support_ticket_reply(ticket_id):
+    ticket = find_support_ticket(ticket_id)
+    user = current_user() or {}
+    if not user_can_view_ticket(ticket, user):
+        abort(404)
+    if normalize_ticket_status(ticket.get("status")) == "closed" and not has_support_access(user):
+        flash("This ticket is closed. Open a new purchase ticket if you still need help.", "warning")
+        return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
+    body = request.form.get("message", "").strip()[:3000]
+    if len(body) < 2:
+        flash("Type a message before sending.", "warning")
+        return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
+    attachments, upload_error = save_support_attachments(ticket_id, request.files.getlist("attachments"))
+    if upload_error:
+        flash(upload_error, "danger")
+        return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
+    if normalize_ticket_status(ticket.get("status")) == "closed" and has_support_access(user):
+        ticket["status"] = "open"
+    append_ticket_message(ticket, user, body, attachments)
+    record_audit("support.ticket_reply", ticket_id, {"actor": user.get("email")})
+    flash("Reply sent.", "success")
+    return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
+
+
+@app.route("/support/tickets/<ticket_id>/status", methods=["POST"])
+@support_required
+def support_ticket_status(ticket_id):
+    ticket = find_support_ticket(ticket_id)
+    if not ticket:
+        abort(404)
+    ticket["status"] = normalize_ticket_status(request.form.get("status"))
+    save_support_ticket(ticket)
+    record_audit("support.ticket_status", ticket_id, {"status": ticket["status"]})
+    if ticket["status"] == "closed":
+        send_support_ticket_email(ticket.get("user_email"), ticket, "Your support ticket was closed. Reply is disabled, but you can open a new purchase ticket if needed.", staff_update=True)
+    flash("Ticket status updated.", "success")
+    return redirect(request.referrer or url_for("support_staff"))
+
+
+@app.route("/support/tickets/<ticket_id>/delete", methods=["POST"])
+@support_required
+def support_ticket_delete(ticket_id):
+    if delete_support_ticket(ticket_id):
+        record_audit("support.ticket_deleted", ticket_id, {})
+        flash("Ticket and its uploaded files were deleted.", "success")
+    else:
+        flash("Ticket was not found.", "warning")
+    return redirect(url_for("support_staff"))
+
+
+@app.route("/support/staff")
+@support_required
+def support_staff():
+    status = request.args.get("status") or ""
+    tickets = load_support_tickets(status if status else None)
+    return render_template("support_staff.html", active_page="support", tickets=tickets, status=status)
+
+
+@app.route("/support/attachments/<ticket_id>/<filename>")
+@login_required
+def support_attachment(ticket_id, filename):
+    ticket = find_support_ticket(ticket_id)
+    if not user_can_view_ticket(ticket, current_user()):
+        abort(404)
+    safe_ticket = secure_filename(ticket_id)
+    safe_name = secure_filename(filename)
+    if not safe_ticket or not safe_name:
+        abort(404)
+    directory = SUPPORT_UPLOADS_DIR / safe_ticket
+    if not (directory / safe_name).exists():
+        abort(404)
+    return send_from_directory(directory, safe_name, as_attachment=False)
 
 
 @app.route("/maintenance")
@@ -3018,7 +3425,8 @@ def account():
     if not current_user():
         return redirect(url_for("login", next=request.path))
     orders = load_orders_for_user((current_user() or {}).get("email"))
-    return render_template("account.html", active_page="account", orders=orders)
+    tickets = load_support_tickets_for_user((current_user() or {}).get("email"))
+    return render_template("account.html", active_page="account", orders=orders, tickets=tickets)
 
 @app.route("/owner")
 @app.route("/admin")
@@ -3035,13 +3443,14 @@ def admin_dashboard():
         "users": len(load_admin_users()),
         "media": len(load_media()),
         "orders": len(load_orders_for_user(None)),
+        "support_tickets": len(load_support_tickets()),
         "applications": len(visible_applications(include_disabled=True)),
         "application_submissions": len((get_applications_settings().get("submissions") or [])),
         "payments": ("Stripe " if STRIPE_SECRET_KEY else "") + ("PayPal" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "") or "not configured",
         "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
         "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
-    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), applications_settings=get_applications_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
+    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
 
 
 @app.route("/admin/settings", methods=["POST"])
@@ -3529,8 +3938,10 @@ def admin_user_role(email):
         flash("MongoDB is required for account control.", "warning")
         return redirect(url_for("admin_dashboard"))
     target = email.strip().lower()
-    role = request.form.get("role", "user")
+    role = request.form.get("role", "user").strip().lower()
     actor = current_user() or {}
+    if role not in {"user", "support", "admin", "owner"}:
+        role = "user"
     if target == OWNER_EMAIL and role != "owner":
         flash("The environment owner account must stay owner.", "danger")
         return redirect(url_for("admin_dashboard"))
