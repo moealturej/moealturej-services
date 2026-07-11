@@ -264,13 +264,22 @@ updatePricingButtons();
   <div class="admin-layout">
 
     <section class="admin-card admin-section" id="owner">
-      <div class="section-top"><div><div class="eyebrow">production controls</div><h2>Owner site controls</h2><p class="muted">Turn features on/off without editing code, post a site-wide announcement, and quickly see payment/storage readiness.</p></div><a class="secondary-cta" href="/admin/api/diagnostics" target="_blank"><i class="fas fa-stethoscope"></i> Diagnostics JSON</a></div>
+      <div class="section-top"><div><div class="eyebrow">production controls</div><h2>Owner site controls</h2><p class="muted">Manage global brand details, links, contact destinations, feature switches, and announcements from one place. Changes apply everywhere those values are used.</p></div><a class="secondary-cta" href="/admin/api/diagnostics" target="_blank"><i class="fas fa-stethoscope"></i> Diagnostics JSON</a></div>
       <form class="admin-form-grid" action="/admin/settings" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Site name<input name="site_name" value="{{ site_settings.site_name or 'moealturej' }}" maxlength="80"></label>
+        <label>Public site URL<input name="site_url" value="{{ site_settings.site_url or 'https://moealturej.com' }}" placeholder="https://moealturej.com"></label>
+        <label class="wide">Site tagline<input name="site_tagline" value="{{ site_settings.site_tagline or '' }}" maxlength="180" placeholder="Premium digital products, tools, and support."></label>
+        <label>Support email<input name="support_email" type="email" value="{{ site_settings.support_email or '' }}" placeholder="support@moealturej.com"></label>
+        <label>Discord invite URL<input name="discord_url" value="{{ site_settings.discord_url or '' }}" placeholder="https://discord.gg/..."></label>
+        <label>Support page URL<input name="support_url" value="{{ site_settings.support_url or '/support' }}" placeholder="/support"></label>
+        <label>Store page URL<input name="store_url" value="{{ site_settings.store_url or '/store' }}" placeholder="/store"></label>
+        <label>Downloads page URL<input name="downloads_url" value="{{ site_settings.downloads_url or '/downloads' }}" placeholder="/downloads"></label>
+        <label>Status page URL<input name="status_url" value="{{ site_settings.status_url or '/status' }}" placeholder="/status"></label>
+        <label>Applications page URL<input name="applications_url" value="{{ site_settings.applications_url or '/applications' }}" placeholder="/applications"></label>
+        <label>Legal page URL<input name="legal_url" value="{{ site_settings.legal_url or '/legal' }}" placeholder="/legal"></label>
         <label class="wide">Announcement text<textarea name="announcement_text" rows="3" placeholder="Example: New product update is live.">{{ site_settings.announcement_text }}</textarea></label>
         <label>Announcement type<select name="announcement_type"><option value="info" {% if site_settings.announcement_type == 'info' %}selected{% endif %}>Info purple</option><option value="warning" {% if site_settings.announcement_type == 'warning' %}selected{% endif %}>Warning gold</option><option value="danger" {% if site_settings.announcement_type == 'danger' %}selected{% endif %}>Danger red</option></select></label>
-        <label>Support URL<input name="support_url" value="{{ site_settings.support_url or '/support' }}" placeholder="/support"></label>
-        <label>Discord URL<input name="discord_url" value="{{ site_settings.discord_url or '' }}" placeholder="https://discord.gg/..."></label>
         <div class="check-row">
           <label><input type="checkbox" name="announcement_enabled" {% if site_settings.announcement_enabled %}checked{% endif %}> Show announcement</label>
           <label><input type="checkbox" name="store_enabled" {% if site_settings.store_enabled %}checked{% endif %}> Store enabled</label>

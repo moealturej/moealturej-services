@@ -20,7 +20,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 
-  <link rel="canonical" href="{% block canonical %}https://moealturej.com{{ request.path }}{% endblock %}" />
+  <link rel="canonical" href="{% block canonical %}{{ site_settings.site_url or 'https://moealturej.com' }}{{ request.path }}{% endblock %}" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='logo.png') }}">
@@ -298,10 +298,10 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
     <footer class="site-footer"><div class="container"><div class="footer-grid">
       <div class="footer-brand-block"><a href="/" class="brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="moealturej" class="brand-logo"><div><div class="brand-name">moealturej</div><div class="brand-subtitle">services</div></div></a><p class="footer-brand-text">Clean digital products, downloads, support, and status updates for moealturej Services.</p></div>
       <div class="footer-col"><h4>Store</h4><a href="/products">Products</a><a href="/downloads">Downloads</a><a href="/applications">Applications</a><a href="/status">Status</a></div>
-      <div class="footer-col"><h4>Help</h4><a href="/discord">Discord</a><a href="/support">Support</a><a href="/legal">Legal</a></div>
+      <div class="footer-col"><h4>Help</h4><a href="{{ site_settings.discord_url or '/discord' }}">Discord</a><a href="{{ site_settings.support_url or '/support' }}">Support</a><a href="{{ site_settings.legal_url or '/legal' }}">Legal</a></div>
       <div class="footer-col"><h4>Legal</h4><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/refund-policy">Refunds</a><a href="/license">License</a><a href="/cookies">Cookies</a><a href="/acceptable-use">Acceptable Use</a></div>
       <div class="footer-col footer-connect"><h4>Stay Connected</h4><p style="margin:0;color:var(--muted);line-height:1.65;font-size:14px;">Get updates and product announcements.</p><form class="footer-mini-form" onsubmit="return false;"><input type="email" placeholder="Enter your email"><button type="button">→</button></form></div>
-    </div><div class="footer-bottom"><span>© 2026 moealturej Services.</span><div class="footer-socials"><a href="/support" aria-label="Discord"><i class="fab fa-discord"></i></a><a href="/support" aria-label="Support"><i class="fas fa-headset"></i></a><a href="/products" aria-label="Store"><i class="fas fa-bag-shopping"></i></a></div></div></div></footer>
+    </div><div class="footer-bottom"><span>© {{ current_year }} {{ site_settings.site_name or 'moealturej' }} Services.</span><div class="footer-socials"><a href="{{ site_settings.discord_url or '/discord' }}" aria-label="Discord"><i class="fab fa-discord"></i></a><a href="{{ site_settings.support_url or '/support' }}" aria-label="Support"><i class="fas fa-headset"></i></a><a href="{{ site_settings.store_url or '/store' }}" aria-label="Store"><i class="fas fa-bag-shopping"></i></a></div></div></div></footer>
   </div>
   <script>
     const topbarWrap=document.getElementById('topbarWrap');function updateHeaderState(){topbarWrap&&topbarWrap.classList.toggle('scrolled',(window.pageYOffset||document.documentElement.scrollTop||0)>12)}updateHeaderState();window.addEventListener('scroll',updateHeaderState,{passive:true});

@@ -230,7 +230,7 @@
             </p>
 
             <div class="support-actions">
-                <a href="/discord" class="support-btn primary">Join Discord →</a>
+                <a href="{{ site_settings.discord_url or '/discord' }}" class="support-btn primary">Join Discord →</a>
                 <a href="/store" class="support-btn ghost">View Store</a>
                 <a href="/" class="support-btn ghost">Go Home</a>
             </div>
@@ -241,7 +241,7 @@
                 <div class="support-icon">💬</div>
                 <h2>Join the Discord</h2>
                 <p>Get updates, support, announcements, and stay connected with the community.</p>
-                <a href="/discord">Open Discord page →</a>
+                <a href="{{ site_settings.discord_url or '/discord' }}">Open Discord page →</a>
             </div>
 
             <div class="support-card">

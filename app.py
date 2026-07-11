@@ -2635,8 +2635,17 @@ def default_site_settings() -> dict:
         "announcement_enabled": False,
         "announcement_text": "",
         "announcement_type": "info",
+        "site_name": APP_NAME,
+        "site_tagline": "Premium digital products, tools, and support.",
+        "site_url": APP_URL,
+        "support_email": SUPPORT_EMAIL,
         "support_url": "/support",
         "discord_url": "",
+        "store_url": "/store",
+        "downloads_url": "/downloads",
+        "status_url": "/status",
+        "applications_url": "/applications",
+        "legal_url": "/legal",
         "discounts": default_discount_settings(),
         "applications": default_applications_settings(),
         "updated_at": utc_now().isoformat(),
@@ -3457,6 +3466,21 @@ def admin_dashboard():
 @owner_required
 def admin_site_settings():
     current = load_site_settings()
+    def clean_link(field: str, fallback: str = "") -> str:
+        value = (request.form.get(field) or fallback).strip()[:500]
+        if not value:
+            return fallback
+        if value.startswith("/") and not value.startswith("//"):
+            return value
+        parsed = urlparse(value)
+        if parsed.scheme in {"http", "https"} and parsed.netloc:
+            return value
+        return fallback
+
+    support_email = (request.form.get("support_email") or SUPPORT_EMAIL).strip().lower()[:254]
+    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", support_email):
+        support_email = SUPPORT_EMAIL
+
     current.update({
         "maintenance_enabled": bool(request.form.get("maintenance_enabled")),
         "store_enabled": bool(request.form.get("store_enabled")),
@@ -3464,8 +3488,17 @@ def admin_site_settings():
         "announcement_enabled": bool(request.form.get("announcement_enabled")),
         "announcement_text": request.form.get("announcement_text", "").strip()[:300],
         "announcement_type": request.form.get("announcement_type", "info").strip()[:20],
-        "support_url": request.form.get("support_url", "/support").strip()[:300] or "/support",
-        "discord_url": request.form.get("discord_url", "").strip()[:300],
+        "site_name": (request.form.get("site_name") or APP_NAME).strip()[:80] or APP_NAME,
+        "site_tagline": (request.form.get("site_tagline") or "").strip()[:180],
+        "site_url": clean_link("site_url", APP_URL),
+        "support_email": support_email,
+        "support_url": clean_link("support_url", "/support"),
+        "discord_url": clean_link("discord_url", ""),
+        "store_url": clean_link("store_url", "/store"),
+        "downloads_url": clean_link("downloads_url", "/downloads"),
+        "status_url": clean_link("status_url", "/status"),
+        "applications_url": clean_link("applications_url", "/applications"),
+        "legal_url": clean_link("legal_url", "/legal"),
     })
     save_site_settings(current)
     record_audit("site_settings_update", "site", current)

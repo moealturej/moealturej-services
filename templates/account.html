@@ -29,7 +29,7 @@
       </div>
       <div class="account-actions">
         {% if current_user.is_owner %}<a class="primary-cta" href="/admin"><i class="fas fa-crown"></i> Owner dashboard</a>{% endif %}
-        <a class="secondary-cta" href="/store"><i class="fas fa-store"></i> Store</a>
+        <a class="secondary-cta" href="{{ site_settings.store_url or '/store' }}"><i class="fas fa-store"></i> Store</a>
         <a class="secondary-cta" href="/cart"><i class="fas fa-bag-shopping"></i> Cart</a>
         <a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
       </div>
@@ -58,7 +58,7 @@
   <section class="orders-panel" id="orders">
     <div class="orders-head">
       <div><div class="eyebrow">orders</div><h2>Your orders</h2><p>Track every checkout, payment status, product, and delivered key in one clean panel.</p></div>
-      <a class="secondary-cta" href="/downloads"><i class="fas fa-download"></i> Downloads</a>
+      <a class="secondary-cta" href="{{ site_settings.downloads_url or '/downloads' }}"><i class="fas fa-download"></i> Downloads</a>
     </div>
 
     <div class="order-list">
@@ -99,11 +99,11 @@
             <div class="delivery-note">This order has no item details saved.</div>
           {% endif %}
         </div>
-        <div class="order-actions"><a class="mini-action primary" href="/support"><i class="fas fa-headset"></i> Purchase support</a><a class="mini-action" href="/store"><i class="fas fa-store"></i> Buy again</a><a class="mini-action" href="/downloads"><i class="fas fa-download"></i> Downloads</a></div>
+        <div class="order-actions"><a class="mini-action primary" href="{{ site_settings.support_url or '/support' }}"><i class="fas fa-headset"></i> Purchase support</a><a class="mini-action" href="{{ site_settings.store_url or '/store' }}"><i class="fas fa-store"></i> Buy again</a><a class="mini-action" href="{{ site_settings.downloads_url or '/downloads' }}"><i class="fas fa-download"></i> Downloads</a></div>
       </article>
       {% endfor %}
     {% else %}
-      <div class="empty-orders"><i class="fas fa-bag-shopping"></i><strong>No orders yet</strong><p>Once you purchase something, your order status, items, and delivered keys will show up here automatically.</p><a class="primary-cta" href="/store"><i class="fas fa-store"></i> Browse store</a></div>
+      <div class="empty-orders"><i class="fas fa-bag-shopping"></i><strong>No orders yet</strong><p>Once you purchase something, your order status, items, and delivered keys will show up here automatically.</p><a class="primary-cta" href="{{ site_settings.store_url or '/store' }}"><i class="fas fa-store"></i> Browse store</a></div>
     {% endif %}
     </div>
     <div class="account-hint"><i class="fas fa-shield-halved"></i><span>For security, product keys only appear on orders tied to this signed-in email. Keep your account login safe and contact support if anything looks wrong.</span></div>
