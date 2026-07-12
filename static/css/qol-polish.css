@@ -1,0 +1,26 @@
+/* 2026 quality-of-life and visual consistency pass */
+:root{--focus:0 0 0 3px rgba(168,85,247,.28);--surface:rgba(255,255,255,.035);--surface-hover:rgba(255,255,255,.055)}
+::selection{background:rgba(168,85,247,.38);color:#fff}
+:focus-visible{outline:none!important;box-shadow:var(--focus)!important}
+html{scroll-padding-top:112px}
+body{accent-color:#a855f7}
+button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}
+input,select,textarea{transition:border-color .18s ease,background .18s ease,box-shadow .18s ease}
+input:hover,select:hover,textarea:hover{border-color:rgba(216,180,254,.2)!important}
+input:focus,select:focus,textarea:focus{border-color:rgba(192,132,252,.5)!important;box-shadow:0 0 0 3px rgba(168,85,247,.12)!important}
+img{background-color:rgba(255,255,255,.025)}
+.skip-link{position:fixed;left:16px;top:-70px;z-index:5000;padding:11px 15px;border-radius:12px;background:#fff;color:#12051e;font-weight:900;transition:top .18s ease}.skip-link:focus{top:16px}
+.mobile-menu-btn{display:none;width:40px;height:40px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.04);color:#fff;place-items:center}
+.back-to-top{position:fixed;right:18px;bottom:18px;z-index:900;width:44px;height:44px;border-radius:14px;border:1px solid rgba(216,180,254,.18);background:rgba(12,7,24,.9);color:#fff;display:grid;place-items:center;opacity:0;visibility:hidden;transform:translateY(8px);transition:.2s ease;backdrop-filter:blur(14px)}.back-to-top.show{opacity:1;visibility:visible;transform:none}.back-to-top:hover{background:rgba(168,85,247,.2);transform:translateY(-2px)}
+.topbar{isolation:isolate}.nav-links a{position:relative}.nav-links a.active:after{content:"";position:absolute;left:14px;right:14px;bottom:3px;height:2px;border-radius:2px;background:linear-gradient(90deg,#c084fc,#8b5cf6)}
+.site-announcement{width:min(1120px,calc(100% - 32px));margin:14px auto 0;border-radius:14px!important}
+.flash-stack{max-width:min(390px,calc(100vw - 24px))}
+.empty-state{min-height:180px;display:grid;place-items:center;align-content:center;text-align:center;padding:28px;border:1px dashed rgba(216,180,254,.18);border-radius:18px;background:rgba(255,255,255,.018)}
+.product-card,.feature-product,.home-link,.section-card,.store-panel-clean{content-visibility:auto;contain-intrinsic-size:300px}
+.product-card img,.feature-product img{transition:transform .35s ease,filter .25s ease}.product-card:hover img,.feature-product:hover img{transform:scale(1.025);filter:saturate(1.06)}
+.product-btn,.primary-cta,.secondary-cta,.ghost-cta,.header-cta,.cart-icon-btn{transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease}.product-btn:active,.primary-cta:active,.secondary-cta:active,.ghost-cta:active,.header-cta:active,.cart-icon-btn:active{transform:translateY(1px) scale(.985)!important}
+.footer-mini-form input:invalid:not(:placeholder-shown){border-color:rgba(255,98,125,.5)!important}
+.page-section{animation:pageIn .34s ease both}@keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+  .mobile-menu-btn{display:grid}.topbar{grid-template-columns:1fr auto auto!important}.header-actions{grid-column:auto!important;grid-row:auto!important}.nav-links{display:none!important;grid-column:1/-1!important;width:100%;padding:7px!important;border-radius:16px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.topbar.menu-open .nav-links{display:grid!important}.nav-links a{justify-content:flex-start!important;padding:0 14px!important}.nav-links a.active:after{left:14px;right:auto;width:24px}.header-cta span{display:none}.header-cta{width:40px!important;padding:0!important;justify-content:center}.cart-icon-btn,.header-cta,.mobile-menu-btn{height:40px!important;min-height:40px!important}.brand{min-width:0}.brand>div{min-width:0}.brand-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.site-announcement{width:calc(100% - 24px)}.back-to-top{right:12px;bottom:12px}}
+@media(prefers-reduced-motion:reduce){.page-section{animation:none}.product-card img,.feature-product img{transition:none}}

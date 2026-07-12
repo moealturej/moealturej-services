@@ -1,0 +1,11 @@
+/* Site-wide visual refinement and organization pass */
+:root{--page-glow:rgba(124,58,237,.12);--line-soft:rgba(255,255,255,.075)}
+body:before{background:radial-gradient(circle at 50% -10%,var(--page-glow),transparent 38%),linear-gradient(180deg,rgba(8,4,16,.12),rgba(3,2,7,.35))!important}
+.page-section>.container>h1:first-child,.page-section>.container>.section-head:first-child{margin-bottom:22px}
+.panel,.hero-shell,.store-shell,.detail-shell,.support-shell,.doc-shell,.legal-shell,.status-shell,.downloads-panel,.commerce-card,.pay-card{border-color:rgba(216,180,254,.105)!important;background:linear-gradient(180deg,rgba(16,10,29,.72),rgba(9,6,17,.72))!important}
+.primary-cta,.product-btn,.checkout-btn{background:linear-gradient(135deg,#8b5cf6,#7c3aed)!important;border:1px solid rgba(255,255,255,.13)!important}.primary-cta:hover,.product-btn:hover,.checkout-btn:hover{filter:brightness(1.08);box-shadow:0 10px 26px rgba(124,58,237,.22)!important}
+.secondary-cta,.ghost-cta{background:rgba(255,255,255,.035)!important}.secondary-cta:hover,.ghost-cta:hover{background:rgba(255,255,255,.065)!important;border-color:rgba(216,180,254,.18)!important}
+.product-card,.home-product-card,.download-card,.status-card,.legal-card,.support-mini-card,.overview-card,.store-kpi,.hero-card,.strip-card,.detail-image-card,.detail-info-card,.detail-section-card,.discord-card,.card{overflow:hidden}.product-card:after,.home-product-card:after{content:"";position:absolute;inset:auto 0 0;height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,.38),transparent);opacity:0;transition:.2s}.product-card:hover:after,.home-product-card:hover:after{opacity:1}
+input,select,textarea{background:rgba(4,2,9,.48)!important}.footer-mini-form input{background:rgba(255,255,255,.035)!important}
+.site-footer{border-top:1px solid rgba(216,180,254,.09)!important}.footer-grid{gap:30px!important}.footer-col h4{font-size:11px!important;text-transform:uppercase;letter-spacing:.11em;color:#cdbfda!important}.footer-col a{color:#9f93ad!important}.footer-col a:hover{color:#fff!important}
+@media(max-width:640px){.page-section{padding-top:20px!important}.panel,.hero-shell,.store-shell,.detail-shell,.support-shell,.doc-shell,.legal-shell,.status-shell,.downloads-panel,.commerce-card,.pay-card{border-radius:20px!important}}

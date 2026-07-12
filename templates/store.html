@@ -117,6 +117,7 @@
   const filterContainer = document.getElementById('filter-container');
   const searchInput = document.getElementById('search-input');
   const sortSelect = document.getElementById('sort-select');
+  sortSelect.value = localStorage.getItem('moeStoreSort') || 'featured';
   const notification = document.getElementById('notification');
   const resultCount = document.getElementById('result-count');
   const statProducts = document.getElementById('stat-products');
@@ -136,7 +137,8 @@
   function debounce(fn, wait=150){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
   async function loadProducts(){ try{ const cached=sessionStorage.getItem('moe_store_products'); if(cached){ products=JSON.parse(cached); buildFilters(); renderProducts(); } const res=await fetch('/api/store-products',{headers:{'Accept':'application/json'}}); if(!res.ok) throw new Error('load failed'); products=await res.json(); sessionStorage.setItem('moe_store_products', JSON.stringify(products)); statProducts.textContent=products.filter(p=>p?.store?.enabled).length; statOnline.textContent=products.filter(p=>p?.store?.enabled && isOnline(p)).length; buildFilters(); renderProducts(); }catch(e){ productsContainer.innerHTML='<div class="empty-state"><h3>Store unavailable</h3><p>Products could not load. Please try again soon.</p></div>'; resultCount.textContent='Unable to load'; } }
   searchInput.addEventListener('input', debounce(function(){ currentSearch=this.value.trim().toLowerCase(); renderProducts(); }));
-  sortSelect.addEventListener('change', renderProducts);
+  sortSelect.addEventListener('change', ()=>{ localStorage.setItem('moeStoreSort', sortSelect.value); renderProducts(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')){ e.preventDefault(); searchInput.focus(); } if(e.key==='Escape' && document.activeElement===searchInput){ searchInput.value=''; currentSearch=''; searchInput.blur(); renderProducts(); } });
   loadProducts();
 </script>
 {% endblock %}

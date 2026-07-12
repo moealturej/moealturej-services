@@ -152,6 +152,69 @@ updatePricingButtons();
   tabs.forEach(tab=>tab.addEventListener('click',()=>setActive(tab.getAttribute('href').slice(1))));
   setActive(sections[0].id);
 })();
+
+(function(){
+  const sections=[...document.querySelectorAll('.admin-section')];
+  const tabs=[...document.querySelectorAll('.admin-tab')];
+  const search=document.getElementById('adminSearch');
+  const empty=document.getElementById('adminSearchEmpty');
+  sections.forEach(section=>{
+    const top=section.querySelector('.section-top');
+    if(!top || top.querySelector('.section-collapse')) return;
+    const button=document.createElement('button');
+    button.type='button'; button.className='section-collapse'; button.setAttribute('aria-label','Collapse section');
+    button.innerHTML='<i class="fas fa-chevron-down"></i>';
+    top.appendChild(button);
+    button.addEventListener('click',()=>{
+      const collapsed=section.classList.toggle('is-collapsed');
+      button.setAttribute('aria-label',collapsed?'Expand section':'Collapse section');
+    });
+  });
+  function setAll(collapsed){sections.filter(s=>s.dataset.searchHidden!=='true').forEach(s=>s.classList.toggle('is-collapsed',collapsed));}
+  document.getElementById('adminExpandAll')?.addEventListener('click',()=>setAll(false));
+  document.getElementById('adminCollapseAll')?.addEventListener('click',()=>setAll(true));
+  function filter(){
+    const q=(search?.value||'').trim().toLowerCase(); let shown=0;
+    sections.forEach(section=>{
+      const match=!q || section.innerText.toLowerCase().includes(q) || section.id.toLowerCase().includes(q);
+      section.dataset.searchHidden=String(!match); if(match){shown++; if(q)section.classList.remove('is-collapsed');}
+      const tab=tabs.find(t=>t.getAttribute('href')==='#'+section.id); if(tab)tab.dataset.searchHidden=String(!match);
+    });
+    empty?.classList.toggle('show',shown===0);
+  }
+  search?.addEventListener('input',filter);
+  document.addEventListener('keydown',event=>{
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();search?.focus();search?.select();}
+    if(event.key==='Escape'&&document.activeElement===search){search.value='';filter();search.blur();}
+  });
+})();
+</script>
+<script>
+(() => {
+  const page=document.querySelector('.admin-page');
+  if(!page)return;
+  const density=document.getElementById('adminDensity');
+  const focus=document.getElementById('adminFocus');
+  const count=document.getElementById('adminResultCount');
+  const key='moe-admin-density';
+  const focusKey='moe-admin-focus';
+  const sync=()=>{
+    const compact=localStorage.getItem(key)==='compact';
+    const focused=localStorage.getItem(focusKey)==='on';
+    page.classList.toggle('compact-mode',compact);page.classList.toggle('focus-mode',focused);
+    density?.classList.toggle('is-active',compact);focus?.classList.toggle('is-active',focused);
+    if(density)density.innerHTML=`<i class="fas ${compact?'fa-grip':'fa-table-cells'}"></i> ${compact?'Comfortable':'Compact'}`;
+    if(focus)focus.innerHTML=`<i class="fas ${focused?'fa-compress':'fa-expand'}"></i> ${focused?'Overview':'Focus'}`;
+  };
+  density?.addEventListener('click',()=>{localStorage.setItem(key,localStorage.getItem(key)==='compact'?'comfortable':'compact');sync()});
+  focus?.addEventListener('click',()=>{localStorage.setItem(focusKey,localStorage.getItem(focusKey)==='on'?'off':'on');sync()});
+  const search=document.getElementById('adminSearch');
+  const updateCount=()=>{const visible=[...document.querySelectorAll('.admin-section')].filter(el=>getComputedStyle(el).display!=='none').length; if(count)count.innerHTML=`<strong>${visible}</strong> sections visible`;};
+  search?.addEventListener('input',()=>requestAnimationFrame(updateCount));
+  document.getElementById('adminExpandAll')?.addEventListener('click',()=>setTimeout(updateCount,0));
+  document.getElementById('adminCollapseAll')?.addEventListener('click',()=>setTimeout(updateCount,0));
+  sync();updateCount();
+})();
 </script>
 {% endblock %}
 {% block extra_head %}
@@ -202,6 +265,7 @@ updatePricingButtons();
   @media(max-width:760px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-command{grid-template-columns:1fr}.pricing-row{gap:8px}.auto-delivery-note{font-size:11px}.product-order-header{display:grid}.product-order-actions,.product-order-savebar{display:grid;grid-template-columns:1fr}.product-order-actions .small-btn,.product-order-savebar button{width:100%}.product-order-control{width:100%;margin-left:0;justify-content:space-between}.drag-handle{flex:1;justify-content:center}.order-number{top:10px;right:10px}}
 
 </style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-experience.css') }}">
 {% endblock %}
 {% block content %}
 <section class="page-section admin-page"><div class="container">
@@ -260,6 +324,16 @@ updatePricingButtons();
     <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
     <a class="admin-tab" href="#security"><i class="fas fa-shield-halved"></i> Security</a>
   </nav>
+
+  <div class="admin-tools" aria-label="Admin workspace tools">
+    <div class="admin-search"><i class="fas fa-magnifying-glass"></i><input id="adminSearch" type="search" placeholder="Find products, orders, users, settings…" autocomplete="off" aria-label="Search admin sections"><kbd>Ctrl K</kbd></div>
+    <button class="admin-tool-btn" id="adminExpandAll" type="button"><i class="fas fa-angles-down"></i> Expand all</button>
+    <button class="admin-tool-btn" id="adminCollapseAll" type="button"><i class="fas fa-angles-up"></i> Collapse all</button>
+    <button class="admin-tool-btn" id="adminDensity" type="button" title="Switch between comfortable and compact spacing"><i class="fas fa-table-cells"></i> Compact</button>
+    <button class="admin-tool-btn" id="adminFocus" type="button" title="Hide overview panels and focus on work"><i class="fas fa-expand"></i> Focus</button>
+    <span class="admin-result-count" id="adminResultCount" aria-live="polite"></span>
+  </div>
+  <div class="admin-search-empty" id="adminSearchEmpty"><i class="fas fa-magnifying-glass"></i> No admin section matches that search.</div>
 
   <div class="admin-layout">
 
