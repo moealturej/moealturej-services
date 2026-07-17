@@ -78,7 +78,7 @@
           </div>
           {% if product.features %}<div class="feature-list">{% for feature in product.features %}<span class="chip"><i class="fas fa-check"></i> {{ feature }}</span>{% endfor %}</div>{% endif %}
           <div id="detail-options" class="detail-options"></div>
-          <div class="detail-actions"><button id="add-detail-cart" class="detail-btn buy"><i class="fas fa-cart-plus"></i>&nbsp; Add selected to cart</button><button class="detail-btn cart-icon"><i class="fas fa-cart-shopping"></i>&nbsp; Open cart</button></div>
+          <div class="detail-actions"><button id="add-detail-cart" class="detail-btn buy"><i class="fas fa-cart-plus"></i>&nbsp; Add selected to cart</button><button class="detail-btn cart-icon"><i class="fas fa-cart-shopping"></i>&nbsp; Open cart</button><button id="detail-wishlist" class="detail-btn"><i class="fas fa-heart"></i>&nbsp; <span>Save</span></button></div>
         </aside>
       </div>
       <div class="detail-section-card"><h2 class="detail-section-title">Details</h2><div id="detail-description" class="detail-description"></div></div>
@@ -115,6 +115,6 @@
   document.getElementById('add-detail-cart')?.addEventListener('click',()=>{if(!selectedOption)return showNotification('No option selected','error');addToCart(selectedOption)});
   document.querySelectorAll('.cart-icon').forEach(btn=>btn.addEventListener('click',()=>toggleModal(cartModal,true)));document.querySelectorAll('.close-modal').forEach(btn=>btn.addEventListener('click',()=>toggleModal(document.getElementById(btn.dataset.close),false)));window.addEventListener('click',e=>{if(e.target===cartModal)toggleModal(cartModal,false)});window.addEventListener('focus',()=>setTimeout(handleReturnFromCheckout,800));document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(handleReturnFromCheckout,800)});window.addEventListener('storage',e=>{if(e.key===CART_STORAGE_KEY){cart=JSON.parse(localStorage.getItem(CART_STORAGE_KEY)||'[]');updateCartUI()}});
   clearCartBtn?.addEventListener('click',()=>{if(cart.length)clearCart(true)});checkoutBtn?.addEventListener('click',()=>{if(!cart.length)return showNotification('Your cart is empty','error');saveCartToStorage();window.location.href={{ url_for('checkout')|tojson }};});
-  window.removeFromCart=removeFromCart; window.changeQuantity=changeQuantity; renderOptions(); renderDescription(); updateCartUI(); handleReturnFromCheckout();
+  const wishlistBtn=document.getElementById('detail-wishlist'); function syncWishlist(){const saved=window.MoeWishlist?.has(product.slug||product.id);wishlistBtn?.classList.toggle('active',!!saved);const label=wishlistBtn?.querySelector('span');if(label)label.textContent=saved?'Saved':'Save';} wishlistBtn?.addEventListener('click',()=>{const added=window.MoeWishlist.toggle(product);syncWishlist();showNotification(added?'Saved to wishlist':'Removed from wishlist','success')}); window.MoeWishlist?.addRecent(product); syncWishlist(); window.removeFromCart=removeFromCart; window.changeQuantity=changeQuantity; renderOptions(); renderDescription(); updateCartUI(); handleReturnFromCheckout();
 </script>
 {% endblock %}

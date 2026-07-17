@@ -1103,6 +1103,18 @@ class AutoDeliveryError(Exception):
     pass
 
 
+NO_KEY_FALLBACK_MESSAGES = {
+    "contact support to receive your key, reference code: bal_er",
+    "contact support to receive your key, reference code: no_stk",
+}
+
+
+def is_no_key_fallback(product_key: str | None) -> bool:
+    """Identify provider fallback messages without changing the delivered value."""
+    normalized = " ".join(str(product_key or "").strip().lower().split())
+    return normalized in NO_KEY_FALLBACK_MESSAGES
+
+
 def normalize_auto_delivery_config(config: dict | None) -> dict:
     """Return a safe, non-secret auto-delivery config for storing on order items."""
     if not isinstance(config, dict):
@@ -1214,14 +1226,23 @@ def notify_buyer_delivery(order: dict, item: dict, delivery: dict) -> dict:
 
 
 def process_auto_delivery(order: dict) -> dict:
-    """Deliver any paid order items configured for Reselling.pro auto-delivery."""
+    """Run auto-delivery once when an order first becomes paid."""
     if str(order.get("status", "")).lower() != "paid":
         return order
+    # Payment providers may repeat paid webhooks. This persisted marker prevents
+    # duplicate provider requests while keeping the original result intact.
+    if order.get("auto_delivery_processed_at"):
+        return order
+
+    processed_at = utc_now().isoformat()
+    order["auto_delivery_processed_at"] = processed_at
     cart_items = (order.get("cart") or {}).get("items") or []
     deliveries = order.get("deliveries") or {}
     attempts = order.get("auto_delivery_attempts") or {}
     failures = []
+    no_key_items = []
     delivered_count = 0
+
     for index, item in enumerate(cart_items):
         delivery_id = str(index)
         if deliveries.get(delivery_id):
@@ -1235,17 +1256,39 @@ def process_auto_delivery(order: dict) -> dict:
         try:
             for _ in range(quantity):
                 keys.append(fetch_reselling_pro_key(base_url))
+
+            fallback_codes = [key for key in keys if is_no_key_fallback(key)]
+            if fallback_codes:
+                no_key_items.append({
+                    "item_index": index,
+                    "product_name": item.get("product_name"),
+                    "option_name": item.get("option_name"),
+                })
+
             note = "Auto-delivered by moealturej. Keep this key private."
             delivery = save_delivery_to_order(order, item, index, "\n".join(keys), note, "reselling_pro_auto")
             notify_buyer_delivery(order, item, delivery)
             delivered_count += 1
-            attempts[delivery_id] = {"status": "delivered", "at": utc_now().isoformat(), "quantity": quantity}
+            attempts[delivery_id] = {
+                "status": "delivered",
+                "at": processed_at,
+                "quantity": quantity,
+                "no_key_fallback": bool(fallback_codes),
+            }
         except Exception as exc:
             message = str(exc)[:500]
-            failures.append({"item_index": index, "product_name": item.get("product_name"), "option_name": item.get("option_name"), "error": message, "at": utc_now().isoformat()})
-            attempts[delivery_id] = {"status": "failed", "at": utc_now().isoformat(), "error": message}
+            failures.append({"item_index": index, "product_name": item.get("product_name"), "option_name": item.get("option_name"), "error": message, "at": processed_at})
+            attempts[delivery_id] = {"status": "failed", "at": processed_at, "error": message}
             logger.warning("Auto-delivery failed for order %s item %s: %s", order.get("order_id"), index, message)
+
     order["auto_delivery_attempts"] = attempts
+    if no_key_items:
+        order["auto_delivery_no_key_items"] = no_key_items
+        order["auto_delivery_no_key"] = True
+    else:
+        order.pop("auto_delivery_no_key_items", None)
+        order.pop("auto_delivery_no_key", None)
+
     if failures:
         order["auto_delivery_failures"] = failures
     elif order.get("auto_delivery_failures"):
@@ -1258,7 +1301,7 @@ def process_auto_delivery(order: dict) -> dict:
         order["delivery_status"] = "auto_failed" if failures else order.get("delivery_status", "pending")
     else:
         order.setdefault("delivery_status", "manual_required")
-    order["updated_at"] = utc_now().isoformat()
+    order["updated_at"] = processed_at
     return order
 
 def format_order_items_for_discord(cart: dict, deliveries: dict | None = None) -> str:
@@ -1294,6 +1337,9 @@ def send_owner_order_webhook(order: dict) -> bool:
         fields.append({"name": "Auto-delivery failure", "value": "\n".join([f"• {f.get('product_name','Product')} — {f.get('option_name','Option')}: {f.get('error','failed')}" for f in failures[:5]])[:1024], "inline": False})
     if buyer.get("discord_id"):
         fields.append({"name": "Discord linked", "value": f"Yes — `{buyer.get('discord_id')}`", "inline": True})
+    # Keep this as the final webhook field so the owner sees the alert at the bottom.
+    if order.get("auto_delivery_no_key"):
+        fields.append({"name": "\u200b", "value": "**NO KEY**", "inline": False})
     fully_delivered = bool(cart.get("items")) and not undelivered
     content = "✅ Paid order auto-delivered." if fully_delivered else "✅ New paid order needs key delivery / review."
     description = (
@@ -4571,6 +4617,15 @@ def download_file(filename):
 # -----------------------------------------------------------------------------
 # Health
 # -----------------------------------------------------------------------------
+
+@app.route("/service-worker.js")
+def service_worker():
+    response = send_from_directory(app.static_folder, "service-worker.js")
+    response.headers["Content-Type"] = "application/javascript; charset=utf-8"
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
 @app.route("/health")
 @app.route("/healthz")
 @limiter.exempt

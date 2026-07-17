@@ -1,90 +1,170 @@
 {% extends "base.html" %}
 {% block title %}Home | moealturej{% endblock %}
-{% block meta_description %}Clean digital products, downloads, and live status from moealturej.{% endblock %}
+{% block meta_description %}Premium digital products, secure delivery, downloads, service status, and account support from moealturej.{% endblock %}
 
 {% block extra_head %}
 <style>
-  .home-page { padding-top: 20px; }
-  .home-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 18px;
-    align-items: end;
-    padding: clamp(22px, 4vw, 38px);
-    border-radius: 26px;
-    background: rgba(13, 8, 24, .72);
-    border: 1px solid rgba(255,255,255,.085);
-    box-shadow: 0 18px 56px rgba(0,0,0,.28);
-    overflow: hidden;
-    position: relative;
+  .home-page{padding:18px 0 76px}
+  .home-page *{animation:none!important}
+  .home-shell{display:grid;gap:16px}
+  .home-panel{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(20,12,35,.88),rgba(9,6,18,.92));box-shadow:0 22px 64px rgba(0,0,0,.26)}
+
+  .home-hero{min-height:380px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.8fr);align-items:center;gap:34px;padding:clamp(32px,6vw,68px);border-radius:32px}
+  .home-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 78% 24%,rgba(168,85,247,.22),transparent 32%),radial-gradient(circle at 18% 0%,rgba(124,58,237,.13),transparent 30%),linear-gradient(125deg,rgba(255,255,255,.025),transparent 38%);pointer-events:none}
+  .home-hero-copy,.home-hero-side{position:relative;z-index:1}
+  .home-kicker{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 13px;border-radius:999px;border:1px solid rgba(216,180,254,.16);background:rgba(168,85,247,.10);color:#e8d7ff;font-size:11px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+  .home-hero h1{max-width:780px;margin:18px 0 16px;font-size:clamp(46px,7vw,78px)!important;line-height:.92!important;letter-spacing:-.08em!important}
+  .home-hero p{max-width:640px;margin:0;color:#c0b5cc;font-size:clamp(15px,1.8vw,18px)!important;line-height:1.65!important}
+  .home-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:28px}
+  .home-action{min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:0 20px;border-radius:15px;border:1px solid rgba(255,255,255,.09);font-weight:900;font-size:14px}
+  .home-action.primary{background:linear-gradient(135deg,#a944ff,#7c3aed);color:#fff;border-color:rgba(216,180,254,.22)}
+  .home-action.secondary{background:rgba(255,255,255,.04);color:#eee7f7}
+
+  .home-hero-side{display:grid;gap:12px}
+  .home-side-card{display:flex;align-items:center;gap:14px;min-height:82px;padding:16px;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:rgba(5,3,11,.48)}
+  .home-side-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;background:rgba(168,85,247,.12);color:#d8b4fe}
+  .home-side-card strong{display:block;color:#fff;font-size:14px;margin-bottom:4px}
+  .home-side-card span{color:#9f94ad;font-size:12.5px;line-height:1.45}
+
+  .home-trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden;border-radius:22px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.07)}
+  .home-trust-item{display:flex;align-items:center;gap:12px;min-height:76px;padding:16px 18px;background:rgba(8,5,16,.94)}
+  .home-trust-item+.home-trust-item{border-left:1px solid rgba(255,255,255,.07)}
+  .home-trust-item i{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:12px;background:rgba(168,85,247,.12);color:#d8b4fe}
+  .home-trust-item strong{display:block;font-size:13px;color:#fff;margin-bottom:3px}
+  .home-trust-item span{color:#9f94ad;font-size:12.5px;line-height:1.35}
+
+  .home-section{padding:24px;border-radius:26px}
+  .home-section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:18px}
+  .home-section-head h2{margin:0;font-size:clamp(26px,4vw,38px)!important}
+  .home-section-head p{margin:7px 0 0;color:#a89db6;font-size:14px!important}
+  .home-link-small{color:#d8b4fe;font-weight:850;font-size:13px}
+
+  .home-destination-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .home-destination{display:flex;flex-direction:column;min-height:176px;padding:18px;border-radius:20px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.03)}
+  .home-destination i{width:38px;height:38px;display:grid;place-items:center;border-radius:13px;background:rgba(168,85,247,.12);color:#d8b4fe;margin-bottom:auto}
+  .home-destination h3{margin:22px 0 5px;font-size:17px!important}
+  .home-destination p{margin:0;color:#9f94ad;font-size:13px!important;line-height:1.45!important}
+
+  .home-products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+  .home-product{overflow:hidden;border-radius:22px;border:1px solid rgba(255,255,255,.075);background:rgba(7,5,14,.72)}
+  .home-product-media{aspect-ratio:1.45/1;background:#0d0817;overflow:hidden}
+  .home-product-media img{width:100%;height:100%;object-fit:cover}
+  .home-product-body{padding:16px}
+  .home-product-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .home-product-title{font-size:15px;font-weight:900;line-height:1.3}
+  .home-price{white-space:nowrap;color:#d8b4fe;font-weight:900;font-size:13px}
+  .home-product-meta{display:flex;align-items:center;gap:8px;margin:12px 0 14px}
+  .home-state{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 9px;border-radius:999px;border:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:850;color:#cfc5d8}
+  .home-state::before{content:"";width:6px;height:6px;border-radius:50%;background:#43df8d;box-shadow:0 0 9px rgba(67,223,141,.75)}
+  .home-product-link{min-height:42px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:rgba(168,85,247,.12);border:1px solid rgba(216,180,254,.14);font-size:13px;font-weight:900}
+  .home-empty{grid-column:1/-1;padding:28px;border-radius:18px;border:1px dashed rgba(255,255,255,.1);color:#9f94ad;text-align:center}
+
+  .home-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .home-step{padding:18px;border-radius:20px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.03)}
+  .home-step-number{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:#a855f7;color:#fff;font-weight:950;font-size:12px}
+  .home-step h3{margin:16px 0 6px;font-size:16px!important}
+  .home-step p{margin:0;color:#9f94ad;font-size:13px!important;line-height:1.5!important}
+
+  .home-support{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:22px;padding:28px;border-radius:26px;background:linear-gradient(135deg,rgba(91,33,182,.28),rgba(20,12,35,.90));border:1px solid rgba(216,180,254,.12)}
+  .home-support h2{margin:0 0 8px;font-size:clamp(24px,4vw,36px)!important}
+  .home-support p{margin:0;color:#b8adca;font-size:14px!important}
+  .home-support-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+
+  @media(max-width:980px){
+    .home-hero{grid-template-columns:1fr;min-height:0}
+    .home-hero-side{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .home-side-card{display:block;min-height:0}
+    .home-side-icon{margin-bottom:12px}
+    .home-destination-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .home-products{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
-  .home-hero:before { content:""; position:absolute; inset:0; pointer-events:none; background: radial-gradient(circle at 80% 12%, rgba(168,85,247,.18), transparent 34%); }
-  .home-hero > * { position:relative; z-index:1; }
-  .home-hero h1 { max-width: 660px; margin: 12px 0 10px; font-size: clamp(34px, 5.5vw, 58px); line-height: .98; letter-spacing: -.065em; }
-  .home-hero p { max-width: 540px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
-  .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-  .confidence-strip { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin-top:12px;overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.075); }
-  .confidence-item { display:flex;align-items:center;gap:11px;padding:14px 16px;background:rgba(10,7,18,.92);color:var(--muted);font-size:12.5px; }
-  .confidence-item i { width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:rgba(168,85,247,.12);color:#d8b4fe; }
-  .confidence-item strong { display:block;color:#fff;font-size:12.5px;margin-bottom:2px; }
-  .home-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-top: 12px; }
-  .home-link { padding: 16px; border-radius: 20px; background: rgba(255,255,255,.032); border: 1px solid rgba(255,255,255,.075); transition: .18s ease; }
-  .home-link:hover { transform: translateY(-2px); border-color: rgba(216,180,254,.20); background: rgba(255,255,255,.045); }
-  .home-link i { color:#d8b4fe; margin-bottom: 10px; }
-  .home-link h3 { margin: 0; font-size: 15px; letter-spacing: -.02em; }
-  .home-link p { margin: 5px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
-  .section-card { margin-top: 12px; padding: 18px; border-radius: 22px; background: rgba(255,255,255,.032); border: 1px solid rgba(255,255,255,.075); }
-  .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-  .section-heading h2 { margin: 0; font-size: clamp(22px, 3vw, 30px); letter-spacing: -.045em; }
-  .featured-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-  .feature-product { border-radius: 18px; overflow: hidden; background: rgba(9,8,15,.62); border: 1px solid rgba(255,255,255,.075); transition: .18s ease; }
-  .feature-product:hover { transform: translateY(-2px); border-color: rgba(216,180,254,.20); }
-  .feature-product img { width: 100%; aspect-ratio: 1.28 / 1; object-fit: cover; display: block; background: #10091b; }
-  .feature-body { padding: 13px; }
-  .feature-title { font-weight: 850; margin-bottom: 10px; line-height: 1.22; font-size: 14px; }
-  .feature-meta { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 11px; }
-  .feature-link { min-height: 38px; border-radius: 13px; display: flex; align-items: center; justify-content: center; background: rgba(139,92,246,.14); border: 1px solid rgba(216,180,254,.16); font-weight: 850; font-size: 12.5px; }
-  .skeleton { min-height: 220px; border-radius: 18px; background: linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,.06), rgba(255,255,255,.03)); background-size: 240% 100%; animation: shimmer 1.1s infinite linear; }
-  @keyframes shimmer { to { background-position: -240% 0; } }
-  @media (max-width: 920px) { .confidence-strip{grid-template-columns:1fr;} .home-hero { grid-template-columns: 1fr; align-items:start; } .home-row, .featured-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-  @media (max-width: 620px) { .home-hero, .section-card { padding: 16px; border-radius: 20px; } .home-row, .featured-grid { grid-template-columns: 1fr; } .section-heading { align-items:flex-start; flex-direction:column; } }
+  @media(max-width:720px){
+    .home-page{padding-top:10px}
+    .home-hero,.home-section,.home-support{border-radius:22px;padding:20px}
+    .home-hero h1{font-size:clamp(38px,13vw,58px)!important}
+    .home-trust{grid-template-columns:1fr}
+    .home-trust-item+.home-trust-item{border-left:0;border-top:1px solid rgba(255,255,255,.07)}
+    .home-hero-side{grid-template-columns:1fr}
+    .home-side-card{display:flex}
+    .home-side-icon{margin-bottom:0}
+    .home-destination-grid,.home-products,.home-flow{grid-template-columns:1fr}
+    .home-section-head,.home-support{grid-template-columns:1fr;align-items:start}
+    .home-section-head{display:block}
+    .home-section-head .home-link-small{display:inline-flex;margin-top:12px}
+    .home-support-actions{justify-content:flex-start}
+    .home-action{width:100%}
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="page-section home-page">
-  <div class="container">
-    <section class="home-hero">
-      <div>
-        <div class="eyebrow">digital store</div>
-        <h1>moealturej Services</h1>
-        <p>Browse products, check status, and access downloads from your account.</p>
+<section class="home-page">
+  <div class="container home-shell">
+    <section class="home-hero home-panel">
+      <div class="home-hero-copy">
+        <span class="home-kicker"><i class="fas fa-sparkles"></i> Digital services</span>
+        <h1>Everything you need, in one clean place.</h1>
+        <p>Browse products, manage purchases, access downloads, check live service status, and get support without digging through clutter.</p>
+        <div class="home-actions">
+          <a class="home-action primary" href="/products"><i class="fas fa-bag-shopping"></i> Browse store</a>
+          {% if current_user %}
+          <a class="home-action secondary" href="/account"><i class="fas fa-user"></i> Open account</a>
+          {% else %}
+          <a class="home-action secondary" href="/signup"><i class="fas fa-user-plus"></i> Create account</a>
+          {% endif %}
+        </div>
       </div>
-      <div class="hero-actions">
-        <a href="/products" class="primary-cta"><i class="fas fa-bag-shopping"></i> Store</a>
-        <a href="/status" class="secondary-cta"><i class="fas fa-signal"></i> Status</a>
+      <div class="home-hero-side" aria-label="Store highlights">
+        <div class="home-side-card"><span class="home-side-icon"><i class="fas fa-bolt"></i></span><div><strong>Fast delivery</strong><span>Keys and downloads stay connected to your order.</span></div></div>
+        <div class="home-side-card"><span class="home-side-icon"><i class="fas fa-shield-halved"></i></span><div><strong>Clear checkout</strong><span>Review the item, option, and total before paying.</span></div></div>
+        <div class="home-side-card"><span class="home-side-icon"><i class="fas fa-headset"></i></span><div><strong>Purchase support</strong><span>Open a ticket tied directly to your order.</span></div></div>
       </div>
     </section>
 
-    <section class="confidence-strip" aria-label="Store benefits">
-      <div class="confidence-item"><i class="fas fa-bolt"></i><span><strong>Fast access</strong>Orders and downloads stay in your account.</span></div>
-      <div class="confidence-item"><i class="fas fa-shield-halved"></i><span><strong>Clear checkout</strong>Review products and pricing before payment.</span></div>
-      <div class="confidence-item"><i class="fas fa-headset"></i><span><strong>Connected support</strong>Get help through your purchase or Discord.</span></div>
+    <section class="home-trust" aria-label="Service benefits">
+      <div class="home-trust-item"><i class="fas fa-box-open"></i><div><strong>Organized orders</strong><span>Everything stays saved to your account.</span></div></div>
+      <div class="home-trust-item"><i class="fas fa-signal"></i><div><strong>Live product status</strong><span>Check availability before purchasing.</span></div></div>
+      <div class="home-trust-item"><i class="fas fa-lock"></i><div><strong>Secure account access</strong><span>Your purchases are tied to your login.</span></div></div>
     </section>
 
-    <section class="home-row" aria-label="Quick links">
-      <a href="/products" class="home-link"><i class="fas fa-store"></i><h3>Store</h3><p>Products, options, and cart.</p></a>
-      <a href="/downloads" class="home-link"><i class="fas fa-download"></i><h3>Downloads</h3><p>Latest files and versions.</p></a>
-      <a href="{{ site_settings.discord_url or '/discord' }}" class="home-link"><i class="fab fa-discord"></i><h3>Discord</h3><p>Support and updates.</p></a>
-    </section>
-
-    <section class="section-card">
-      <div class="section-heading">
-        <h2>Popular products</h2>
-        <a href="/products" class="ghost-cta">View all</a>
+    <section class="home-section home-panel">
+      <div class="home-section-head">
+        <div><h2>Go where you need</h2><p>The important parts of the site, without extra noise.</p></div>
       </div>
-      <div id="home-products-grid" class="featured-grid" aria-live="polite">
-        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      <div class="home-destination-grid">
+        <a class="home-destination" href="/products"><i class="fas fa-store"></i><h3>Store</h3><p>Browse available products and pricing options.</p></a>
+        <a class="home-destination" href="/downloads"><i class="fas fa-download"></i><h3>Downloads</h3><p>Access files and the newest available versions.</p></a>
+        <a class="home-destination" href="/status"><i class="fas fa-chart-column"></i><h3>Status</h3><p>See which products and services are available.</p></a>
+        <a class="home-destination" href="{{ site_settings.discord_url or '/discord' }}"><i class="fab fa-discord"></i><h3>Discord</h3><p>Join for announcements, updates, and community support.</p></a>
+      </div>
+    </section>
+
+    <section class="home-section home-panel">
+      <div class="home-section-head">
+        <div><h2>Popular products</h2><p>A small selection from the store. No heavy carousel or endless animation.</p></div>
+        <a class="home-link-small" href="/products">View all products <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div id="home-products-grid" class="home-products" aria-live="polite">
+        <div class="home-empty">Loading products…</div>
+      </div>
+    </section>
+
+    <section class="home-section home-panel">
+      <div class="home-section-head">
+        <div><h2>Simple from purchase to delivery</h2><p>A clear process with your order kept in one place.</p></div>
+      </div>
+      <div class="home-flow">
+        <div class="home-step"><span class="home-step-number">01</span><h3>Choose your product</h3><p>Open the store, compare options, and select the one that fits.</p></div>
+        <div class="home-step"><span class="home-step-number">02</span><h3>Complete checkout</h3><p>Review your order details and pay through the available checkout method.</p></div>
+        <div class="home-step"><span class="home-step-number">03</span><h3>Access your order</h3><p>Your key, files, and purchase-specific support stay in your account.</p></div>
+      </div>
+    </section>
+
+    <section class="home-support">
+      <div><h2>Need help with a purchase?</h2><p>Use the support center or join Discord for updates and assistance.</p></div>
+      <div class="home-support-actions">
+        <a class="home-action primary" href="/support"><i class="fas fa-headset"></i> Support center</a>
+        <a class="home-action secondary" href="{{ site_settings.discord_url or '/discord' }}"><i class="fab fa-discord"></i> Discord</a>
       </div>
     </section>
   </div>
@@ -93,46 +173,48 @@
 
 {% block extra_scripts %}
 <script>
-  const homeGrid = document.getElementById('home-products-grid');
-  const PLACEHOLDER = 'https://placehold.co/560x430/10091b/8b2cff?text=Product';
-  function esc(v){return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
-  function priceLabel(product){
-    const options = product?.store?.options || [];
-    const prices = options.map(opt => Number(opt.price)).filter(n => Number.isFinite(n));
+(() => {
+  const grid = document.getElementById('home-products-grid');
+  if (!grid) return;
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+  const priceLabel = product => {
+    const prices = (product?.store?.options || []).map(option => Number(option.price)).filter(Number.isFinite);
     return prices.length ? `$${Math.min(...prices).toFixed(2)}+` : 'Options';
-  }
-  function stateChip(item){
-    const raw = String(item?.status?.state || item?.status?.label || 'Online').toLowerCase();
-    if(raw.includes('offline') || raw.includes('out')) return '<span class="chip is-red"><i class="fas fa-circle"></i> Offline</span>';
-    if(raw.includes('degraded') || raw.includes('update') || raw.includes('limited')) return '<span class="chip is-yellow"><i class="fas fa-circle"></i> Limited</span>';
-    return '<span class="chip is-green"><i class="fas fa-circle"></i> Online</span>';
-  }
-  async function loadHomeProducts(){
-    try{
-      const cached = sessionStorage.getItem('moe_home_products');
-      if(cached) render(JSON.parse(cached));
-      const res = await fetch('/api/products', {headers:{'Accept':'application/json'}});
-      if(!res.ok) throw new Error('load failed');
-      const items = await res.json();
-      sessionStorage.setItem('moe_home_products', JSON.stringify(items.slice(0,12)));
-      render(items);
-    }catch(e){
-      homeGrid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Products could not load right now.</div>';
+  };
+  const render = items => {
+    const products = (items || []).filter(item => item?.store?.enabled).slice(0, 3);
+    if (!products.length) {
+      grid.innerHTML = '<div class="home-empty">No products are available right now.</div>';
+      return;
     }
-  }
-  function render(items){
-    const featured = (items || []).filter(item => item?.store?.enabled).slice(0,4);
-    if(!featured.length){ homeGrid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No products available right now.</div>'; return; }
-    homeGrid.innerHTML = featured.map(item => `
-      <article class="feature-product">
-        <img src="${esc(item.image || PLACEHOLDER)}" alt="${esc(item.name || 'Product')}" loading="lazy" decoding="async">
-        <div class="feature-body">
-          <div class="feature-title">${esc(item.name || 'Untitled Product')}</div>
-          <div class="feature-meta">${stateChip(item)}<span class="chip"><i class="fas fa-tag"></i> ${esc(priceLabel(item))}</span></div>
-          <a class="feature-link" href="/product/${encodeURIComponent(item.slug || item.id || '')}">View</a>
+    grid.innerHTML = products.map(item => `
+      <article class="home-product">
+        <div class="home-product-media"><img src="${esc(item.image || '/static/logo.png')}" alt="${esc(item.name || 'Product')}" loading="lazy" decoding="async"></div>
+        <div class="home-product-body">
+          <div class="home-product-top"><div class="home-product-title">${esc(item.name || 'Product')}</div><span class="home-price">${esc(priceLabel(item))}</span></div>
+          <div class="home-product-meta"><span class="home-state">Available</span></div>
+          <a class="home-product-link" href="/product/${encodeURIComponent(item.slug || item.id || '')}">View product</a>
         </div>
       </article>`).join('');
-  }
-  loadHomeProducts();
+  };
+  const load = async () => {
+    try {
+      const cached = sessionStorage.getItem('moe_home_products_v2');
+      if (cached) {
+        render(JSON.parse(cached));
+        return;
+      }
+      const response = await fetch('/api/products', {headers:{Accept:'application/json'}});
+      if (!response.ok) throw new Error('Could not load products');
+      const items = await response.json();
+      sessionStorage.setItem('moe_home_products_v2', JSON.stringify(items.slice(0, 8)));
+      render(items);
+    } catch (error) {
+      grid.innerHTML = '<div class="home-empty">Products could not load right now. Visit the store to try again.</div>';
+    }
+  };
+  if ('requestIdleCallback' in window) requestIdleCallback(load, {timeout:900});
+  else setTimeout(load, 120);
+})();
 </script>
 {% endblock %}

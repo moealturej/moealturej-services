@@ -1,0 +1,23 @@
+/* Organization v6 — spacing, hierarchy, and consistency without changing site behavior */
+:root{--org-gap:20px;--org-panel:rgba(255,255,255,.032);--org-line:rgba(255,255,255,.075)}
+main>.page-section>.container{display:grid;gap:22px}
+.page-head,.section-head,.commerce-head,.admin-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.page-head p,.section-head p,.commerce-head p,.admin-section-head p{max-width:720px;margin-bottom:0}
+.panel,.store-shell,.detail-shell,.support-shell,.status-shell,.downloads-panel,.commerce-card,.pay-card{overflow:hidden}
+.card-grid,.product-grid,.downloads-grid,.status-grid,.overview-grid,.admin-stats{gap:18px!important}
+.form-grid,.admin-grid,.settings-grid{gap:16px!important}
+label{gap:8px}
+input,select,textarea{transition:border-color .18s ease,background .18s ease,box-shadow .18s ease}
+input:focus,select:focus,textarea:focus{border-color:rgba(192,132,252,.42)!important;box-shadow:0 0 0 4px rgba(168,85,247,.08)!important}
+.admin-page .admin-section,.admin-page .admin-card,.admin-page .order-card,.account-page .order-card{border-radius:22px!important;border:1px solid var(--org-line)!important;background:linear-gradient(180deg,rgba(255,255,255,.038),rgba(255,255,255,.02))!important}
+.admin-page .admin-section{padding:20px!important}
+.admin-page .admin-section+.admin-section{margin-top:18px}
+.admin-page .order-card,.account-page .order-card{padding:18px!important}
+.admin-page .order-line{padding:12px 14px!important;border-radius:14px!important}
+.admin-page .delivery-form{padding:14px!important;border-radius:16px!important}
+.admin-page details>summary{min-height:46px;display:flex;align-items:center}
+.product-card,.home-product-card,.download-card,.status-card{isolation:isolate}
+.product-card-content,.home-product-card-content,.download-card-content{display:flex;flex-direction:column;gap:10px}
+.primary-cta,.secondary-cta,.small-btn,.danger-btn{font-weight:850;letter-spacing:-.01em}
+.flash-stack{max-width:min(410px,calc(100vw - 28px))}
+@media(max-width:760px){main>.page-section>.container{gap:16px}.page-head,.section-head,.commerce-head,.admin-section-head{align-items:flex-start}.admin-page .admin-section{padding:15px!important}.admin-page .order-card,.account-page .order-card{padding:14px!important}}

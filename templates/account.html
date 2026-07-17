@@ -43,6 +43,12 @@
     <div class="account-stat"><span><i class="fas fa-wallet"></i> Total spent</span><strong>${{ '%.2f'|format(stats.total_cents / 100) }}</strong></div>
   </section>
 
+
+  <section class="orders-panel" id="wishlist">
+    <div class="orders-head"><div><div class="eyebrow">saved</div><h2>Your wishlist</h2><p>Products you saved for later on this device.</p></div><a class="secondary-cta" href="/products#wishlist"><i class="fas fa-heart"></i> Browse saved</a></div>
+    <div id="account-wishlist-grid" class="account-wishlist-grid"><div class="empty-orders"><i class="fas fa-heart"></i><strong>No saved products</strong><p>Tap the heart on any store product to keep it here.</p></div></div>
+  </section>
+
   <section class="orders-panel" id="support-tickets">
     <div class="orders-head">
       <div><div class="eyebrow">support</div><h2>Purchase tickets</h2><p>Create and track support tickets tied to a paid order/product so your help stays organized.</p></div>
@@ -109,4 +115,9 @@
     <div class="account-hint"><i class="fas fa-shield-halved"></i><span>For security, product keys only appear on orders tied to this signed-in email. Keep your account login safe and contact support if anything looks wrong.</span></div>
   </section>
 </div></div></section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded',()=>{const grid=document.getElementById('account-wishlist-grid');if(!grid||!window.MoeWishlist)return;const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');const render=()=>{const items=window.MoeWishlist.get();grid.innerHTML=items.length?items.map(item=>`<article class="account-wishlist-item"><img src="${esc(item.image||'/static/logo.png')}" alt="${esc(item.name)}"><div><strong>${esc(item.name)}</strong><a href="/product/${encodeURIComponent(item.slug)}">View product <i class="fas fa-arrow-right"></i></a></div></article>`).join(''):'<div class="empty-orders" style="grid-column:1/-1"><i class="fas fa-heart"></i><strong>No saved products</strong><p>Tap the heart on any store product to keep it here.</p></div>';};render();window.addEventListener('moeWishlistUpdated',render);});
+</script>
 {% endblock %}

@@ -1,0 +1,9 @@
+/* Performance-safe visual layer — loaded last */
+#particle-canvas{opacity:.18!important;filter:none!important}
+.shooting-star,.v3-cursor-glow{display:none!important}
+.topbar,.admin-tabs,.admin-tools,.product-order-savebar{backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important}
+.panel,.hero-shell,.store-shell,.detail-shell,.support-shell,.doc-shell,.legal-shell,.status-shell,.downloads-panel,.error-shell,.commerce-card,.pay-card,.orders-panel,.account-hero,.legal-hero{backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
+.product-card,.home-product-card,.download-card,.status-card,.legal-card,.support-mini-card,.overview-card,.store-kpi,.hero-card,.strip-card,.detail-image-card,.detail-info-card,.detail-section-card,.discord-card,.card{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+img{content-visibility:auto}
+@media(max-width:780px){#particle-canvas{opacity:.12!important}.topbar,.admin-tabs,.admin-tools,.product-order-savebar,.panel,.hero-shell,.store-shell,.detail-shell,.support-shell,.doc-shell,.legal-shell,.status-shell,.downloads-panel,.error-shell,.commerce-card,.pay-card,.orders-panel,.account-hero,.legal-hero{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
+@media(prefers-reduced-motion:reduce){#particle-canvas{display:none!important}.v3-reveal{opacity:1!important;transform:none!important;transition:none!important}}

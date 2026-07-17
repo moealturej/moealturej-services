@@ -156,6 +156,7 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
 
   </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/command-center-v2.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/premium-v3.css') }}">
   {% block extra_head %}{% endblock %}
   <style>
     /* final override layer: keeps uploaded page logic but fixes formatting after per-page CSS */
@@ -285,6 +286,10 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
   <link rel="stylesheet" href="{{ url_for('static', filename='css/qol-polish.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site-refinement.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bold-footer-particles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/store-retention.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/header-footer-v4.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/performance-lite.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/organization-v6.css') }}">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -294,60 +299,127 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
   <i class="shooting-star s1" aria-hidden="true"></i><i class="shooting-star s2" aria-hidden="true"></i><i class="shooting-star s3" aria-hidden="true"></i>
   <div class="site-shell">
     <div class="topbar-wrap" id="topbarWrap"><div class="container"><header class="topbar">
-      <a href="/" class="brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="moealturej" class="brand-logo"><div><div class="brand-name">moealturej</div><div class="brand-subtitle">premium digital store</div></div></a>
-      <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fas fa-bars"></i></button>
-      <nav class="nav-links" id="mainNav" aria-label="Main navigation"><a href="/" class="{% if active_page == 'home' %}active{% endif %}">Home</a><a href="/products" class="{% if active_page == 'products' %}active{% endif %}">Store</a>
-        <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a><a href="/status" class="{% if active_page == 'status' %}active{% endif %}">Status</a><a href="/legal" class="{% if active_page == 'legal' %}active{% endif %}">Legal</a></nav>
-      <div class="header-actions"><a href="/cart" class="cart-icon-btn {% if request.path == '/cart' %}active{% endif %}" aria-label="Open cart"><i class="fas fa-bag-shopping"></i><span id="navCartCount" class="cart-count-badge" hidden>0</span></a>{% if current_user %}<a href="{{ '/admin' if (current_user.is_owner or current_user.role == 'admin') else '/account' }}" class="header-cta"><i class="fas {{ 'fa-crown' if (current_user.is_owner or current_user.role == 'admin') else 'fa-user' }}"></i> <span>{{ 'Admin' if (current_user.is_owner or current_user.role == 'admin') else 'Account' }}</span></a>{% else %}<a href="/login" class="header-cta"><i class="fas fa-right-to-bracket"></i> <span>Login</span></a>{% endif %}</div>
+      <a href="/" class="brand" aria-label="moealturej home"><img src="{{ url_for('static', filename='logo.png') }}" alt="" class="brand-logo"><div><div class="brand-name">moealturej</div><div class="brand-subtitle">premium digital store</div></div></a>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="mainNav"><i class="fas fa-bars"></i></button>
+      <nav class="nav-links" id="mainNav" aria-label="Main navigation">
+        <a href="/" class="{% if active_page == 'home' %}active{% endif %}">Home</a>
+        <a href="/products" class="{% if active_page == 'products' %}active{% endif %}">Store</a>
+        <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a>
+        <a href="/status" class="{% if active_page == 'status' %}active{% endif %}">Status</a>
+        <div class="nav-more">
+          <button type="button" aria-haspopup="true">More <i class="fas fa-chevron-down"></i></button>
+          <div class="nav-more-menu">
+            <a href="/support"><i class="fas fa-headset"></i>Support</a>
+            <a href="/applications"><i class="fas fa-clipboard-list"></i>Applications</a>
+            <a href="/discord"><i class="fab fa-discord"></i>Discord</a>
+            <a href="/legal"><i class="fas fa-scale-balanced"></i>Legal center</a>
+          </div>
+        </div>
+      </nav>
+      <div class="header-actions"><a href="/products#wishlist" class="wishlist-icon-btn" id="navWishlistBtn" aria-label="View saved products"><i class="fas fa-heart"></i><span id="navWishlistCount" class="wishlist-count" hidden>0</span></a><a href="/cart" class="cart-icon-btn {% if request.path == '/cart' %}active{% endif %}" aria-label="Open cart"><i class="fas fa-bag-shopping"></i><span id="navCartCount" class="cart-count-badge" hidden>0</span></a>{% if current_user %}<a href="{{ '/admin' if (current_user.is_owner or current_user.role == 'admin') else '/account' }}" class="header-cta"><i class="fas {{ 'fa-crown' if (current_user.is_owner or current_user.role == 'admin') else 'fa-user' }}"></i> <span>{{ 'Admin' if (current_user.is_owner or current_user.role == 'admin') else 'Account' }}</span></a>{% else %}<a href="/login" class="header-cta"><i class="fas fa-right-to-bracket"></i> <span>Login</span></a>{% endif %}</div>
     </header></div></div>
     <main id="main-content">{% if site_settings.announcement_enabled and site_settings.announcement_text %}<div class="site-announcement {{ site_settings.announcement_type|default('info') }}"><i class="fas fa-bullhorn"></i><span>{{ site_settings.announcement_text }}</span></div>{% endif %}{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash {{ category }}"><span>{{ message }}</span><button class="flash-close" type="button" aria-label="Dismiss notification">×</button></div>{% endfor %}</div>{% endif %}{% endwith %}{% block content %}{% endblock %}</main>
     <footer class="site-footer">
       <div class="footer-glow" aria-hidden="true"></div>
       <div class="container">
-        <div class="footer-grid">
+        <div class="footer-top">
           <section class="footer-brand-block" aria-label="About moealturej">
             <a href="/" class="footer-brand-link">
-              <img src="{{ url_for('static', filename='logo.png') }}" alt="moealturej" class="footer-logo">
-              <span class="footer-brand-copy"><strong>moealturej</strong><small>services</small></span>
+              <img src="{{ url_for('static', filename='logo.png') }}" alt="" class="footer-logo">
+              <span class="footer-brand-copy">
+                <strong>{{ (site_settings.site_name or 'moealturej')|upper }}</strong>
+                <small>digital services</small>
+              </span>
             </a>
-            <p class="footer-brand-text">Clean digital products, downloads, support, and status updates from one premium platform.</p>
-            <a class="footer-status-pill" href="/status"><span></span> View system status</a>
+            <p class="footer-brand-text">Premium digital products, secure delivery, account tools, and direct support—all organized in one clean platform.</p>
+            <div class="footer-trust-row">
+              <a class="footer-status-pill" href="/status"><span></span>Systems online</a>
+              <span class="footer-trust-pill"><i class="fas fa-shield-halved"></i> Secure checkout</span>
+              <span class="footer-trust-pill"><i class="fas fa-bolt"></i> Fast delivery</span>
+            </div>
+            <a class="footer-help-row" href="{{ site_settings.support_url or '/support' }}">
+              <span class="footer-help-icon"><i class="fas fa-headset"></i></span>
+              <span>Need help? Visit our <strong>Support Center</strong></span>
+              <i class="fas fa-chevron-right"></i>
+            </a>
           </section>
 
-          <nav class="footer-col" aria-label="Store links">
-            <h4><span class="footer-heading-icon"><i class="fas fa-bag-shopping"></i></span>Store</h4>
-            <div class="footer-link-list">
-              <a href="/products"><span><i class="fas fa-cube"></i>Products</span><i class="fas fa-chevron-right"></i></a>
-              <a href="/downloads"><span><i class="fas fa-download"></i>Downloads</span><i class="fas fa-chevron-right"></i></a>
-              <a href="/applications"><span><i class="fas fa-border-all"></i>Applications</span><i class="fas fa-chevron-right"></i></a>
-            </div>
-          </nav>
+          <div class="footer-directory">
+            <nav class="footer-col" aria-label="Explore links">
+              <h4><span class="footer-heading-icon"><i class="fas fa-compass"></i></span>Explore</h4>
+              <div class="footer-link-list">
+                <a href="/"><span><i class="fas fa-house"></i>Home</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/products"><span><i class="fas fa-bag-shopping"></i>Store</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/downloads"><span><i class="fas fa-download"></i>Downloads</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/status"><span><i class="fas fa-chart-column"></i>Status</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/applications"><span><i class="fas fa-table-cells-large"></i>Applications</span><i class="fas fa-chevron-right"></i></a>
+              </div>
+            </nav>
 
-          <nav class="footer-col" aria-label="Help links">
-            <h4><span class="footer-heading-icon"><i class="fas fa-headset"></i></span>Help</h4>
-            <div class="footer-link-list">
-              <a href="{{ site_settings.discord_url or '/discord' }}"><span><i class="fab fa-discord"></i>Discord</span><i class="fas fa-chevron-right"></i></a>
-              <a href="{{ site_settings.support_url or '/support' }}"><span><i class="fas fa-life-ring"></i>Support</span><i class="fas fa-chevron-right"></i></a>
-              <a href="{{ site_settings.legal_url or '/legal' }}"><span><i class="fas fa-scale-balanced"></i>Legal center</span><i class="fas fa-chevron-right"></i></a>
-            </div>
-          </nav>
+            <nav class="footer-col" aria-label="Account links">
+              <h4><span class="footer-heading-icon"><i class="fas fa-user"></i></span>Account</h4>
+              <div class="footer-link-list">
+                {% if current_user %}
+                <a href="/account"><span><i class="fas fa-gauge"></i>Dashboard</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/account#orders"><span><i class="fas fa-receipt"></i>Orders</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/account#downloads"><span><i class="fas fa-cloud-arrow-down"></i>My downloads</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/logout"><span><i class="fas fa-arrow-right-from-bracket"></i>Log out</span><i class="fas fa-chevron-right"></i></a>
+                {% else %}
+                <a href="/login"><span><i class="fas fa-right-to-bracket"></i>Log in</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/signup"><span><i class="fas fa-user-plus"></i>Create account</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/forgot-password"><span><i class="fas fa-key"></i>Reset password</span><i class="fas fa-chevron-right"></i></a>
+                {% endif %}
+                <a href="/cart"><span><i class="fas fa-cart-shopping"></i>Cart</span><i class="fas fa-chevron-right"></i></a>
+              </div>
+            </nav>
 
-          <nav class="footer-col" aria-label="Legal links">
-            <h4><span class="footer-heading-icon"><i class="fas fa-shield-halved"></i></span>Legal</h4>
-            <div class="footer-link-list footer-legal-list">
-              <a href="/terms"><span><i class="fas fa-file-contract"></i>Terms &amp; Privacy</span><i class="fas fa-chevron-right"></i></a>
-              <a href="/refund-policy"><span><i class="fas fa-rotate-left"></i>Refund policy</span><i class="fas fa-chevron-right"></i></a>
-              <a href="/acceptable-use"><span><i class="fas fa-cookie-bite"></i>Acceptable use</span><i class="fas fa-chevron-right"></i></a>
-            </div>
-          </nav>
+            <nav class="footer-col" aria-label="Support links">
+              <h4><span class="footer-heading-icon"><i class="fas fa-life-ring"></i></span>Support</h4>
+              <div class="footer-link-list">
+                <a href="{{ site_settings.support_url or '/support' }}"><span><i class="fas fa-headset"></i>Support center</span><i class="fas fa-chevron-right"></i></a>
+                <a href="{{ site_settings.discord_url or '/discord' }}"><span><i class="fab fa-discord"></i>Discord</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/support"><span><i class="fas fa-ticket"></i>Open a ticket</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/status"><span><i class="fas fa-server"></i>Service status</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/donate"><span><i class="fas fa-heart"></i>Donate</span><i class="fas fa-chevron-right"></i></a>
+              </div>
+            </nav>
+
+            <nav class="footer-col" aria-label="Legal links">
+              <h4><span class="footer-heading-icon"><i class="fas fa-shield-halved"></i></span>Legal</h4>
+              <div class="footer-link-list">
+                <a href="/terms"><span><i class="fas fa-file-contract"></i>Terms</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/privacy"><span><i class="fas fa-user-shield"></i>Privacy</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/refund-policy"><span><i class="fas fa-rotate-left"></i>Refund policy</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/acceptable-use"><span><i class="fas fa-circle-check"></i>Acceptable use</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/dmca"><span><i class="fas fa-copyright"></i>DMCA</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/cookie-policy"><span><i class="fas fa-cookie-bite"></i>Cookies</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/license"><span><i class="fas fa-certificate"></i>License</span><i class="fas fa-chevron-right"></i></a>
+              </div>
+            </nav>
+          </div>
         </div>
 
-        <div class="footer-bottom">
-          <span>© {{ current_year }} <strong>{{ site_settings.site_name or 'moealturej' }} Services.</strong> All rights reserved.</span>
-          <div class="footer-socials">
-            <a href="{{ site_settings.discord_url or '/discord' }}" aria-label="Discord"><i class="fab fa-discord"></i></a>
-            <a href="{{ site_settings.support_url or '/support' }}" aria-label="Support"><i class="fas fa-headset"></i></a>
-            <a href="{{ site_settings.store_url or '/products' }}" aria-label="Store"><i class="fas fa-bag-shopping"></i></a>
+        <div class="footer-bottom-wrap">
+          <div class="footer-bottom-ornament" aria-hidden="true"><span></span></div>
+          <div class="footer-bottom">
+            <div class="footer-copyright">
+              <span class="footer-copyright-icon"><i class="fas fa-shield-heart"></i></span>
+              <span>© {{ current_year }} <strong class="footer-copy-name">{{ site_settings.site_name or 'moealturej' }}</strong>. All rights reserved.</span>
+            </div>
+            <div class="footer-bottom-links">
+              <a href="/privacy">Privacy</a>
+              <a href="/terms">Terms</a>
+              <a href="/refund-policy">Refunds</a>
+              <a href="/status">Status</a>
+            </div>
+            <div class="footer-connect">
+              <span>Connect with us</span>
+              <div class="footer-socials">
+                <a href="{{ site_settings.discord_url or '/discord' }}" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                <a href="{{ site_settings.support_url or '/support' }}" aria-label="Support"><i class="fas fa-headset"></i></a>
+                <a href="/products" aria-label="Store"><i class="fas fa-bag-shopping"></i></a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -359,7 +431,39 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
     const backToTop=document.getElementById('backToTop');window.addEventListener('scroll',()=>backToTop?.classList.toggle('show',scrollY>520),{passive:true});backToTop?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
     document.addEventListener('error',e=>{const img=e.target;if(img?.tagName==='IMG'&&!img.dataset.fallback){img.dataset.fallback='1';img.src='/static/logo.png';img.classList.add('image-fallback')}},true);
     const topbarWrap=document.getElementById('topbarWrap');function updateHeaderState(){topbarWrap&&topbarWrap.classList.toggle('scrolled',(window.pageYOffset||document.documentElement.scrollTop||0)>12)}updateHeaderState();window.addEventListener('scroll',updateHeaderState,{passive:true});
-    const canvas=document.getElementById('particle-canvas');const ctx=canvas?canvas.getContext('2d'):null;let particles=[];let mouse={x:-9999,y:-9999};function resizeCanvas(){if(!ctx)return;const ratio=Math.min(window.devicePixelRatio||1,1.7);canvas.width=Math.floor(innerWidth*ratio);canvas.height=Math.floor(innerHeight*ratio);canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(ratio,0,0,ratio,0,0);const count=Math.max(innerWidth<700?75:125,Math.min(innerWidth<700?120:210,Math.floor(innerWidth/8)));particles=Array.from({length:count},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.42,vy:(Math.random()-.5)*.42,r:Math.random()*2.55+.75,a:Math.random()*.62+.28}))}function drawParticles(){if(!ctx)return;ctx.clearRect(0,0,innerWidth,innerHeight);for(let i=0;i<particles.length;i++){const p=particles[i];p.x+=p.vx;p.y+=p.vy;if(p.x<-20)p.x=innerWidth+20;if(p.x>innerWidth+20)p.x=-20;if(p.y<-20)p.y=innerHeight+20;if(p.y>innerHeight+20)p.y=-20;const md=Math.hypot(mouse.x-p.x,mouse.y-p.y);if(md<175){p.x-=(mouse.x-p.x)*.0042;p.y-=(mouse.y-p.y)*.0042}ctx.beginPath();ctx.fillStyle=`rgba(184,79,255,${p.a})`;ctx.shadowBlur=22;ctx.shadowColor='rgba(184,79,255,.92)';ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;for(let j=i+1;j<particles.length;j++){const q=particles[j],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<135){ctx.beginPath();ctx.strokeStyle=`rgba(184,79,255,${(1-d/135)*.24})`;ctx.lineWidth=1.15;ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}}}requestAnimationFrame(drawParticles)}window.addEventListener('resize',resizeCanvas);window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});window.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999});resizeCanvas();drawParticles();
+    const canvas=document.getElementById('particle-canvas');
+    const ctx=canvas?canvas.getContext('2d',{alpha:true,desynchronized:true}):null;
+    const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let particles=[],particleFrame=0,lastParticleTick=0,resizeTimer=0,mouse={x:-9999,y:-9999};
+    function resizeCanvas(){
+      if(!ctx)return;
+      const ratio=Math.min(window.devicePixelRatio||1,1.1);
+      canvas.width=Math.floor(innerWidth*ratio);canvas.height=Math.floor(innerHeight*ratio);
+      canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(ratio,0,0,ratio,0,0);
+      const count=reduceMotion?0:(innerWidth<700?22:42);
+      particles=Array.from({length:count},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.24,vy:(Math.random()-.5)*.24,r:Math.random()*1.45+.55,a:Math.random()*.34+.18}));
+    }
+    function drawParticles(now=0){
+      if(!ctx||document.hidden){particleFrame=requestAnimationFrame(drawParticles);return}
+      if(now-lastParticleTick<33){particleFrame=requestAnimationFrame(drawParticles);return}
+      lastParticleTick=now;ctx.clearRect(0,0,innerWidth,innerHeight);
+      for(let i=0;i<particles.length;i++){
+        const p=particles[i];p.x+=p.vx;p.y+=p.vy;
+        if(p.x<-10)p.x=innerWidth+10;else if(p.x>innerWidth+10)p.x=-10;
+        if(p.y<-10)p.y=innerHeight+10;else if(p.y>innerHeight+10)p.y=-10;
+        const dx=mouse.x-p.x,dy=mouse.y-p.y,md2=dx*dx+dy*dy;if(md2<14400){p.x-=dx*.0018;p.y-=dy*.0018}
+        ctx.beginPath();ctx.fillStyle=`rgba(184,79,255,${p.a})`;ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+        const limit=Math.min(particles.length,i+7);
+        for(let j=i+1;j<limit;j++){const q=particles[j],x=p.x-q.x,y=p.y-q.y,d2=x*x+y*y;if(d2<8100){ctx.beginPath();ctx.strokeStyle=`rgba(184,79,255,${(1-Math.sqrt(d2)/90)*.11})`;ctx.lineWidth=.7;ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}}
+      }
+      particleFrame=requestAnimationFrame(drawParticles);
+    }
+    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(resizeCanvas,180)},{passive:true});
+    window.addEventListener('pointermove',e=>{mouse.x=e.clientX;mouse.y=e.clientY},{passive:true});
+    window.addEventListener('pointerleave',()=>{mouse.x=-9999;mouse.y=-9999},{passive:true});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!particleFrame)particleFrame=requestAnimationFrame(drawParticles)});
+    if(location.pathname!=='/'){resizeCanvas();if(!reduceMotion)particleFrame=requestAnimationFrame(drawParticles);}else if(canvas){canvas.remove();}
+    document.querySelectorAll('img:not([loading])').forEach((img,i)=>{if(i>1)img.loading='lazy';img.decoding='async'});
     document.querySelectorAll('form[method="post"],form[method="POST"]').forEach(form=>{if(!form.querySelector('input[name="csrf_token"]')){const i=document.createElement('input');i.type='hidden';i.name='csrf_token';i.value='{{ csrf_token() }}';form.appendChild(i)}});
     document.querySelectorAll('.flash').forEach((toast)=>{const close=toast.querySelector('.flash-close');const remove=()=>{toast.style.animation='toastOut .24s ease forwards';setTimeout(()=>toast.remove(),260)};close&&close.addEventListener('click',remove);setTimeout(remove,5400)});
 
@@ -399,6 +503,21 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
     document.querySelectorAll('form.auth-card, form[data-loading-form="true"]').forEach(form=>{form.addEventListener('submit',()=>{const btn=form.querySelector('button[type="submit"]');form.classList.add('is-loading');if(btn){btn.disabled=true;if(!btn.querySelector('.btn-spinner')){const s=document.createElement('span');s.className='btn-spinner';btn.prepend(s)}const t=btn.dataset.loadingText||'Sending code...';const label=btn.querySelector('.btn-label');if(label)label.textContent=t;else btn.append(document.createTextNode(' '+t));}if(loadingOverlay){loadingTitle.textContent=form.dataset.loadingTitle||'Sending security code';loadingText.textContent=form.dataset.loadingText||'Checking your account and sending the email code. This can take a moment.';loadingOverlay.classList.add('active');loadingOverlay.setAttribute('aria-hidden','false');}})});
 
   </script>
+  <script>
+    window.MoeWishlist = {
+      key: 'moeWishlist', recentKey: 'moeRecentlyViewed',
+      get(){ try{return JSON.parse(localStorage.getItem(this.key)||'[]')}catch{return []} },
+      save(items){ localStorage.setItem(this.key,JSON.stringify(items.slice(0,50))); this.updateBadge(); window.dispatchEvent(new CustomEvent('moeWishlistUpdated')); },
+      has(slug){ return this.get().some(x=>String(x.slug)===String(slug)); },
+      toggle(product){ let items=this.get(), slug=String(product.slug||product.id||''); const exists=items.some(x=>String(x.slug)===slug); items=exists?items.filter(x=>String(x.slug)!==slug):[{slug,name:product.name||'Product',image:product.image||'/static/logo.png',category:product.category||'Product'},...items]; this.save(items); return !exists; },
+      addRecent(product){ let items=[]; try{items=JSON.parse(localStorage.getItem(this.recentKey)||'[]')}catch{} const slug=String(product.slug||product.id||''); items=[{slug,name:product.name||'Product',image:product.image||'/static/logo.png'},...items.filter(x=>String(x.slug)!==slug)].slice(0,8); localStorage.setItem(this.recentKey,JSON.stringify(items)); },
+      updateBadge(){ const count=this.get().length, badge=document.getElementById('navWishlistCount'), btn=document.getElementById('navWishlistBtn'); if(badge){badge.textContent=count;badge.hidden=count<1} if(btn)btn.classList.toggle('active',count>0); }
+    };
+    window.MoeWishlist.updateBadge();
+    window.addEventListener('storage',e=>{if(e.key==='moeWishlist')window.MoeWishlist.updateBadge()});
+    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));}
+  </script>
+  <script src="{{ url_for('static', filename='js/premium-v3.js') }}" defer></script>
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>
