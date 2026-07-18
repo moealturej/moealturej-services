@@ -399,11 +399,11 @@ if not secret_key:
 
 app.config.update(
     SECRET_KEY=secret_key,
-    PERMANENT_SESSION_LIFETIME=timedelta(minutes=20),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=IS_PRODUCTION,
-    SESSION_REFRESH_EACH_REQUEST=True,
+    SESSION_REFRESH_EACH_REQUEST=False,
     JSON_SORT_KEYS=False,
     MAX_CONTENT_LENGTH=MAX_UPLOAD_MB * 1024 * 1024,
     MAX_SUPPORT_ATTACHMENT_MB=MAX_SUPPORT_ATTACHMENT_MB,
@@ -843,11 +843,13 @@ def consume_email_code_flow(kind: str, code: str) -> dict | None:
     return payload
 
 
-def finish_login(user: dict):
+def finish_login(user: dict, remember: bool = False):
     safe_user = sanitize_user_for_session(user)
     if not safe_user:
         abort(403, description="Invalid login session.")
     session["user"] = safe_user
+    session["remember_login"] = bool(remember)
+    session.permanent = bool(remember)
     session.pop("csrf_token", None)
 
 
@@ -2896,7 +2898,10 @@ def cleanup_stale_pending_orders_before_request():
 
 @app.before_request
 def set_session_timeout():
-    session.permanent = True
+    # A normal login uses a browser-session cookie. "Keep me signed in"
+    # marks the signed Flask session cookie as persistent for 30 days.
+    # Clearing browser cookies removes both the login and remembered-device state.
+    session.permanent = bool(session.get("remember_login", False))
     user = current_user()
     if user and using_mongo():
         fresh = get_user_by_email(user.get("email"))
@@ -3331,7 +3336,8 @@ def login():
             if not payload:
                 flash("Invalid or expired security code.", "danger")
                 return render_template("verify_email.html", flow="login", email=session.get("pending_login", {}).get("email"), active_page="login")
-            finish_login(payload)
+            remember = bool(payload.pop("_remember_login", False))
+            finish_login(payload, remember=remember)
             record_audit("login", payload.get("email", ""))
             flash("Logged in securely.", "success")
             return redirect(request.args.get("next") or url_for("admin_dashboard" if session["user"].get("is_owner") else "account"))
@@ -3352,14 +3358,16 @@ def login():
         if not valid:
             flash("Invalid email or password.", "danger")
             return render_template("login.html", active_page="login")
-        payload = {"email": user.get("email"), "username": user.get("username") or email.split("@")[0], "is_owner": bool(user.get("is_owner") or user.get("role") == "owner"), "role": user.get("role", "user")}
+        remember = request.form.get("keep_signed_in") == "on"
+        payload = {"email": user.get("email"), "username": user.get("username") or email.split("@")[0], "is_owner": bool(user.get("is_owner") or user.get("role") == "owner"), "role": user.get("role", "user"), "_remember_login": remember}
         if REQUIRE_EMAIL_CODES:
             if not start_email_code_flow("login", payload, email, "login"):
                 flash("Email 2FA is not configured. Add RESEND_API_KEY in .env. Emails will send from @moealturej.com with Gmail as reply-to.", "danger")
                 return render_template("login.html", active_page="login")
             flash("Check your email for the 6-digit login code.", "success")
             return render_template("verify_email.html", flow="login", email=email, active_page="login")
-        finish_login(payload)
+        remember = bool(payload.pop("_remember_login", False))
+        finish_login(payload, remember=remember)
         flash("Logged in successfully.", "success")
         return redirect(request.args.get("next") or url_for("admin_dashboard" if session["user"].get("is_owner") else "account"))
     return render_template("login.html", active_page="login")
@@ -3378,6 +3386,7 @@ def discord_login():
     if not str(next_url).startswith("/"):
         next_url = url_for("account")
     session["discord_oauth_next"] = next_url
+    session["discord_oauth_remember"] = request.args.get("remember") == "1"
     params = {
         "client_id": DISCORD_CLIENT_ID,
         "redirect_uri": discord_redirect_uri(),
@@ -3441,7 +3450,7 @@ def discord_callback():
     if user.get("status") == "suspended":
         flash("This account is suspended.", "danger")
         return redirect(url_for("login"))
-    finish_login(user | {"auth_provider": "discord"})
+    finish_login(user | {"auth_provider": "discord"}, remember=bool(session.pop("discord_oauth_remember", False)))
     record_audit("discord_login", user.get("email", user.get("discord_id", "")))
     flash("Logged in with Discord.", "success")
     next_url = session.pop("discord_oauth_next", None) or url_for("admin_dashboard" if session["user"].get("is_owner") else "account")
@@ -3464,6 +3473,7 @@ def google_login():
     if not str(next_url).startswith("/"):
         next_url = url_for("account")
     session["google_oauth_next"] = next_url
+    session["google_oauth_remember"] = request.args.get("remember") == "1"
     params = {
         "client_id": GOOGLE_CLIENT_ID,
         "redirect_uri": google_redirect_uri(),
@@ -3524,7 +3534,7 @@ def google_callback():
     if user.get("status") == "suspended":
         flash("This account is suspended.", "danger")
         return redirect(url_for("login"))
-    finish_login(user | {"auth_provider": "google"})
+    finish_login(user | {"auth_provider": "google"}, remember=bool(session.pop("google_oauth_remember", False)))
     record_audit("google_login", user.get("email", user.get("google_id", "")))
     flash("Logged in with Google.", "success")
     next_url = session.pop("google_oauth_next", None) or url_for("admin_dashboard" if session["user"].get("is_owner") else "account")
