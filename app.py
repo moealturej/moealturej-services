@@ -4959,6 +4959,38 @@ def register_dynamic_routes():
 
 register_dynamic_routes()
 
+# Secure desktop loader API
+def authenticate_loader_password(email: str, password: str):
+    email = (email or "").strip().lower()
+    if using_mongo():
+        user = users_col.find_one({"email": email})
+        if not user or not check_password_hash(user.get("password_hash", ""), password):
+            return None
+        if str(user.get("status") or "active").lower() == "suspended":
+            return None
+        return user
+    if email == OWNER_EMAIL and password == OWNER_PASSWORD:
+        return {"email": OWNER_EMAIL, "username": OWNER_USERNAME, "is_owner": True, "role": "owner", "status": "active"}
+    return None
+
+from loader_api import register_loader_api
+register_loader_api(
+    app,
+    current_user=current_user,
+    load_products=load_products,
+    load_orders_for_user=load_orders_for_user,
+    get_user_by_email=get_user_by_email,
+    authenticate_password=authenticate_loader_password,
+    files_dir=FILES_DIR,
+    using_mongo=using_mongo,
+    db=db,
+    load_support_tickets_for_user=load_support_tickets_for_user,
+    find_support_ticket=find_support_ticket,
+    save_support_ticket=save_support_ticket,
+    append_ticket_message=append_ticket_message,
+    ticket_public_id=ticket_public_id,
+)
+
 
 # -----------------------------------------------------------------------------
 # App start
