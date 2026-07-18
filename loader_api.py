@@ -13,6 +13,7 @@ from urllib.parse import urlparse, unquote
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for, send_from_directory
 from werkzeug.utils import safe_join
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 def _utcnow() -> datetime:
@@ -63,6 +64,8 @@ def register_loader_api(
     save_support_ticket: Callable[[dict], None] | None = None,
     append_ticket_message: Callable[[dict, dict, str, list | None], dict] | None = None,
     ticket_public_id: Callable[[], str] | None = None,
+    send_security_email: Callable[[str, str, str], bool] | None = None,
+    require_email_codes: bool = True,
     login_endpoint: str = "login",
 ):
     """Register a browser-approved device login and authenticated loader API."""
@@ -72,6 +75,8 @@ def register_loader_api(
     data_dir.mkdir(parents=True, exist_ok=True)
     devices_file = data_dir / "loader_devices.json"
     sessions_file = data_dir / "loader_sessions.json"
+    challenges_file = data_dir / "loader_login_challenges.json"
+    trusted_devices_file = data_dir / "loader_trusted_devices.json"
     pepper = str(app.config.get("SECRET_KEY") or "")
 
     def _json_load(path: Path) -> list[dict]:
@@ -140,6 +145,69 @@ def register_loader_api(
             col.delete_one({"refresh_hash": refresh_hash})
             return
         _json_save(sessions_file, [x for x in _json_load(sessions_file) if x.get("refresh_hash") != refresh_hash])
+
+    def _challenge_upsert(token_hash: str, payload: dict) -> None:
+        payload = {**payload, "challenge_hash": token_hash}
+        col = _collection("loader_login_challenges")
+        if col is not None:
+            col.update_one({"challenge_hash": token_hash}, {"$set": payload}, upsert=True)
+            return
+        items = [x for x in _json_load(challenges_file) if x.get("challenge_hash") != token_hash]
+        items.append(payload)
+        _json_save(challenges_file, items[-500:])
+
+    def _challenge_find(token_hash: str) -> dict | None:
+        col = _collection("loader_login_challenges")
+        if col is not None:
+            return col.find_one({"challenge_hash": token_hash}, {"_id": 0})
+        return next((x for x in _json_load(challenges_file) if x.get("challenge_hash") == token_hash), None)
+
+    def _challenge_delete(token_hash: str) -> None:
+        col = _collection("loader_login_challenges")
+        if col is not None:
+            col.delete_one({"challenge_hash": token_hash})
+            return
+        _json_save(challenges_file, [x for x in _json_load(challenges_file) if x.get("challenge_hash") != token_hash])
+
+    def _trusted_device(email: str, device_id: str) -> bool:
+        if not email or not device_id:
+            return False
+        key = _sha256_text(f"{email.lower()}:{device_id}", pepper)
+        col = _collection("loader_trusted_devices")
+        record = col.find_one({"device_hash": key}, {"_id": 0}) if col is not None else next((x for x in _json_load(trusted_devices_file) if x.get("device_hash") == key), None)
+        if not record or record.get("revoked"):
+            return False
+        try:
+            return _parse(record.get("expires_at")) > _utcnow()
+        except Exception:
+            return False
+
+    def _remember_device(email: str, device_id: str, device_name: str) -> None:
+        if not email or not device_id:
+            return
+        key = _sha256_text(f"{email.lower()}:{device_id}", pepper)
+        payload = {
+            "device_hash": key,
+            "email": email.lower(),
+            "device_name": device_name[:120],
+            "created_at": _iso(_utcnow()),
+            "expires_at": _iso(_utcnow() + timedelta(days=30)),
+            "revoked": False,
+        }
+        col = _collection("loader_trusted_devices")
+        if col is not None:
+            col.update_one({"device_hash": key}, {"$set": payload}, upsert=True)
+            return
+        items = [x for x in _json_load(trusted_devices_file) if x.get("device_hash") != key]
+        items.append(payload)
+        _json_save(trusted_devices_file, items[-1000:])
+
+    def _masked_email(email: str) -> str:
+        local, _, domain = email.partition("@")
+        if not domain:
+            return "your account email"
+        visible = local[:2] if len(local) > 2 else local[:1]
+        return f"{visible}{'*' * max(2, len(local) - len(visible))}@{domain}"
 
     def _new_tokens(email: str, device_name: str, device_id: str) -> dict:
         access = secrets.token_urlsafe(40)
@@ -319,13 +387,76 @@ def register_loader_api(
         password = str(payload.get("password") or "")
         device_name = str(payload.get("device_name") or "Windows PC")[:120]
         device_id = str(payload.get("device_id") or "")[:160]
+        remember_device = bool(payload.get("remember_device"))
 
         # Keep the response generic so account existence is not disclosed.
         user = authenticate_password(email, password) if email and password else None
         if not user or str(user.get("status") or "active").lower() == "suspended":
             return jsonify({"ok": False, "error": "Invalid email or password."}), 401
 
-        tokens = _new_tokens(str(user.get("email") or email), device_name, device_id)
+        account_email = str(user.get("email") or email).lower()
+        needs_2fa = bool(require_email_codes and send_security_email and not _trusted_device(account_email, device_id))
+        if needs_2fa:
+            code = f"{secrets.randbelow(1000000):06d}"
+            challenge = secrets.token_urlsafe(40)
+            challenge_hash = _sha256_text(challenge, pepper)
+            record = {
+                "email": account_email,
+                "device_name": device_name,
+                "device_id": device_id,
+                "remember_device": remember_device,
+                "code_hash": generate_password_hash(code),
+                "attempts": 0,
+                "created_at": _iso(_utcnow()),
+                "expires_at": _iso(_utcnow() + timedelta(minutes=10)),
+            }
+            if not send_security_email(account_email, code, "login"):
+                return jsonify({"ok": False, "error": "Security code delivery is unavailable. Try another sign-in method."}), 503
+            _challenge_upsert(challenge_hash, record)
+            return jsonify({
+                "ok": True,
+                "status": "2fa_required",
+                "requires_2fa": True,
+                "challenge_token": challenge,
+                "masked_email": _masked_email(account_email),
+            })
+
+        tokens = _new_tokens(account_email, device_name, device_id)
+        return jsonify({"ok": True, "status": "approved", **tokens})
+
+    @bp.post("/api/loader/login/2fa")
+    def native_login_two_factor():
+        payload = request.get_json(silent=True) or {}
+        challenge = str(payload.get("challenge_token") or "")
+        code = str(payload.get("code") or "").strip()
+        remember_device = bool(payload.get("remember_device"))
+        if not challenge or not code:
+            return jsonify({"ok": False, "error": "Enter the 6-digit security code."}), 400
+
+        challenge_hash = _sha256_text(challenge, pepper)
+        record = _challenge_find(challenge_hash)
+        if not record:
+            return jsonify({"ok": False, "error": "This security challenge expired. Sign in again."}), 401
+        try:
+            expired = _parse(record.get("expires_at")) <= _utcnow()
+        except Exception:
+            expired = True
+        attempts = int(record.get("attempts") or 0) + 1
+        if expired or attempts > 5:
+            _challenge_delete(challenge_hash)
+            return jsonify({"ok": False, "error": "This security code expired. Sign in again."}), 401
+        if not check_password_hash(str(record.get("code_hash") or ""), code):
+            record["attempts"] = attempts
+            _challenge_upsert(challenge_hash, record)
+            return jsonify({"ok": False, "error": "The security code is incorrect."}), 401
+
+        _challenge_delete(challenge_hash)
+        email = str(record.get("email") or "").lower()
+        device_id = str(record.get("device_id") or "")
+        device_name = str(record.get("device_name") or "Windows PC")
+        if remember_device or bool(record.get("remember_device")):
+            _remember_device(email, device_id, device_name)
+        tokens = _new_tokens(email, device_name, device_id)
         return jsonify({"ok": True, "status": "approved", **tokens})
 
     @bp.post("/api/loader/device/start")

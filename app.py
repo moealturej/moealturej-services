@@ -4989,6 +4989,8 @@ register_loader_api(
     save_support_ticket=save_support_ticket,
     append_ticket_message=append_ticket_message,
     ticket_public_id=ticket_public_id,
+    send_security_email=send_security_email,
+    require_email_codes=REQUIRE_EMAIL_CODES,
 )
 
 
