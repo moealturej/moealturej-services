@@ -733,37 +733,51 @@ def brand_logo_html(size: int = 46) -> str:
 
 
 def branded_email_shell(title: str, eyebrow: str, intro: str, body_html: str, cta_label: str = "Open account", cta_url: str | None = None, footer: str | None = None) -> str:
-    """Reusable production email layout so OTP, keys, password reset, and admin broadcasts match."""
+    """Clean, email-client-safe layout shared by all transactional messages."""
     safe_app = html_escape.escape(APP_NAME)
-    safe_app_url = html_escape.escape(APP_URL)
-    safe_title = html_escape.escape(title)
-    safe_eyebrow = html_escape.escape(eyebrow)
-    safe_intro = html_escape.escape(intro)
-    safe_cta_label = html_escape.escape(cta_label)
-    safe_cta_url = html_escape.escape(cta_url or APP_URL)
-    safe_footer = footer if footer is not None else f"Need help? Contact <a href='mailto:{html_escape.escape(SUPPORT_EMAIL)}' style='color:#e9d5ff;text-decoration:none;'>{html_escape.escape(SUPPORT_EMAIL)}</a>."
-    logo = brand_logo_html(46)
+    safe_title = html_escape.escape(str(title or APP_NAME))
+    safe_eyebrow = html_escape.escape(str(eyebrow or "Account update"))
+    safe_intro = html_escape.escape(str(intro or ""))
+    safe_cta_label = html_escape.escape(str(cta_label or "Open account"))
+    safe_cta_url = html_escape.escape(str(cta_url or APP_URL), quote=True)
+    support = html_escape.escape(SUPPORT_EMAIL)
+    safe_footer = footer if footer is not None else f"Questions? Email <a href='mailto:{support}' style='color:#c4a7ff;text-decoration:none;'>{support}</a>."
+    logo = brand_logo_html(42)
     return f"""<!doctype html>
-<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe_title}</title></head>
-<body style=\"margin:0;background:#05020a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;\">
-  <div style=\"display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;\">{safe_intro}</div>
-  <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:radial-gradient(circle at top left,rgba(139,92,246,.25),transparent 34%),radial-gradient(circle at top right,rgba(236,72,153,.18),transparent 32%),#05020a;padding:34px 14px;\"><tr><td align=\"center\">
-    <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:650px;border-collapse:separate;border-spacing:0;background:linear-gradient(180deg,rgba(24,12,39,.98),rgba(8,5,15,.98));border:1px solid rgba(255,255,255,.12);border-radius:28px;overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,.55);\">
-      <tr><td style=\"padding:26px 28px;border-bottom:1px solid rgba(255,255,255,.08);\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td style=\"width:58px;vertical-align:middle;\">{logo}</td><td style=\"vertical-align:middle;\"><div style=\"font-size:20px;line-height:1.2;font-weight:900;letter-spacing:-.03em;color:#fff;\">{safe_app}</div><div style=\"font-size:13px;line-height:1.5;color:#b9a8d8;\">{html_escape.escape(eyebrow)}</div></td></tr></table></td></tr>
-      <tr><td style=\"padding:34px 28px 14px;text-align:center;\"><div style=\"display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(139,92,246,.16);border:1px solid rgba(216,180,254,.22);color:#e9d5ff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;\">{safe_eyebrow}</div><h1 style=\"margin:18px 0 10px;font-size:32px;line-height:1.1;letter-spacing:-.05em;color:#fff;\">{safe_title}</h1><p style=\"margin:0 auto;max-width:460px;color:#b9a8d8;font-size:15px;line-height:1.65;\">{safe_intro}</p></td></tr>
-      <tr><td style=\"padding:18px 28px 24px;\">{body_html}</td></tr>
-      <tr><td style=\"padding:0 28px 34px;text-align:center;\"><a href=\"{safe_cta_url}\" style=\"display:inline-block;text-decoration:none;color:#fff;background:linear-gradient(135deg,#7c3aed,#db2777);padding:14px 22px;border-radius:14px;font-weight:950;box-shadow:0 16px 35px rgba(124,58,237,.28);\">{safe_cta_label}</a><p style=\"margin:20px 0 0;color:#8f80ad;font-size:12px;line-height:1.6;\">{safe_footer}</p></td></tr>
-    </table>
-    <div style=\"max-width:620px;margin:16px auto 0;color:#6f6288;font-size:11px;line-height:1.6;text-align:center;\">This email was sent by {safe_app}. Never share account codes or product keys with anyone you do not trust.</div>
-  </td></tr></table>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>{safe_title}</title></head>
+<body style="margin:0;padding:0;background:#07050b;color:#f8f5fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">{safe_intro}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#07050b;">
+    <tr><td align="center" style="padding:36px 16px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#100b18;border:1px solid #2a2038;border-radius:20px;overflow:hidden;">
+        <tr><td style="height:3px;background:#8b3dea;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="padding:22px 24px;border-bottom:1px solid #2a2038;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+            <td width="54" valign="middle">{logo}</td>
+            <td valign="middle"><div style="font-size:17px;font-weight:800;color:#ffffff;line-height:1.25;">{safe_app}</div><div style="margin-top:3px;font-size:12px;color:#93879f;line-height:1.4;">{safe_eyebrow}</div></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:30px 24px 10px;">
+          <div style="font-size:12px;line-height:1.4;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#b99ae9;">{safe_eyebrow}</div>
+          <h1 style="margin:10px 0 9px;font-size:28px;line-height:1.18;letter-spacing:-.035em;color:#ffffff;">{safe_title}</h1>
+          <p style="margin:0;color:#aaa0b3;font-size:15px;line-height:1.65;">{safe_intro}</p>
+        </td></tr>
+        <tr><td style="padding:18px 24px 22px;">{body_html}</td></tr>
+        <tr><td style="padding:0 24px 30px;">
+          <a href="{safe_cta_url}" style="display:inline-block;padding:13px 18px;border-radius:11px;background:#8b3dea;color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;">{safe_cta_label}</a>
+          <p style="margin:20px 0 0;color:#7f748a;font-size:12px;line-height:1.65;">{safe_footer}</p>
+        </td></tr>
+        <tr><td style="padding:16px 24px;background:#0b0811;border-top:1px solid #211a2b;color:#6f6677;font-size:11px;line-height:1.6;">Sent by {safe_app}. Never share verification codes or product keys with anyone you do not trust.</td></tr>
+      </table>
+    </td></tr>
+  </table>
 </body></html>"""
 
-def send_security_email(to_email: str, code: str, purpose: str) -> bool:
-    safe_purpose = html_escape.escape(str(purpose or "security").strip().title())
+def build_security_email(code: str, purpose: str) -> tuple[str, str, str]:
     safe_code = html_escape.escape(str(code))
-    safe_app = html_escape.escape(APP_NAME)
-    safe_app_url = html_escape.escape(APP_URL)
-    safe_support = html_escape.escape(SUPPORT_EMAIL)
+    label = str(purpose or "security").strip().title()
+    safe_label = html_escape.escape(label)
     subject = f"{APP_NAME} security code: {code}"
     text = (
         f"Your {APP_NAME} {purpose} code is: {code}\n\n"
@@ -771,75 +785,31 @@ def send_security_email(to_email: str, code: str, purpose: str) -> bool:
         f"Open {APP_URL} if you requested this.\n\n"
         f"If this was not you, ignore this email and contact {SUPPORT_EMAIL}."
     )
-    logo_html = brand_logo_html(46)
-    html = f"""<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{safe_app} security code</title>
-  </head>
-  <body style="margin:0;background:#05020a;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your {safe_app} {safe_purpose.lower()} code is {safe_code}. It expires in 10 minutes.</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:radial-gradient(circle at top left,rgba(139,92,246,.25),transparent 34%),radial-gradient(circle at top right,rgba(236,72,153,.18),transparent 32%),#05020a;padding:34px 14px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;border-collapse:separate;border-spacing:0;background:linear-gradient(180deg,rgba(24,12,39,.98),rgba(8,5,15,.98));border:1px solid rgba(255,255,255,.12);border-radius:28px;overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,.55);">
-            <tr>
-              <td style="padding:26px 28px;border-bottom:1px solid rgba(255,255,255,.08);">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td style="width:58px;vertical-align:middle;">{logo_html}</td>
-                    <td style="vertical-align:middle;">
-                      <div style="font-size:20px;line-height:1.2;font-weight:900;letter-spacing:-.03em;color:#ffffff;">{safe_app}</div>
-                      <div style="font-size:13px;line-height:1.5;color:#b9a8d8;">Secure account verification</div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:34px 28px 16px;text-align:center;">
-                <div style="display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(139,92,246,.16);border:1px solid rgba(216,180,254,.22);color:#e9d5ff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">{safe_purpose} code</div>
-                <h1 style="margin:18px 0 10px;font-size:32px;line-height:1.1;letter-spacing:-.05em;color:#ffffff;">Finish signing in securely</h1>
-                <p style="margin:0 auto;max-width:420px;color:#b9a8d8;font-size:15px;line-height:1.65;">Use the code below to continue. This helps keep your {safe_app} account protected.</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:18px 28px 12px;text-align:center;">
-                <div style="display:inline-block;min-width:265px;padding:20px 18px;border-radius:22px;background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(236,72,153,.14));border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 18px 55px rgba(139,92,246,.18);">
-                  <div style="font-size:40px;line-height:1;font-weight:950;letter-spacing:12px;color:#ffffff;text-shadow:0 0 28px rgba(216,180,254,.35);">{safe_code}</div>
-                </div>
-                <p style="margin:18px 0 0;color:#f0abfc;font-size:14px;font-weight:700;">Expires in 10 minutes</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:12px 28px 30px;text-align:center;">
-                <a href="{safe_app_url}" style="display:inline-block;text-decoration:none;color:#ffffff;background:linear-gradient(135deg,#7c3aed,#db2777);padding:13px 20px;border-radius:14px;font-size:14px;font-weight:900;box-shadow:0 16px 35px rgba(124,58,237,.28);">Open {safe_app}</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:20px 28px 26px;background:rgba(255,255,255,.035);border-top:1px solid rgba(255,255,255,.08);">
-                <p style="margin:0 0 8px;color:#c4b5fd;font-size:13px;line-height:1.6;"><strong style="color:#fff;">Didn’t request this?</strong> You can ignore this email. Nobody can access your account without this code.</p>
-                <p style="margin:0;color:#8f80ad;font-size:12px;line-height:1.6;">Need help? Contact <a href="mailto:{safe_support}" style="color:#e9d5ff;text-decoration:none;">{safe_support}</a>.</p>
-              </td>
-            </tr>
-          </table>
-          <div style="max-width:620px;margin:16px auto 0;color:#6f6288;font-size:11px;line-height:1.6;text-align:center;">This automated security email was sent by {safe_app}. Never share this code with anyone.</div>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
-"""
-    if not email_delivery_ready():
-        if IS_PRODUCTION:
-            logger.error("Email delivery is not configured. Add RESEND_API_KEY in production. The app defaults to security@moealturej.com for Resend.")
-            return False
-        flash(f"Dev security code: {code}", "warning")
-        return True
-    return send_email_message(to_email, subject, text, html, "Security")
+    body_html = f"""
+      <div style="padding:20px;border-radius:14px;background:#0b0811;border:1px solid #2d2240;text-align:center;">
+        <div style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8f839a;">{safe_label} code</div>
+        <div style="margin-top:11px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:36px;line-height:1;font-weight:900;letter-spacing:10px;color:#ffffff;">{safe_code}</div>
+        <div style="margin-top:13px;font-size:12px;font-weight:700;color:#b99ae9;">Expires in 10 minutes</div>
+      </div>
+      <p style="margin:16px 0 0;color:#8f8499;font-size:13px;line-height:1.65;">Didn’t request this? Ignore this email. Your account cannot be accessed without the code.</p>
+    """
+    html = branded_email_shell(
+        "Your security code",
+        "Secure account verification",
+        f"Use this code to continue your {APP_NAME} {label.lower()} request.",
+        body_html,
+        f"Open {APP_NAME}",
+        APP_URL,
+    )
+    return subject, text, html
 
+
+def send_security_email(to_email: str, code: str, purpose: str) -> bool:
+    subject, text, html = build_security_email(code, purpose)
+    if not email_delivery_ready():
+        logger.error("Email delivery is not configured. Add RESEND_API_KEY in production. The app defaults to security@moealturej.com for Resend.")
+        return False
+    return send_email_message(to_email, subject, text, html, "Security")
 
 def start_email_code_flow(kind: str, payload: dict, email: str, purpose: str) -> bool:
     code = f"{secrets.randbelow(1000000):06d}"
@@ -3732,6 +3702,51 @@ def admin_guide_delete(guide_id):
 
 
 @app.route("/owner")
+def build_email_preview(kind: str) -> tuple[str, str]:
+    """Create sample email HTML without sending anything."""
+    kind = (kind or "security").strip().lower()
+    if kind == "security":
+        subject, _, html = build_security_email("482193", "sign in")
+    elif kind == "password":
+        body = """<div style='padding:18px;border-radius:14px;background:#0b0811;border:1px solid #2d2240;'><div style='font-size:14px;font-weight:800;color:#fff;'>Password reset requested</div><p style='margin:8px 0 0;color:#9f94aa;font-size:13px;line-height:1.65;'>Use the button below to create a new password. This secure link expires in 20 minutes.</p></div>"""
+        subject = "Reset your password"
+        html = branded_email_shell(subject, "Password recovery", "Use this secure link to reset your password for your moealturej account.", body, "Reset password", f"{APP_URL}/reset-password/demo")
+    elif kind == "key":
+        sample_order = {"order_id": "MOE-DEMO-1842"}
+        sample_item = {"product_name": "Example Product", "option_name": "30 Days"}
+        subject, _, html = build_key_delivery_email("customer@example.com", sample_order, sample_item, "DEMO-8F2K-4L9P-X7QW", "Keep this key private and follow the guide in your account.")
+    elif kind == "support":
+        body = """<div style='padding:18px;border-radius:14px;background:#0b0811;border:1px solid #2d2240;'><div style='font-size:13px;color:#8f839a;'>Ticket #SUP-1842</div><div style='margin-top:8px;font-size:15px;font-weight:800;color:#fff;'>Installation help</div><p style='margin:10px 0 0;color:#9f94aa;font-size:13px;line-height:1.65;'>We replied to your ticket. Open it to view the full response and continue the conversation.</p></div>"""
+        subject = "Support reply received"
+        html = branded_email_shell(subject, "Support ticket", "Your support conversation was updated.", body, "Open ticket", f"{APP_URL}/support")
+    else:
+        subject, _, html = build_admin_broadcast_email("Store update", "A new product update is available now.\n\nSign in to view the latest details and downloads.", "View update", f"{APP_URL}/store")
+    return subject, html
+
+
+@app.route("/admin/email-previews")
+@owner_required
+def admin_email_previews():
+    preview_types = [
+        ("security", "Security code"),
+        ("password", "Password reset"),
+        ("key", "Product key"),
+        ("support", "Support reply"),
+        ("broadcast", "Store update"),
+    ]
+    return render_template("email_previews.html", preview_types=preview_types, active_page="admin")
+
+
+@app.route("/admin/email-previews/<kind>")
+@owner_required
+def admin_email_preview_document(kind):
+    _, html = build_email_preview(kind)
+    response = Response(html, mimetype="text/html")
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
+
 @app.route("/admin")
 @owner_required
 def admin_dashboard():

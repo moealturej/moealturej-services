@@ -1,220 +1,61 @@
 {% extends "base.html" %}
-{% block title %}Home | moealturej{% endblock %}
-{% block meta_description %}Premium digital products, secure delivery, downloads, service status, and account support from moealturej.{% endblock %}
-
-{% block extra_head %}
-<style>
-  .home-page{padding:18px 0 76px}
-  .home-page *{animation:none!important}
-  .home-shell{display:grid;gap:16px}
-  .home-panel{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(20,12,35,.88),rgba(9,6,18,.92));box-shadow:0 22px 64px rgba(0,0,0,.26)}
-
-  .home-hero{min-height:380px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.8fr);align-items:center;gap:34px;padding:clamp(32px,6vw,68px);border-radius:32px}
-  .home-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 78% 24%,rgba(168,85,247,.22),transparent 32%),radial-gradient(circle at 18% 0%,rgba(124,58,237,.13),transparent 30%),linear-gradient(125deg,rgba(255,255,255,.025),transparent 38%);pointer-events:none}
-  .home-hero-copy,.home-hero-side{position:relative;z-index:1}
-  .home-kicker{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 13px;border-radius:999px;border:1px solid rgba(216,180,254,.16);background:rgba(168,85,247,.10);color:#e8d7ff;font-size:11px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
-  .home-hero h1{max-width:780px;margin:18px 0 16px;font-size:clamp(46px,7vw,78px)!important;line-height:.92!important;letter-spacing:-.08em!important}
-  .home-hero p{max-width:640px;margin:0;color:#c0b5cc;font-size:clamp(15px,1.8vw,18px)!important;line-height:1.65!important}
-  .home-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:28px}
-  .home-action{min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:0 20px;border-radius:15px;border:1px solid rgba(255,255,255,.09);font-weight:900;font-size:14px}
-  .home-action.primary{background:linear-gradient(135deg,#a944ff,#7c3aed);color:#fff;border-color:rgba(216,180,254,.22)}
-  .home-action.secondary{background:rgba(255,255,255,.04);color:#eee7f7}
-
-  .home-hero-side{display:grid;gap:12px}
-  .home-side-card{display:flex;align-items:center;gap:14px;min-height:82px;padding:16px;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:rgba(5,3,11,.48)}
-  .home-side-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;background:rgba(168,85,247,.12);color:#d8b4fe}
-  .home-side-card strong{display:block;color:#fff;font-size:14px;margin-bottom:4px}
-  .home-side-card span{color:#9f94ad;font-size:12.5px;line-height:1.45}
-
-  .home-trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden;border-radius:22px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.07)}
-  .home-trust-item{display:flex;align-items:center;gap:12px;min-height:76px;padding:16px 18px;background:rgba(8,5,16,.94)}
-  .home-trust-item+.home-trust-item{border-left:1px solid rgba(255,255,255,.07)}
-  .home-trust-item i{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:12px;background:rgba(168,85,247,.12);color:#d8b4fe}
-  .home-trust-item strong{display:block;font-size:13px;color:#fff;margin-bottom:3px}
-  .home-trust-item span{color:#9f94ad;font-size:12.5px;line-height:1.35}
-
-  .home-section{padding:24px;border-radius:26px}
-  .home-section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:18px}
-  .home-section-head h2{margin:0;font-size:clamp(26px,4vw,38px)!important}
-  .home-section-head p{margin:7px 0 0;color:#a89db6;font-size:14px!important}
-  .home-link-small{color:#d8b4fe;font-weight:850;font-size:13px}
-
-  .home-destination-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-  .home-destination{display:flex;flex-direction:column;min-height:176px;padding:18px;border-radius:20px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.03)}
-  .home-destination i{width:38px;height:38px;display:grid;place-items:center;border-radius:13px;background:rgba(168,85,247,.12);color:#d8b4fe;margin-bottom:auto}
-  .home-destination h3{margin:22px 0 5px;font-size:17px!important}
-  .home-destination p{margin:0;color:#9f94ad;font-size:13px!important;line-height:1.45!important}
-
-  .home-products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-  .home-product{overflow:hidden;border-radius:22px;border:1px solid rgba(255,255,255,.075);background:rgba(7,5,14,.72)}
-  .home-product-media{aspect-ratio:1.45/1;background:#0d0817;overflow:hidden}
-  .home-product-media img{width:100%;height:100%;object-fit:cover}
-  .home-product-body{padding:16px}
-  .home-product-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .home-product-title{font-size:15px;font-weight:900;line-height:1.3}
-  .home-price{white-space:nowrap;color:#d8b4fe;font-weight:900;font-size:13px}
-  .home-product-meta{display:flex;align-items:center;gap:8px;margin:12px 0 14px}
-  .home-state{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 9px;border-radius:999px;border:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:850;color:#cfc5d8}
-  .home-state::before{content:"";width:6px;height:6px;border-radius:50%;background:#43df8d;box-shadow:0 0 9px rgba(67,223,141,.75)}
-  .home-product-link{min-height:42px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:rgba(168,85,247,.12);border:1px solid rgba(216,180,254,.14);font-size:13px;font-weight:900}
-  .home-empty{grid-column:1/-1;padding:28px;border-radius:18px;border:1px dashed rgba(255,255,255,.1);color:#9f94ad;text-align:center}
-
-  .home-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-  .home-step{padding:18px;border-radius:20px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.03)}
-  .home-step-number{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:#a855f7;color:#fff;font-weight:950;font-size:12px}
-  .home-step h3{margin:16px 0 6px;font-size:16px!important}
-  .home-step p{margin:0;color:#9f94ad;font-size:13px!important;line-height:1.5!important}
-
-  .home-support{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:22px;padding:28px;border-radius:26px;background:linear-gradient(135deg,rgba(91,33,182,.28),rgba(20,12,35,.90));border:1px solid rgba(216,180,254,.12)}
-  .home-support h2{margin:0 0 8px;font-size:clamp(24px,4vw,36px)!important}
-  .home-support p{margin:0;color:#b8adca;font-size:14px!important}
-  .home-support-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-
-  @media(max-width:980px){
-    .home-hero{grid-template-columns:1fr;min-height:0}
-    .home-hero-side{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .home-side-card{display:block;min-height:0}
-    .home-side-icon{margin-bottom:12px}
-    .home-destination-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .home-products{grid-template-columns:repeat(2,minmax(0,1fr))}
-  }
-  @media(max-width:720px){
-    .home-page{padding-top:10px}
-    .home-hero,.home-section,.home-support{border-radius:22px;padding:20px}
-    .home-hero h1{font-size:clamp(38px,13vw,58px)!important}
-    .home-trust{grid-template-columns:1fr}
-    .home-trust-item+.home-trust-item{border-left:0;border-top:1px solid rgba(255,255,255,.07)}
-    .home-hero-side{grid-template-columns:1fr}
-    .home-side-card{display:flex}
-    .home-side-icon{margin-bottom:0}
-    .home-destination-grid,.home-products,.home-flow{grid-template-columns:1fr}
-    .home-section-head,.home-support{grid-template-columns:1fr;align-items:start}
-    .home-section-head{display:block}
-    .home-section-head .home-link-small{display:inline-flex;margin-top:12px}
-    .home-support-actions{justify-content:flex-start}
-    .home-action{width:100%}
-  }
-</style>
-{% endblock %}
-
+{% block title %}moealturej — Premium Digital Store{% endblock %}
+{% block meta_description %}Premium digital products, fast delivery, live status, guides, and direct purchase support in one clean storefront.{% endblock %}
 {% block content %}
-<section class="home-page">
-  <div class="container home-shell">
-    <section class="home-hero home-panel">
-      <div class="home-hero-copy">
-        <span class="home-kicker"><i class="fas fa-sparkles"></i> Digital services</span>
-        <h1>Everything you need, in one clean place.</h1>
-        <p>Browse products, manage purchases, access downloads, check live service status, and get support without digging through clutter.</p>
-        <div class="home-actions">
-          <a class="home-action primary" href="/products"><i class="fas fa-bag-shopping"></i> Browse store</a>
-          {% if current_user %}
-          <a class="home-action secondary" href="/account"><i class="fas fa-user"></i> Open account</a>
-          {% else %}
-          <a class="home-action secondary" href="/signup"><i class="fas fa-user-plus"></i> Create account</a>
-          {% endif %}
+<section class="home-minimal">
+  <div class="container home-minimal-wrap">
+    <section class="minimal-hero">
+      <div class="minimal-hero-copy">
+        <span class="minimal-eyebrow"><i></i> Premium digital store</span>
+        <h1>moealturej<br><span>Solutions</span></h1>
+        <p>Browse trusted digital products, check live availability, purchase securely, and keep every order organized in one account.</p>
+        <div class="minimal-actions">
+          <a class="minimal-btn primary" href="/products">Browse store <i class="fas fa-arrow-right"></i></a>
+          {% if current_user %}<a class="minimal-btn secondary" href="/account">Open account</a>{% else %}<a class="minimal-btn secondary" href="/signup">Create account</a>{% endif %}
         </div>
       </div>
-      <div class="home-hero-side" aria-label="Store highlights">
-        <div class="home-side-card"><span class="home-side-icon"><i class="fas fa-bolt"></i></span><div><strong>Fast delivery</strong><span>Keys and downloads stay connected to your order.</span></div></div>
-        <div class="home-side-card"><span class="home-side-icon"><i class="fas fa-shield-halved"></i></span><div><strong>Clear checkout</strong><span>Review the item, option, and total before paying.</span></div></div>
-        <div class="home-side-card"><span class="home-side-icon"><i class="fas fa-headset"></i></span><div><strong>Purchase support</strong><span>Open a ticket tied directly to your order.</span></div></div>
+      <div class="minimal-hero-side">
+        <div class="minimal-status-row"><span><i></i> Store online</span><a href="/status">View status</a></div>
+        <div class="minimal-side-content">
+          <span class="minimal-side-label">Everything in one place</span>
+          <div class="minimal-side-list">
+            <div><i class="fas fa-bolt"></i><span><strong>Fast delivery</strong><small>Orders stay connected to your account.</small></span></div>
+            <div><i class="fas fa-shield-halved"></i><span><strong>Secure checkout</strong><small>A focused, protected payment flow.</small></span></div>
+            <div><i class="fas fa-headset"></i><span><strong>Direct support</strong><small>Help linked to the product you purchased.</small></span></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="home-trust" aria-label="Service benefits">
-      <div class="home-trust-item"><i class="fas fa-box-open"></i><div><strong>Organized orders</strong><span>Everything stays saved to your account.</span></div></div>
-      <div class="home-trust-item"><i class="fas fa-signal"></i><div><strong>Live product status</strong><span>Check availability before purchasing.</span></div></div>
-      <div class="home-trust-item"><i class="fas fa-lock"></i><div><strong>Secure account access</strong><span>Your purchases are tied to your login.</span></div></div>
-    </section>
-
-    <section class="home-section home-panel">
-      <div class="home-section-head">
-        <div><h2>Go where you need</h2><p>The important parts of the site, without extra noise.</p></div>
+    <section class="minimal-products">
+      <div class="minimal-section-head">
+        <div><span>Featured products</span><h2>Start here.</h2></div>
+        <a href="/products">View all products <i class="fas fa-arrow-right"></i></a>
       </div>
-      <div class="home-destination-grid">
-        <a class="home-destination" href="/products"><i class="fas fa-store"></i><h3>Store</h3><p>Browse available products and pricing options.</p></a>
-        <a class="home-destination" href="/downloads"><i class="fas fa-download"></i><h3>Downloads</h3><p>Access files and the newest available versions.</p></a>
-        <a class="home-destination" href="/status"><i class="fas fa-chart-column"></i><h3>Status</h3><p>See which products and services are available.</p></a>
-        <a class="home-destination" href="{{ site_settings.discord_url or '/discord' }}"><i class="fab fa-discord"></i><h3>Discord</h3><p>Join for announcements, updates, and community support.</p></a>
+      <div id="minimal-product-grid" class="minimal-product-grid">
+        <div class="minimal-product-card skeleton"></div><div class="minimal-product-card skeleton"></div><div class="minimal-product-card skeleton"></div>
       </div>
     </section>
 
-    <section class="home-section home-panel">
-      <div class="home-section-head">
-        <div><h2>Popular products</h2><p>A small selection from the store. No heavy carousel or endless animation.</p></div>
-        <a class="home-link-small" href="/products">View all products <i class="fas fa-arrow-right"></i></a>
-      </div>
-      <div id="home-products-grid" class="home-products" aria-live="polite">
-        <div class="home-empty">Loading products…</div>
-      </div>
+    <section class="minimal-links">
+      <a href="/status"><i class="fas fa-signal"></i><div><strong>Live status</strong><span>Check availability before purchasing.</span></div><i class="fas fa-arrow-right"></i></a>
+      <a href="/guides"><i class="fas fa-book-open"></i><div><strong>Member guides</strong><span>Setup information kept organized.</span></div><i class="fas fa-arrow-right"></i></a>
+      <a href="/support"><i class="fas fa-headset"></i><div><strong>Purchase support</strong><span>Get help tied to your order.</span></div><i class="fas fa-arrow-right"></i></a>
     </section>
 
-    <section class="home-section home-panel">
-      <div class="home-section-head">
-        <div><h2>Simple from purchase to delivery</h2><p>A clear process with your order kept in one place.</p></div>
-      </div>
-      <div class="home-flow">
-        <div class="home-step"><span class="home-step-number">01</span><h3>Choose your product</h3><p>Open the store, compare options, and select the one that fits.</p></div>
-        <div class="home-step"><span class="home-step-number">02</span><h3>Complete checkout</h3><p>Review your order details and pay through the available checkout method.</p></div>
-        <div class="home-step"><span class="home-step-number">03</span><h3>Access your order</h3><p>Your key, files, and purchase-specific support stay in your account.</p></div>
-      </div>
-    </section>
-
-    <section class="home-support">
-      <div><h2>Need help with a purchase?</h2><p>Use the support center or join Discord for updates and assistance.</p></div>
-      <div class="home-support-actions">
-        <a class="home-action primary" href="/support"><i class="fas fa-headset"></i> Support center</a>
-        <a class="home-action secondary" href="{{ site_settings.discord_url or '/discord' }}"><i class="fab fa-discord"></i> Discord</a>
-      </div>
+    <section class="minimal-cta">
+      <div><span>Ready to browse?</span><h2>Find the right product without the clutter.</h2></div>
+      <a class="minimal-btn primary" href="/products">Explore store <i class="fas fa-arrow-right"></i></a>
     </section>
   </div>
 </section>
 {% endblock %}
-
 {% block extra_scripts %}
 <script>
-(() => {
-  const grid = document.getElementById('home-products-grid');
-  if (!grid) return;
-  const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
-  const priceLabel = product => {
-    const prices = (product?.store?.options || []).map(option => Number(option.price)).filter(Number.isFinite);
-    return prices.length ? `$${Math.min(...prices).toFixed(2)}+` : 'Options';
-  };
-  const render = items => {
-    const products = (items || []).filter(item => item?.store?.enabled).slice(0, 3);
-    if (!products.length) {
-      grid.innerHTML = '<div class="home-empty">No products are available right now.</div>';
-      return;
-    }
-    grid.innerHTML = products.map(item => `
-      <article class="home-product">
-        <div class="home-product-media"><img src="${esc(item.image || '/static/logo.png')}" alt="${esc(item.name || 'Product')}" loading="lazy" decoding="async"></div>
-        <div class="home-product-body">
-          <div class="home-product-top"><div class="home-product-title">${esc(item.name || 'Product')}</div><span class="home-price">${esc(priceLabel(item))}</span></div>
-          <div class="home-product-meta"><span class="home-state">Available</span></div>
-          <a class="home-product-link" href="/product/${encodeURIComponent(item.slug || item.id || '')}">View product</a>
-        </div>
-      </article>`).join('');
-  };
-  const load = async () => {
-    try {
-      const cached = sessionStorage.getItem('moe_home_products_v2');
-      if (cached) {
-        render(JSON.parse(cached));
-        return;
-      }
-      const response = await fetch('/api/products', {headers:{Accept:'application/json'}});
-      if (!response.ok) throw new Error('Could not load products');
-      const items = await response.json();
-      sessionStorage.setItem('moe_home_products_v2', JSON.stringify(items.slice(0, 8)));
-      render(items);
-    } catch (error) {
-      grid.innerHTML = '<div class="home-empty">Products could not load right now. Visit the store to try again.</div>';
-    }
-  };
-  if ('requestIdleCallback' in window) requestIdleCallback(load, {timeout:900});
-  else setTimeout(load, 120);
+(()=>{const grid=document.getElementById('minimal-product-grid');if(!grid)return;
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const price=p=>{const vals=(p?.store?.options||[]).map(x=>Number(x.price)).filter(Number.isFinite);return vals.length?'From $'+Math.min(...vals).toFixed(2):'View options'};
+fetch('/api/products',{headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():Promise.reject()).then(items=>{const list=(items||[]).filter(x=>x?.store?.enabled).slice(0,3);grid.innerHTML=list.length?list.map(x=>`<article class="minimal-product-card"><a class="minimal-product-image" href="/product/${encodeURIComponent(x.slug||x.id||'')}"><img src="${esc(x.image||'/static/logo.png')}" alt="${esc(x.name||'Product')}"><span><i></i> Available</span></a><div class="minimal-product-info"><div><small>${esc(x.category||'Digital product')}</small><h3>${esc(x.name||'Product')}</h3></div><div class="minimal-product-bottom"><strong>${esc(price(x))}</strong><a href="/product/${encodeURIComponent(x.slug||x.id||'')}" aria-label="View ${esc(x.name||'product')}"><i class="fas fa-arrow-right"></i></a></div></div></article>`).join(''):'<div class="minimal-empty">No featured products are available right now.</div>'}).catch(()=>grid.innerHTML='<div class="minimal-empty">Products are temporarily unavailable.</div>');
 })();
 </script>
 {% endblock %}

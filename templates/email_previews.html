@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Email previews | moealturej{% endblock %}
+{% block extra_head %}
+<style>
+.email-preview-page{padding:28px 0 78px}.email-preview-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}.email-preview-head h1{margin:7px 0 6px;font-size:clamp(32px,5vw,50px);letter-spacing:-.055em}.email-preview-head p{margin:0;color:var(--muted);max-width:650px;line-height:1.65}.email-preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.email-preview-card{overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025)}.email-preview-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.07)}.email-preview-bar strong{font-size:13px}.email-preview-bar a{font-size:12px;color:#c8a9ff;font-weight:800}.email-frame{display:block;width:100%;height:700px;border:0;background:#07050b}.preview-note{margin-top:16px;padding:14px 16px;border-radius:14px;background:rgba(139,61,234,.08);border:1px solid rgba(139,61,234,.18);color:var(--muted);font-size:13px;line-height:1.6}@media(max-width:900px){.email-preview-grid{grid-template-columns:1fr}.email-preview-head{align-items:flex-start;flex-direction:column}.email-frame{height:660px}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="email-preview-page"><div class="container">
+  <div class="email-preview-head"><div><div class="eyebrow">testing only</div><h1>Email previews</h1><p>These are generated with the same production email builders, but nothing is sent. Use “Open full preview” to inspect one at its natural size.</p></div><a class="secondary-cta" href="{{ url_for('admin_dashboard') }}#emails"><i class="fas fa-arrow-left"></i> Back to admin</a></div>
+  <div class="email-preview-grid">
+    {% for key, label in preview_types %}<article class="email-preview-card"><div class="email-preview-bar"><strong>{{ label }}</strong><a href="{{ url_for('admin_email_preview_document', kind=key) }}" target="_blank" rel="noopener">Open full preview <i class="fas fa-arrow-up-right-from-square"></i></a></div><iframe class="email-frame" title="{{ label }} preview" loading="lazy" src="{{ url_for('admin_email_preview_document', kind=key) }}"></iframe></article>{% endfor %}
+  </div>
+  <div class="preview-note"><strong>Safe test mode:</strong> opening this page does not call Resend and does not email customers. The previews are restricted to the owner account.</div>
+</div></section>
+{% endblock %}

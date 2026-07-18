@@ -1,0 +1,8 @@
+/* Original account/auth layout, lightly aligned with the current minimal site system. */
+.auth-page{padding-top:38px!important;padding-bottom:64px!important}
+.auth-card{border-radius:22px!important;box-shadow:0 20px 60px rgba(0,0,0,.28)!important}
+.auth-card input{border-radius:13px!important}
+.auth-card .primary-cta,.auth-card button[type="submit"]{border-radius:13px!important;min-height:46px!important}
+.account-page .account-hero,.account-page .orders-panel,.account-page .order-card{border-radius:18px!important}
+.account-page .account-command-nav{border-radius:15px!important}
+@media(max-width:640px){.auth-page{padding:24px 0 48px!important}.auth-card{padding:21px!important;border-radius:18px!important}.account-page .account-hero,.account-page .orders-panel{padding:16px!important}}

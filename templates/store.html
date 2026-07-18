@@ -17,7 +17,9 @@
   .store-sidebar { position:static; display:grid; grid-template-columns: minmax(240px,1.15fr) minmax(260px,1.85fr); gap:14px; }
   .store-panel-clean { padding:14px; border-radius:20px; background:rgba(255,255,255,.028); border:1px solid rgba(255,255,255,.075); }
   .store-panel-clean h3 { margin:0 0 12px; font-size:15px; }
-  .search-box { position:relative; }
+  .search-box { position:relative; padding:0 !important; border:0 !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important; outline:0 !important; overflow:visible !important; }
+  .search-box::before, .search-box::after { content:none !important; display:none !important; }
+  .search-box:focus-within { box-shadow:none !important; border-color:transparent !important; background:transparent !important; }
   .search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,.56); }
   .search-box input { width:100%; min-height:48px; padding:0 14px 0 42px; border-radius:15px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.18); color:#fff; outline:none; }
   .search-box input:focus { border-color:rgba(139,44,255,.45); box-shadow:0 0 0 4px rgba(139,44,255,.1); }

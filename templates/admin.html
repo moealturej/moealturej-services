@@ -372,7 +372,7 @@ updatePricingButtons();
     </section>
 
     <section class="admin-card admin-section" id="emails">
-      <div class="section-top"><div><div class="eyebrow">customer communication</div><h2>Custom email sender</h2><p class="muted">Send a clean branded email to one person, selected customers, or every active account. Uses the same logo/branding as OTP emails.</p></div></div>
+      <div class="section-top"><div><div class="eyebrow">customer communication</div><h2>Custom email sender</h2><p class="muted">Send a clean branded email to one person, selected customers, or every active account. Uses the same layout as your transactional emails.</p></div><a class="secondary-cta" href="{{ url_for('admin_email_previews') }}"><i class="fas fa-eye"></i> Test email previews</a></div>
       <div class="email-compose">
         <form class="admin-form-grid" action="/admin/email/send" method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
