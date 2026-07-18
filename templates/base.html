@@ -157,6 +157,7 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
   </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/command-center-v2.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/premium-v3.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/order-status-polish.css') }}">
   {% block extra_head %}{% endblock %}
   <style>
     /* final override layer: keeps uploaded page logic but fixes formatting after per-page CSS */
@@ -304,7 +305,7 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
       <nav class="nav-links" id="mainNav" aria-label="Main navigation">
         <a href="/" class="{% if active_page == 'home' %}active{% endif %}">Home</a>
         <a href="/products" class="{% if active_page == 'products' %}active{% endif %}">Store</a>
-        <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a>
+        <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a>{% if current_user %}<a href="/guides" class="{% if active_page == 'guides' %}active{% endif %}">Guides</a>{% endif %}
         <a href="/status" class="{% if active_page == 'status' %}active{% endif %}">Status</a>
         <div class="nav-more">
           <button type="button" aria-haspopup="true">More <i class="fas fa-chevron-down"></i></button>
@@ -362,7 +363,7 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
                 {% if current_user %}
                 <a href="/account"><span><i class="fas fa-gauge"></i>Dashboard</span><i class="fas fa-chevron-right"></i></a>
                 <a href="/account#orders"><span><i class="fas fa-receipt"></i>Orders</span><i class="fas fa-chevron-right"></i></a>
-                <a href="/account#downloads"><span><i class="fas fa-cloud-arrow-down"></i>My downloads</span><i class="fas fa-chevron-right"></i></a>
+                <a href="/account#downloads"><span><i class="fas fa-cloud-arrow-down"></i>My downloads</span><i class="fas fa-chevron-right"></i></a>{% if current_user %}<a href="/guides"><span><i class="fas fa-book-open"></i>Member guides</span><i class="fas fa-chevron-right"></i></a>{% endif %}
                 <a href="/logout"><span><i class="fas fa-arrow-right-from-bracket"></i>Log out</span><i class="fas fa-chevron-right"></i></a>
                 {% else %}
                 <a href="/login"><span><i class="fas fa-right-to-bracket"></i>Log in</span><i class="fas fa-chevron-right"></i></a>

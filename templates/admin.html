@@ -264,6 +264,7 @@ updatePricingButtons();
   @media(max-width:1100px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pricing-row,.option-api-row,.auto-delivery-grid,.discount-admin-grid{grid-template-columns:1fr!important}.auto-toggle{justify-content:flex-start}}
   @media(max-width:760px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-command{grid-template-columns:1fr}.pricing-row{gap:8px}.auto-delivery-note{font-size:11px}.product-order-header{display:grid}.product-order-actions,.product-order-savebar{display:grid;grid-template-columns:1fr}.product-order-actions .small-btn,.product-order-savebar button{width:100%}.product-order-control{width:100%;margin-left:0;justify-content:space-between}.drag-handle{flex:1;justify-content:center}.order-number{top:10px;right:10px}}
 
+.guide-admin-icon{display:grid;place-items:center;width:54px;height:54px;border-radius:16px;background:rgba(169,53,255,.1);border:1px solid rgba(213,156,255,.16);color:#ddaaff;font-size:19px;flex:0 0 auto}
 </style>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-experience.css') }}">
 {% endblock %}
@@ -308,6 +309,7 @@ updatePricingButtons();
     <div><strong>{{ stats.orders }}</strong><span>Orders</span></div>
     <div><strong>{{ stats.support_tickets }}</strong><span>Support tickets</span></div>
     <div><strong>{{ stats.applications }}</strong><span>Applications</span></div>
+    <div><strong>{{ stats.guides }}</strong><span>Member guides</span></div>
     <div><strong>{{ stats.storage }}</strong><span>Storage</span></div>
   </section>
 
@@ -319,6 +321,7 @@ updatePricingButtons();
     <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
     <a class="admin-tab" href="#support"><i class="fas fa-headset"></i> Support</a>
     <a class="admin-tab" href="#applications"><i class="fas fa-clipboard-list"></i> Applications</a>
+    <a class="admin-tab" href="#guides"><i class="fas fa-book-open"></i> Guides</a>
     <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
     <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
     <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
@@ -511,6 +514,15 @@ updatePricingButtons();
       </form>
     </section>
 
+
+    <section class="admin-card admin-section" id="guides">
+      <div class="section-top"><div><div class="eyebrow">member knowledge base</div><h2>Guides</h2><p class="muted">Create and order private guides that only signed-in users can access. Use one instruction per line to build a clean, checkable step list.</p></div><a class="secondary-cta" href="/guides" target="_blank"><i class="fas fa-up-right-from-square"></i> Preview guides</a></div>
+      <div class="admin-two-col">
+        <div class="admin-card"><h3>Create guide</h3><form class="admin-form-grid" action="/admin/guides" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Title<input name="title" required placeholder="Getting started"></label><label>Slug<input name="slug" placeholder="getting-started"></label><label>Category<input name="category" value="General" placeholder="Setup"></label><label>Order<input name="sort_order" type="number" min="0" max="9999" value="100"></label><label>Icon<input name="icon" value="fa-book-open" placeholder="fa-download"></label><label>Badge<input name="badge" placeholder="Recommended"></label><label class="wide">Summary<textarea name="summary" rows="2" maxlength="300" placeholder="A short description shown on the guide card."></textarea></label><label class="wide">Steps / content<textarea name="body" rows="9" maxlength="12000" placeholder="Sign in to your account.&#10;Open your order.&#10;Copy your delivered key."></textarea><small class="helper-text">Each non-empty line becomes one numbered checklist step.</small></label><div class="check-row"><label><input type="checkbox" name="enabled" checked> Published</label></div><button class="primary-cta wide" type="submit"><i class="fas fa-plus"></i> Create guide</button></form></div>
+        <div class="admin-card"><h3>Guide publishing tips</h3><div class="security-grid"><div class="security-item"><i class="fas fa-list-ol"></i><span>Use order values such as 10, 20, and 30 so new guides can be inserted later.</span></div><div class="security-item"><i class="fas fa-lock"></i><span>Guide routes redirect visitors to login. Disabled guides are hidden immediately.</span></div><div class="security-item"><i class="fas fa-wand-magic-sparkles"></i><span>Keep each line short and action-focused. Users can save checklist progress in their browser.</span></div></div></div>
+      </div>
+      <div class="product-list" style="margin-top:16px">{% for guide in guides_settings['items']|sort(attribute='sort_order') %}<article class="admin-product"><div class="admin-product-main"><div class="guide-admin-icon"><i class="fas {{ guide.icon }}"></i></div><div><h3>{{ guide.title }}</h3><p class="muted">/{{ guide.slug }} · {{ guide.category }} · order {{ guide.sort_order }}</p><div class="admin-tags"><span>{{ 'Published' if guide.enabled else 'Hidden' }}</span><span>{{ guide.body.splitlines()|length }} steps</span>{% if guide.badge %}<span>{{ guide.badge }}</span>{% endif %}</div></div></div><details class="json-editor"><summary>Edit guide</summary><form class="admin-form-grid" action="/admin/guides/{{ guide.id }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Title<input name="title" value="{{ guide.title }}" required></label><label>Slug<input name="slug" value="{{ guide.slug }}" required></label><label>Category<input name="category" value="{{ guide.category }}"></label><label>Order<input name="sort_order" type="number" min="0" max="9999" value="{{ guide.sort_order }}"></label><label>Icon<input name="icon" value="{{ guide.icon }}"></label><label>Badge<input name="badge" value="{{ guide.badge }}"></label><label class="wide">Summary<textarea name="summary" rows="2">{{ guide.summary }}</textarea></label><label class="wide">Steps / content<textarea name="body" rows="10">{{ guide.body }}</textarea></label><div class="check-row"><label><input type="checkbox" name="enabled" {% if guide.enabled %}checked{% endif %}> Published</label></div><button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save guide</button></form><form action="/admin/guides/{{ guide.id }}/delete" method="post" onsubmit="return confirm('Delete this guide?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete guide</button></form></details></article>{% else %}<p class="muted">No guides created yet.</p>{% endfor %}</div>
+    </section>
 
     <section class="admin-card admin-section" id="applications">
       <div class="section-top"><div><div class="eyebrow">custom forms</div><h2>Applications</h2><p class="muted">Create public application listings. Visitors can see open applications, but only logged-in accounts can submit. Each application can send submissions to its own Discord webhook.</p></div><a class="secondary-cta" href="/applications" target="_blank"><i class="fas fa-up-right-from-square"></i> View page</a></div>
@@ -707,7 +719,7 @@ updatePricingButtons();
       <div class="users-grid">
         {% for order in orders[:30] %}
         <article class="user-row">
-          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</p><div class="user-meta"><span class="owner-badge {{ 'active-badge' if order.status == 'paid' else 'suspended-badge' }}">{{ order.status|default('pending') }}</span>{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% elif order.delivery_status == 'partial' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Partially delivered</span>{% elif order.delivery_status == 'auto_failed' %}<span class="owner-badge suspended-badge"><i class="fas fa-triangle-exclamation"></i> Auto failed</span>{% endif %}</div></div></div>
+          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</p><div class="user-meta"><span class="owner-badge order-status-chip status-{{ order.status|default('pending') }}">{{ order.status|default('pending') }}</span>{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% elif order.delivery_status == 'partial' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Partially delivered</span>{% elif order.delivery_status == 'auto_failed' %}<span class="owner-badge suspended-badge"><i class="fas fa-triangle-exclamation"></i> Auto failed</span>{% endif %}</div></div></div>
           <div class="order-items" style="margin-top:12px;display:grid;gap:8px">
             {% if order.cart and order.cart.get('items') %}
               {% for item in order.cart.get('items') %}
@@ -716,6 +728,21 @@ updatePricingButtons();
               {% endfor %}
             {% endif %}
           </div>
+          <form class="order-status-form" action="{{ url_for('admin_order_change_status', order_id=order.order_id) }}" method="post" onsubmit="return confirm('Change order {{ order.order_id }} to ' + this.status.value + '?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>Status
+              <select name="status" aria-label="Order status">
+                {% for value, label in [('pending','Pending'),('paid','Paid'),('refunded','Refunded'),('cancelled','Cancelled'),('failed','Failed'),('chargeback','Chargeback')] %}
+                <option value="{{ value }}" {% if order.status|default('pending') == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="status-note-field">Internal note
+              <input name="status_note" maxlength="500" value="{{ order.status_note|default('') }}" placeholder="Optional reason or refund reference">
+            </label>
+            <button class="secondary-cta" type="submit"><i class="fas fa-rotate"></i> Update status</button>
+          </form>
+          {% if order.status_history %}<details class="status-history"><summary>View status history</summary><div>{% for change in order.status_history|reverse %}<p><strong>{{ change.from|title }} → {{ change.to|title }}</strong><span>{{ change.at }} · {{ change.by }}</span>{% if change.note %}<small>{{ change.note }}</small>{% endif %}</p>{% endfor %}</div></details>{% endif %}
           {% if order.status == 'paid' and order.cart and order.cart.get('items') %}
           <form class="delivery-form" action="{{ url_for('admin_order_deliver_key', order_id=order.order_id) }}" method="post" onsubmit="return confirm('Send/save this key to {{ order.user_email }}?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

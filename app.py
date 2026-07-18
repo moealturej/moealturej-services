@@ -2353,20 +2353,35 @@ def extract_paypal_paid_amount_cents(data: dict) -> tuple[int | None, str | None
         return None, None
 
 
+ORDER_STATUSES = {"pending", "paid", "refunded", "cancelled", "failed", "chargeback"}
+FINAL_ADMIN_ORDER_STATUSES = {"refunded", "cancelled", "chargeback"}
+
+
+def normalize_order_status(value: str) -> str:
+    status = str(value or "").strip().lower()
+    return status if status in ORDER_STATUSES else ""
+
+
 def update_order_status(order_id: str, status: str, details: dict | None = None):
     order_id = (order_id or "").strip()
-    if not order_id:
-        logger.warning("Ignoring order status update with missing order_id: %s", status)
+    status = normalize_order_status(status)
+    if not order_id or not status:
+        logger.warning("Ignoring invalid order status update: order=%s status=%s", order_id, status)
         return None
     orders = load_orders_for_user(None)
     existing = next((o for o in orders if o.get("order_id") == order_id), None)
     if not existing:
         logger.warning("Ignoring status update for missing/deleted order %s -> %s", order_id, status)
         return None
-    if order_is_expired_pending(existing) and str(status).lower() != "paid":
+    details = dict(details or {})
+    source = str(details.get("status_source") or "provider").lower()
+    if order_is_expired_pending(existing) and status != "paid" and source != "admin":
         delete_order(order_id)
         return None
-    previous_status = str(existing.get("status", "")).lower()
+    previous_status = normalize_order_status(existing.get("status")) or "pending"
+    if previous_status in FINAL_ADMIN_ORDER_STATUSES and status == "paid" and source != "admin":
+        logger.warning("Blocked delayed provider update for finalized order %s (%s -> paid)", order_id, previous_status)
+        return existing
     was_notified = bool(existing.get("owner_notified_at"))
     existing["status"] = status
     existing["updated_at"] = utc_now().isoformat()
@@ -2445,6 +2460,135 @@ def get_allowed_download_files() -> set[str]:
     return allowed_files
 
 
+
+
+# -----------------------------------------------------------------------------
+# Logged-in guides / knowledge base
+# -----------------------------------------------------------------------------
+def default_guides_settings() -> dict:
+    now = utc_now().isoformat()
+    return {
+        "enabled": True,
+        "items": [
+            {
+                "id": "getting-started",
+                "slug": "getting-started",
+                "title": "Getting started",
+                "summary": "Set up your account, find your purchases, and learn where keys and downloads appear.",
+                "category": "Start here",
+                "icon": "fa-rocket",
+                "badge": "Recommended",
+                "sort_order": 10,
+                "enabled": True,
+                "body": "Sign in with the same email used at checkout.\nOpen your Account dashboard to confirm your order status.\nWhen an order is paid, your key or download appears inside the matching order.\nUse Purchase Support from the order if you need help.",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "id": "downloads-and-installation",
+                "slug": "downloads-and-installation",
+                "title": "Downloads & installation",
+                "summary": "A clean checklist for downloading files and preparing your system before installation.",
+                "category": "Setup",
+                "icon": "fa-download",
+                "badge": "Setup",
+                "sort_order": 20,
+                "enabled": True,
+                "body": "Open Downloads from your account or the site navigation.\nDownload only the file connected to your purchased product.\nRead any product-specific notes shown beside the download.\nKeep your key private and never share your account login.\nIf a download is missing, open a support ticket tied to the paid order.",
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "id": "orders-keys-support",
+                "slug": "orders-keys-support",
+                "title": "Orders, keys & support",
+                "summary": "Understand order statuses, key delivery, refunds, and the fastest way to get support.",
+                "category": "Account",
+                "icon": "fa-key",
+                "badge": "Account",
+                "sort_order": 30,
+                "enabled": True,
+                "body": "Pending means the payment is still being confirmed.\nPaid means the order is complete and delivery can begin.\nRefunded means the payment was returned and access may be removed.\nDelivered keys are stored inside the matching order in your Account page.\nFor help, create a purchase ticket from the paid order so support receives the correct product and order details.",
+                "created_at": now,
+                "updated_at": now,
+            },
+        ],
+    }
+
+
+def clean_guide_slug(value: str) -> str:
+    return (clean_slug(value or "guide")[:80] or f"guide-{int(utc_now().timestamp())}")
+
+
+def normalize_guide(data: dict) -> dict:
+    if not isinstance(data, dict):
+        data = {}
+    title = str(data.get("title") or "Guide").strip()[:120] or "Guide"
+    slug = clean_guide_slug(data.get("slug") or title)
+    icon = str(data.get("icon") or "fa-book-open").strip()[:60]
+    if not re.fullmatch(r"fa-[a-z0-9-]+", icon):
+        icon = "fa-book-open"
+    try:
+        sort_order = max(0, min(9999, int(data.get("sort_order", 100))))
+    except (TypeError, ValueError):
+        sort_order = 100
+    return {
+        "id": str(data.get("id") or slug or secrets.token_hex(6))[:80],
+        "slug": slug,
+        "title": title,
+        "summary": str(data.get("summary") or "").strip()[:300],
+        "category": str(data.get("category") or "General").strip()[:60] or "General",
+        "icon": icon,
+        "badge": str(data.get("badge") or "").strip()[:40],
+        "sort_order": sort_order,
+        "enabled": bool(data.get("enabled", True)),
+        "body": str(data.get("body") or "").strip()[:12000],
+        "created_at": str(data.get("created_at") or utc_now().isoformat()),
+        "updated_at": str(data.get("updated_at") or utc_now().isoformat()),
+    }
+
+
+def get_guides_settings() -> dict:
+    raw = load_site_settings().get("guides")
+    defaults = default_guides_settings()
+    if isinstance(raw, dict):
+        defaults.update(raw)
+        if "items" not in raw:
+            defaults["items"] = default_guides_settings()["items"]
+    defaults["items"] = [normalize_guide(item) for item in defaults.get("items") or [] if isinstance(item, dict)]
+    return defaults
+
+
+def save_guides_settings(guides_settings: dict) -> None:
+    settings = load_site_settings()
+    merged = {"enabled": True, "items": []}
+    if isinstance(guides_settings, dict):
+        merged.update(guides_settings)
+    merged["items"] = [normalize_guide(item) for item in merged.get("items") or []]
+    settings["guides"] = merged
+    save_site_settings(settings)
+
+
+def visible_guides(include_disabled: bool = False) -> list[dict]:
+    data = get_guides_settings()
+    items = data.get("items") or []
+    if not include_disabled:
+        if not data.get("enabled", True):
+            return []
+        items = [item for item in items if item.get("enabled")]
+    return sorted(items, key=lambda item: (item.get("sort_order", 100), item.get("title", "").lower()))
+
+
+def find_guide(slug: str, include_disabled: bool = False) -> dict | None:
+    slug = clean_guide_slug(slug)
+    for item in visible_guides(include_disabled=include_disabled):
+        if item.get("slug") == slug or item.get("id") == slug:
+            return item
+    return None
+
+
+def guide_steps(guide: dict) -> list[str]:
+    return [line.strip().lstrip("-• ") for line in str((guide or {}).get("body") or "").splitlines() if line.strip()]
 
 # -----------------------------------------------------------------------------
 # Applications system
@@ -2833,7 +2977,10 @@ def apply_security_headers(response):
     response.headers["X-Download-Options"] = "noopen"
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
     response.headers["Cross-Origin-Resource-Policy"] = "same-site"
-    response.headers["Cache-Control"] = response.headers.get("Cache-Control", "no-store" if request.path.startswith(("/admin", "/account", "/checkout")) else response.headers.get("Cache-Control", ""))
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
+    elif request.path.startswith(("/admin", "/account", "/checkout")):
+        response.headers["Cache-Control"] = "no-store, private"
 
     if IS_PRODUCTION and request.is_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
@@ -3481,7 +3628,108 @@ def account():
         return redirect(url_for("login", next=request.path))
     orders = load_orders_for_user((current_user() or {}).get("email"))
     tickets = load_support_tickets_for_user((current_user() or {}).get("email"))
-    return render_template("account.html", active_page="account", orders=orders, tickets=tickets)
+    return render_template("account.html", active_page="account", orders=orders, tickets=tickets, guides=visible_guides())
+
+
+
+@app.route("/guides")
+def guides():
+    if not current_user():
+        return redirect(url_for("login", next=request.path))
+    items = visible_guides()
+    categories = []
+    for item in items:
+        if item.get("category") not in categories:
+            categories.append(item.get("category"))
+    return render_template("guides.html", active_page="guides", guides=items, categories=categories)
+
+
+@app.route("/guides/<slug>")
+def guide_detail(slug):
+    if not current_user():
+        return redirect(url_for("login", next=request.path))
+    guide = find_guide(slug)
+    if not guide:
+        abort(404)
+    items = visible_guides()
+    return render_template("guide_detail.html", active_page="guides", guide=guide, guide_steps=guide_steps(guide), guides=items)
+
+
+@app.route("/admin/guides", methods=["POST"])
+@owner_required
+@limiter.limit("20 per minute")
+def admin_guide_new():
+    guides_data = get_guides_settings()
+    title = (request.form.get("title") or "").strip()
+    if not title:
+        flash("Guide title is required.", "danger")
+        return redirect(url_for("admin_dashboard") + "#guides")
+    guide = normalize_guide({
+        "id": secrets.token_hex(6),
+        "title": title,
+        "slug": request.form.get("slug") or title,
+        "summary": request.form.get("summary"),
+        "category": request.form.get("category"),
+        "icon": request.form.get("icon"),
+        "badge": request.form.get("badge"),
+        "sort_order": request.form.get("sort_order", 100),
+        "body": request.form.get("body"),
+        "enabled": bool(request.form.get("enabled")),
+    })
+    existing = {item.get("slug") for item in guides_data.get("items") or []}
+    if guide["slug"] in existing:
+        guide["slug"] = f'{guide["slug"]}-{secrets.token_hex(2)}'
+    guides_data.setdefault("items", []).append(guide)
+    save_guides_settings(guides_data)
+    record_audit("guide_created", guide["slug"])
+    flash("Guide created.", "success")
+    return redirect(url_for("admin_dashboard") + "#guides")
+
+
+@app.route("/admin/guides/<guide_id>", methods=["POST"])
+@owner_required
+@limiter.limit("30 per minute")
+def admin_guide_update(guide_id):
+    guides_data = get_guides_settings()
+    items = guides_data.get("items") or []
+    target = next((item for item in items if str(item.get("id")) == str(guide_id)), None)
+    if not target:
+        flash("Guide not found.", "danger")
+        return redirect(url_for("admin_dashboard") + "#guides")
+    target.update(normalize_guide({
+        **target,
+        "title": request.form.get("title") or target.get("title"),
+        "slug": request.form.get("slug") or target.get("slug"),
+        "summary": request.form.get("summary"),
+        "category": request.form.get("category"),
+        "icon": request.form.get("icon"),
+        "badge": request.form.get("badge"),
+        "sort_order": request.form.get("sort_order", target.get("sort_order", 100)),
+        "body": request.form.get("body"),
+        "enabled": bool(request.form.get("enabled")),
+        "updated_at": utc_now().isoformat(),
+    }))
+    save_guides_settings(guides_data)
+    record_audit("guide_updated", target.get("slug", guide_id))
+    flash("Guide updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#guides")
+
+
+@app.route("/admin/guides/<guide_id>/delete", methods=["POST"])
+@owner_required
+@limiter.limit("15 per minute")
+def admin_guide_delete(guide_id):
+    guides_data = get_guides_settings()
+    before = len(guides_data.get("items") or [])
+    guides_data["items"] = [item for item in guides_data.get("items") or [] if str(item.get("id")) != str(guide_id)]
+    if len(guides_data["items"]) == before:
+        flash("Guide not found.", "danger")
+    else:
+        save_guides_settings(guides_data)
+        record_audit("guide_deleted", str(guide_id))
+        flash("Guide deleted.", "success")
+    return redirect(url_for("admin_dashboard") + "#guides")
+
 
 @app.route("/owner")
 @app.route("/admin")
@@ -3500,12 +3748,13 @@ def admin_dashboard():
         "orders": len(load_orders_for_user(None)),
         "support_tickets": len(load_support_tickets()),
         "applications": len(visible_applications(include_disabled=True)),
+        "guides": len(visible_guides(include_disabled=True)),
         "application_submissions": len((get_applications_settings().get("submissions") or [])),
         "payments": ("Stripe " if STRIPE_SECRET_KEY else "") + ("PayPal" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "") or "not configured",
         "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
         "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
-    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
+    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
 
 
 @app.route("/admin/settings", methods=["POST"])
@@ -4431,6 +4680,50 @@ def stripe_webhook():
         logger.warning("Stripe webhook rejected: %s", exc)
         return jsonify({"ok": False}), 400
 
+
+
+@app.route("/admin/order/<order_id>/status", methods=["POST"])
+@owner_required
+@limiter.limit("30 per minute")
+def admin_order_change_status(order_id):
+    order = find_order_by_id(order_id)
+    if not order:
+        flash("Order not found.", "danger")
+        return redirect(url_for("admin_dashboard") + "#orders")
+
+    new_status = normalize_order_status(request.form.get("status"))
+    if not new_status:
+        flash("That order status is not allowed.", "danger")
+        return redirect(url_for("admin_dashboard") + "#orders")
+
+    previous_status = normalize_order_status(order.get("status")) or "pending"
+    reason = (request.form.get("status_note") or "").strip()[:500]
+    changed_at = utc_now().isoformat()
+    history = list(order.get("status_history") or [])[-24:]
+    history.append({
+        "from": previous_status,
+        "to": new_status,
+        "at": changed_at,
+        "by": (current_user() or {}).get("email") or "owner",
+        "note": reason,
+    })
+    updated = update_order_status(order_id, new_status, {
+        "status_source": "admin",
+        "status_note": reason,
+        "status_changed_at": changed_at,
+        "status_history": history,
+    })
+    if not updated:
+        flash("The order status could not be updated.", "danger")
+        return redirect(url_for("admin_dashboard") + "#orders")
+
+    record_audit("order_status_changed", order_id, {
+        "from": previous_status,
+        "to": new_status,
+        "note": reason,
+    })
+    flash(f"Order {order_id} changed from {previous_status} to {new_status}.", "success")
+    return redirect(url_for("admin_dashboard") + "#orders")
 
 
 @app.route("/admin/order/<order_id>/deliver-key", methods=["POST"])
