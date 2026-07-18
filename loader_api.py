@@ -9,6 +9,7 @@ import string
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import urlparse, unquote
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for, send_from_directory
 from werkzeug.utils import safe_join
@@ -206,37 +207,61 @@ def register_loader_api(
         return next((p for p in load_products() if str(p.get("slug")) == slug), None)
 
     def _product_file(product: dict) -> tuple[Path, str] | None:
-        url = str((product.get("downloads") or {}).get("downloadUrl") or "").strip()
-        if not url.startswith("/download/"):
+        downloads = product.get("downloads") or {}
+        raw = str(
+            downloads.get("downloadUrl")
+            or downloads.get("download_url")
+            or downloads.get("fileUrl")
+            or downloads.get("file_url")
+            or ""
+        ).strip()
+        if not raw:
             return None
-        filename = url.removeprefix("/download/").strip("/")
+
+        parsed = urlparse(raw)
+        path_part = unquote(parsed.path if parsed.scheme or parsed.netloc else raw)
+        filename = ""
+        if path_part.startswith("/download/"):
+            filename = path_part.removeprefix("/download/").strip("/")
+        elif path_part.startswith("download/"):
+            filename = path_part.removeprefix("download/").strip("/")
+        else:
+            candidate = str(downloads.get("fileName") or downloads.get("file_name") or "").strip()
+            if candidate:
+                filename = candidate.strip("/")
+
+        if not filename:
+            return None
         safe = safe_join(str(files_dir), filename)
         if not safe:
             return None
         path = Path(safe)
         return (path, filename) if path.exists() and path.is_file() else None
 
-    def _public_product(product: dict) -> dict:
+    def _public_product(product: dict, *, owned: bool = False) -> dict:
         downloads = product.get("downloads") or {}
         status = product.get("status") or {}
         file_info = _product_file(product)
+        enabled = bool(downloads.get("enabled"))
         sha = _file_sha256(file_info[0]) if file_info else ""
         size = file_info[0].stat().st_size if file_info else 0
         image = str(product.get("image") or "/static/logo.png")
+        slug = str(product.get("slug") or "")
         return {
-            "id": str(product.get("id") or product.get("slug")),
-            "slug": product.get("slug"),
+            "id": str(product.get("id") or slug),
+            "slug": slug,
             "name": product.get("name") or "Product",
-            "description": product.get("detailedDescription") or "",
             "image_url": image if image.startswith("http") else request.host_url.rstrip("/") + image,
             "version": str(downloads.get("version") or "Latest"),
             "status": str(status.get("label") or status.get("state") or "Unknown"),
-            "available": bool(downloads.get("enabled") and file_info),
+            "available": bool(enabled and file_info),
+            "owned": bool(owned),
             "file_name": file_info[1] if file_info else "",
             "file_size": size,
             "sha256": sha,
-            "release_notes": str(downloads.get("releaseNotes") or ""),
-            "download_url": url_for("loader_api.loader_download", slug=product.get("slug"), _external=True) if file_info else "",
+            "release_notes": str(downloads.get("releaseNotes") or downloads.get("release_notes") or ""),
+            "download_url": url_for("loader_api.loader_download", slug=slug, _external=True) if owned and enabled and file_info else "",
+            "product_url": url_for("product_detail", slug=slug, _external=True) if slug else url_for("products", _external=True),
         }
 
 
@@ -439,12 +464,18 @@ def register_loader_api(
     @_api_auth
     def library():
         auth = request.loader_session  # type: ignore[attr-defined]
-        owned = _owned_slugs(auth.get("email", ""))
+        owned_slugs = _owned_slugs(auth.get("email", ""))
         products = []
         for product in load_products():
-            if str(product.get("slug")) in owned and (product.get("downloads") or {}).get("enabled"):
-                products.append(_public_product(product))
-        return jsonify({"ok": True, "products": products, "count": len(products)})
+            slug = str(product.get("slug") or "")
+            products.append(_public_product(product, owned=slug in owned_slugs))
+        products.sort(key=lambda item: (not item.get("owned", False), not item.get("available", False), str(item.get("name", "")).lower()))
+        return jsonify({
+            "ok": True,
+            "products": products,
+            "count": len(products),
+            "owned_count": sum(1 for item in products if item.get("owned")),
+        })
 
     @bp.get("/api/loader/products/<slug>/manifest")
     @_api_auth
@@ -455,7 +486,7 @@ def register_loader_api(
         product = _product_for_slug(slug)
         if not product:
             return jsonify({"ok": False, "error": "not_found"}), 404
-        return jsonify({"ok": True, "product": _public_product(product)})
+        return jsonify({"ok": True, "product": _public_product(product, owned=True)})
 
     @bp.get("/api/loader/products/<slug>/download")
     @_api_auth
