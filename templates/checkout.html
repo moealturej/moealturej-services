@@ -1,501 +1,751 @@
 {% extends "base.html" %}
 {% block title %}Checkout | moealturej Services{% endblock %}
+{% block meta_description %}Complete your secure moealturej purchase using Stripe or PayPal.{% endblock %}
 
 {% block extra_head %}
 <style>
-  .pay-page {
-    padding: 34px 0 80px;
+  .checkout-page {
+    padding: 34px 0 90px;
   }
 
-  .pay-layout {
+  .checkout-header {
+    max-width: 750px;
+    margin-bottom: 24px;
+  }
+
+  .checkout-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    padding: 0 11px;
+    margin-bottom: 13px;
+    border: 1px solid rgba(192, 132, 252, .18);
+    border-radius: 999px;
+    background: rgba(168, 85, 247, .08);
+    color: #d8b4fe;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+  }
+
+  .checkout-eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #a855f7;
+    box-shadow: 0 0 13px rgba(168, 85, 247, .9);
+  }
+
+  .checkout-header h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(40px, 6vw, 68px);
+    font-weight: 950;
+    letter-spacing: -.065em;
+    line-height: .95;
+  }
+
+  .checkout-header p {
+    margin: 13px 0 0;
+    color: rgba(255, 255, 255, .51);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .checkout-header strong {
+    color: rgba(255, 255, 255, .85);
+    font-weight: 850;
+  }
+
+  .checkout-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 390px;
     gap: 18px;
     align-items: start;
   }
 
-  .pay-card {
-    border-radius: 26px;
+  .checkout-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .07);
+    border-radius: 25px;
     background:
-      radial-gradient(circle at top left, rgba(147, 51, 234, .13), transparent 34%),
-      rgba(12, 9, 22, .74);
-    border: 1px solid rgba(255,255,255,.075);
-    box-shadow: 0 22px 70px rgba(0,0,0,.34);
+      radial-gradient(circle at 0 0, rgba(147, 51, 234, .09), transparent 31%),
+      rgba(12, 9, 21, .76);
+    box-shadow: 0 24px 72px rgba(0, 0, 0, .31);
     backdrop-filter: blur(18px);
   }
 
-  .pay-main {
-    padding: 28px;
+  .checkout-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, .035),
+        transparent 25%,
+        transparent 75%,
+        rgba(168, 85, 247, .025)
+      );
   }
 
-  .pay-kicker {
+  .checkout-main {
+    min-height: 460px;
+    padding: 12px;
+  }
+
+  .checkout-main-inner,
+  .checkout-summary-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .checkout-section-heading {
+    padding: 15px 15px 12px;
+  }
+
+  .checkout-section-heading span {
+    display: block;
+    margin-bottom: 5px;
+    color: #c4a1eb;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .checkout-section-heading h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 21px;
+    font-weight: 950;
+    letter-spacing: -.035em;
+  }
+
+  .checkout-items {
+    display: grid;
+    gap: 9px;
+  }
+
+  .checkout-item {
+    display: grid;
+    grid-template-columns: 68px minmax(0, 1fr) auto;
+    gap: 13px;
+    align-items: center;
+    min-height: 94px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, .065);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .026);
+  }
+
+  .checkout-item img {
+    width: 68px;
+    height: 68px;
+    border: 1px solid rgba(255, 255, 255, .07);
+    border-radius: 15px;
+    object-fit: cover;
+    background: #08050e;
+  }
+
+  .checkout-item-copy {
+    min-width: 0;
+  }
+
+  .checkout-item h3 {
+    margin: 0;
+    overflow: hidden;
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 900;
+    letter-spacing: -.02em;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .checkout-item p {
+    margin: 5px 0 0;
+    color: rgba(255, 255, 255, .42);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .checkout-item strong {
+    padding-left: 13px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .checkout-message {
+    margin-top: 10px;
+    padding: 13px 14px;
+    border: 1px solid rgba(255, 255, 255, .065);
+    border-radius: 15px;
+    background: rgba(255, 255, 255, .025);
+    color: rgba(255, 255, 255, .48);
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.5;
+  }
+
+  .checkout-message.error {
+    border-color: rgba(255, 91, 121, .24);
+    background: rgba(255, 74, 108, .075);
+    color: #ffc0cc;
+  }
+
+  .checkout-message.success {
+    border-color: rgba(64, 211, 133, .2);
+    background: rgba(40, 190, 108, .07);
+    color: #b9f7d1;
+  }
+
+  .checkout-message a {
+    color: #d8b4fe;
+    font-weight: 850;
+  }
+
+  .checkout-summary {
+    position: sticky;
+    top: 110px;
+    padding: 22px;
+  }
+
+  .summary-label {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-    padding: 7px 11px;
-    border-radius: 999px;
-    background: rgba(168, 85, 247, .10);
-    border: 1px solid rgba(168, 85, 247, .18);
-    color: #d8b4fe;
-    font-size: 11px;
+    gap: 7px;
+    margin-bottom: 9px;
+    color: #c4a1eb;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .summary-label i {
+    font-size: 9px;
+  }
+
+  .checkout-summary h2 {
+    margin: 0 0 18px;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 950;
+    letter-spacing: -.04em;
+  }
+
+  .summary-table {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .065);
+    border-radius: 17px;
+    background: rgba(255, 255, 255, .02);
+  }
+
+  .summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    min-height: 47px;
+    padding: 0 13px;
+    border-bottom: 1px solid rgba(255, 255, 255, .055);
+    color: rgba(255, 255, 255, .49);
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .summary-row:last-child {
+    border-bottom: 0;
+  }
+
+  .summary-row strong {
+    color: rgba(255, 255, 255, .88);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .summary-row.total {
+    min-height: 59px;
+    color: #fff;
+    background: rgba(255, 255, 255, .025);
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .summary-row.total strong {
+    color: #fff;
+    font-size: 20px;
+    letter-spacing: -.03em;
+  }
+
+  .discount-section {
+    margin-top: 14px;
+  }
+
+  .discount-section label {
+    display: block;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, .53);
+    font-size: 10px;
     font-weight: 900;
     letter-spacing: .08em;
     text-transform: uppercase;
   }
 
-  .pay-kicker::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #a855f7;
-    box-shadow: 0 0 14px rgba(168, 85, 247, .8);
-  }
-
-  .pay-main h1 {
-    margin: 0;
-    font-size: clamp(34px, 5vw, 54px);
-    line-height: .98;
-    letter-spacing: -1.8px;
-    font-weight: 950;
-  }
-
-  .pay-main .lead {
-    max-width: 620px;
-    margin: 13px 0 22px;
-    color: rgba(255,255,255,.58);
-    font-size: 13.5px;
-    line-height: 1.6;
-  }
-
-  .checkout-items-clean {
-    display: grid;
-    gap: 10px;
-  }
-
-  .checkout-item-clean {
-    display: grid;
-    grid-template-columns: 62px minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: center;
-    padding: 11px;
-    border-radius: 18px;
-    background: rgba(255,255,255,.035);
-    border: 1px solid rgba(255,255,255,.065);
-  }
-
-  .checkout-item-clean img {
-    width: 62px;
-    height: 62px;
-    border-radius: 15px;
-    object-fit: cover;
-    background: #07030d;
-  }
-
-  .checkout-item-clean h3 {
-    margin: 0 0 4px;
-    font-size: 13.5px;
-    line-height: 1.2;
-    letter-spacing: -.2px;
-  }
-
-  .checkout-item-clean p {
-    margin: 0;
-    color: rgba(255,255,255,.45);
-    font-size: 11.5px;
-    font-weight: 800;
-  }
-
-  .checkout-item-clean strong {
-    font-size: 13px;
-    color: #fff;
-  }
-
-  .pay-summary {
-    padding: 22px;
-    position: sticky;
-    top: 112px;
-  }
-
-  .pay-summary h2 {
-    margin: 0 0 15px;
-    font-size: 22px;
-    letter-spacing: -.7px;
-    font-weight: 950;
-  }
-
-  .summary-box {
-    display: grid;
-    gap: 0;
-    overflow: hidden;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.065);
-    background: rgba(255,255,255,.025);
-  }
-
-  .summary-row-clean {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 13px 14px;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-    color: rgba(255,255,255,.55);
-    font-size: 13px;
-    font-weight: 750;
-  }
-
-  .summary-row-clean:last-child {
-    border-bottom: 0;
-  }
-
-  .summary-row-clean strong {
-    color: #fff;
-    font-size: 13px;
-  }
-
-  .summary-total-clean {
-    color: #fff;
-    font-size: 16px;
-    font-weight: 950;
-    background: rgba(255,255,255,.025);
-  }
-
-  .summary-total-clean strong {
-    font-size: 20px;
-  }
-
-  .discount-box {
-    margin-top: 14px;
-    display: grid;
-    gap: 9px;
-  }
-
-  .discount-box label {
-    color: rgba(255,255,255,.62);
-    font-size: 12px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-
   .discount-input-row {
     display: grid;
-    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
   }
 
   .discount-input-row input {
+    width: 100%;
+    min-width: 0;
     min-height: 46px;
-    border-radius: 15px;
-    border: 1px solid rgba(255,255,255,.09);
-    background: rgba(0,0,0,.24);
-    color: #fff;
     padding: 0 13px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 14px;
+    outline: none;
+    background: rgba(0, 0, 0, .22);
+    color: #fff;
+    font-size: 12px;
     font-weight: 850;
+    letter-spacing: .04em;
     text-transform: uppercase;
+    transition:
+      border-color .18s ease,
+      box-shadow .18s ease;
+  }
+
+  .discount-input-row input:focus {
+    border-color: rgba(168, 85, 247, .45);
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, .08);
+  }
+
+  .discount-input-row input::placeholder {
+    color: rgba(255, 255, 255, .23);
   }
 
   .discount-input-row button {
-    border: 0;
-    border-radius: 15px;
-    background: rgba(168,85,247,.18);
-    color: #fff;
+    min-height: 46px;
+    padding: 0 15px;
+    border: 1px solid rgba(192, 132, 252, .16);
+    border-radius: 14px;
+    background: rgba(168, 85, 247, .11);
+    color: #e9d5ff;
+    font-size: 11px;
     font-weight: 950;
-    padding: 0 14px;
+    cursor: pointer;
+    transition:
+      transform .18s ease,
+      background .18s ease,
+      border-color .18s ease;
+  }
+
+  .discount-input-row button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(192, 132, 252, .27);
+    background: rgba(168, 85, 247, .17);
   }
 
   .discount-lines {
     display: grid;
     gap: 7px;
-    margin-top: 10px;
+    margin-top: 9px;
   }
 
   .discount-pill {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    padding: 9px 10px;
-    border-radius: 14px;
-    background: rgba(35,165,90,.10);
-    border: 1px solid rgba(35,165,90,.18);
-    color: #caffdc;
-    font-size: 12px;
+    gap: 12px;
+    min-height: 39px;
+    padding: 0 11px;
+    border: 1px solid rgba(55, 205, 123, .17);
+    border-radius: 12px;
+    background: rgba(35, 165, 90, .07);
+    color: #bff5d2;
+    font-size: 11px;
     font-weight: 850;
   }
 
-  .payment-stack {
-    display: grid;
-    gap: 10px;
-    margin-top: 16px;
+  .payment-label {
+    display: block;
+    margin: 17px 0 9px;
+    color: rgba(255, 255, 255, .53);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
   }
 
-  .pay-method {
+  .payment-methods {
+    display: grid;
+    gap: 9px;
+  }
+
+  .payment-method {
     width: 100%;
-    min-height: 58px;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.08);
-    color: #fff;
-    font-weight: 950;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    min-height: 60px;
     padding: 0 14px;
+    border-radius: 16px;
+    color: #fff;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 11px;
+    align-items: center;
     text-align: left;
     cursor: pointer;
-    transition: transform .18s ease, filter .18s ease, border-color .18s ease;
+    transition:
+      transform .18s ease,
+      filter .18s ease,
+      box-shadow .18s ease;
   }
 
-  .pay-method:hover:not(:disabled) {
+  .payment-method:hover:not(:disabled) {
     transform: translateY(-2px);
     filter: brightness(1.05);
   }
 
-  .pay-method:disabled {
-    opacity: .55;
+  .payment-method:disabled {
+    opacity: .52;
     cursor: not-allowed;
+    box-shadow: none;
   }
 
-  .pay-method i:first-child {
-    width: 38px;
-    height: 38px;
-    border-radius: 14px;
+  .payment-method-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     display: grid;
     place-items: center;
     font-size: 16px;
   }
 
-  .pay-method span {
-    display: block;
-    flex: 1;
-    font-size: 13.5px;
+  .payment-method-copy {
+    min-width: 0;
   }
 
-  .pay-method small {
+  .payment-method-copy strong {
+    display: block;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 950;
+  }
+
+  .payment-method-copy small {
     display: block;
     margin-top: 3px;
-    color: rgba(255,255,255,.56);
-    font-size: 11.5px;
+    color: rgba(255, 255, 255, .55);
+    font-size: 10.5px;
     font-weight: 750;
   }
 
-  .pay-method.stripe {
+  .payment-method-arrow {
+    color: rgba(255, 255, 255, .67);
+    font-size: 11px;
+  }
+
+  .payment-method.stripe {
+    border: 1px solid rgba(157, 149, 255, .27);
     background:
-      linear-gradient(135deg, rgba(99, 91, 255, .82), rgba(124, 58, 237, .72)),
-      rgba(255,255,255,.04);
-    border-color: rgba(160, 150, 255, .35);
-    box-shadow: 0 16px 36px rgba(99, 91, 255, .20);
+      linear-gradient(135deg, rgba(99, 91, 255, .84), rgba(112, 66, 214, .86));
+    box-shadow: 0 15px 34px rgba(99, 91, 255, .17);
   }
 
-  .pay-method.stripe i:first-child {
-    background: rgba(255,255,255,.15);
+  .payment-method.stripe .payment-method-icon {
+    background: rgba(255, 255, 255, .14);
   }
 
-  .pay-method.paypal {
+  .payment-method.paypal {
+    border: 1px solid rgba(56, 163, 226, .25);
     background:
-      linear-gradient(135deg, rgba(0, 112, 186, .88), rgba(0, 48, 135, .78)),
-      rgba(255,255,255,.04);
-    border-color: rgba(0, 156, 222, .34);
-    box-shadow: 0 16px 36px rgba(0, 112, 186, .18);
+      linear-gradient(135deg, rgba(0, 112, 186, .92), rgba(0, 61, 145, .9));
+    box-shadow: 0 15px 34px rgba(0, 112, 186, .15);
   }
 
-  .pay-method.paypal i:first-child {
-    background: rgba(255,255,255,.16);
-    color: #ffd140;
+  .payment-method.paypal .payment-method-icon {
+    background: rgba(255, 255, 255, .14);
+    color: #ffd45b;
   }
 
-  .pay-lock {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    margin-top: 13px;
-    color: rgba(255,255,255,.42);
-    font-size: 11.5px;
-    font-weight: 800;
-  }
-
-  .pay-note,
   .provider-missing {
-    margin-top: 14px;
-    padding: 13px 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,.075);
-    background: rgba(255,255,255,.032);
-    color: rgba(255,255,255,.55);
-    font-size: 12.5px;
+    padding: 12px 13px;
+    border: 1px solid rgba(255, 198, 77, .17);
+    border-radius: 14px;
+    background: rgba(255, 198, 77, .06);
+    color: #f5d996;
+    font-size: 11.5px;
+    font-weight: 750;
     line-height: 1.5;
   }
 
-  .provider-missing {
-    border-color: rgba(255, 200, 87, .22);
-    background: rgba(255, 200, 87, .08);
-    color: #ffe8a9;
+  .checkout-security {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
   }
 
-  .pay-note.error {
-    border-color: rgba(255, 98, 125, .32);
-    background: rgba(255, 98, 125, .10);
-    color: #ffd1da;
+  .checkout-security-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 39px;
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, .055);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .02);
+    color: rgba(255, 255, 255, .38);
+    font-size: 10.5px;
+    font-weight: 750;
   }
 
-  .pay-note.success {
-    border-color: rgba(35, 165, 90, .28);
-    background: rgba(35, 165, 90, .10);
-    color: #bfffd7;
-  }
-
-  .spinner {
-    display: inline-block;
+  .checkout-security-row i {
     width: 15px;
-    height: 15px;
-    border: 2px solid rgba(255,255,255,.22);
+    color: rgba(216, 180, 254, .73);
+    text-align: center;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    border: 2px solid rgba(255, 255, 255, .2);
     border-top-color: #fff;
     border-radius: 50%;
-    animation: spin .8s linear infinite;
     vertical-align: middle;
-    margin-right: 8px;
+    animation: checkout-spin .75s linear infinite;
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+  @keyframes checkout-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @media (max-width: 980px) {
-    .pay-layout {
+    .checkout-layout {
       grid-template-columns: 1fr;
     }
 
-    .pay-summary {
+    .checkout-summary {
       position: relative;
       top: auto;
       order: -1;
     }
   }
 
-  @media (max-width: 620px) {
-    .pay-page {
-      padding: 22px 0 64px;
+  @media (max-width: 650px) {
+    .checkout-page {
+      padding: 24px 0 70px;
     }
 
-    .pay-main,
-    .pay-summary {
-      padding: 20px;
+    .checkout-card {
+      border-radius: 21px;
     }
 
-    .checkout-item-clean {
-      grid-template-columns: 56px minmax(0, 1fr);
+    .checkout-main {
+      padding: 8px;
     }
 
-    .checkout-item-clean img {
-      width: 56px;
-      height: 56px;
+    .checkout-summary {
+      padding: 18px;
     }
 
-    .checkout-item-clean strong {
+    .checkout-item {
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 11px;
+      border-radius: 15px;
+    }
+
+    .checkout-item img {
+      width: 58px;
+      height: 58px;
+      border-radius: 13px;
+    }
+
+    .checkout-item strong {
       grid-column: 1 / -1;
-      justify-self: end;
+      padding-left: 69px;
+      text-align: left;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .discount-input-row {
+      grid-template-columns: 1fr;
+    }
+
+    .discount-input-row button {
+      width: 100%;
+    }
+
+    .payment-method {
+      grid-template-columns: 38px minmax(0, 1fr) auto;
+      padding: 0 12px;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="page-section pay-page">
+<section class="page-section checkout-page">
   <div class="container">
-    <div class="pay-layout">
+    <header class="checkout-header">
+      <div class="checkout-eyebrow">Secure checkout</div>
 
-      <main class="pay-card pay-main">
-        <div class="pay-kicker">Checkout</div>
+      <h1>Review and pay.</h1>
 
-        <h1>Review and pay.</h1>
+      <p>
+        Signed in as <strong>{{ current_user.email }}</strong>.
+        Confirm your order and select a payment method.
+      </p>
+    </header>
 
-        <p class="lead">
-          Signed in as <strong>{{ current_user.email }}</strong>. Review your order, then choose a payment method.
-        </p>
+    <div class="checkout-layout">
+      <main class="checkout-card checkout-main">
+        <div class="checkout-main-inner">
+          <div class="checkout-section-heading">
+            <span>Your order</span>
+            <h2>Order items</h2>
+          </div>
 
-        <div id="checkout-list" class="checkout-items-clean"></div>
+          <div id="checkout-list" class="checkout-items"></div>
 
-        <div id="pay-message" class="pay-note">
-          Loading checkout...
+          <div id="pay-message" class="checkout-message">
+            Loading checkout details...
+          </div>
         </div>
       </main>
 
-      <aside class="pay-card pay-summary">
-        <div class="pay-kicker">Payment</div>
-
-        <h2>Order total</h2>
-
-        <div class="summary-box">
-          <div class="summary-row-clean">
-            <span>Subtotal</span>
-            <strong id="subtotal">$0.00</strong>
+      <aside class="checkout-card checkout-summary">
+        <div class="checkout-summary-inner">
+          <div class="summary-label">
+            <i class="fas fa-receipt"></i>
+            Payment summary
           </div>
 
-          <div class="summary-row-clean">
-            <span>Discounts</span>
-            <strong id="discount">-$0.00</strong>
+          <h2>Order total</h2>
+
+          <div class="summary-table">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <strong id="subtotal">$0.00</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Discounts</span>
+              <strong id="discount">-$0.00</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Processing fee</span>
+              <strong id="fee">$0.00</strong>
+            </div>
+
+            <div class="summary-row total">
+              <span>Total</span>
+              <strong id="total">$0.00</strong>
+            </div>
           </div>
 
-          <div class="summary-row-clean">
-            <span>Fee</span>
-            <strong id="fee">$0.00</strong>
+          <div class="discount-section">
+            <label for="discount-code">Discount code</label>
+
+            <div class="discount-input-row">
+              <input
+                id="discount-code"
+                type="text"
+                maxlength="32"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Enter code"
+              >
+
+              <button id="apply-discount" type="button">
+                Apply
+              </button>
+            </div>
+
+            <div id="discount-lines" class="discount-lines"></div>
           </div>
 
-          <div class="summary-row-clean summary-total-clean">
-            <span>Total</span>
-            <strong id="total">$0.00</strong>
-          </div>
-        </div>
+          <span class="payment-label">Choose payment method</span>
 
-        <div class="discount-box">
-          <label for="discount-code">Discount code</label>
-          <div class="discount-input-row">
-            <input id="discount-code" maxlength="32" placeholder="SAVE10">
-            <button id="apply-discount" type="button">Apply</button>
-          </div>
-          <div id="discount-lines" class="discount-lines"></div>
-        </div>
+          <div class="payment-methods">
+            {% if stripe_enabled %}
+            <button
+              id="stripe-btn"
+              class="payment-method stripe"
+              type="button"
+            >
+              <span class="payment-method-icon">
+                <i class="fas fa-credit-card"></i>
+              </span>
 
-        <div class="payment-stack">
-          {% if stripe_enabled %}
-          <button id="stripe-btn" class="pay-method stripe">
-            <i class="fas fa-credit-card"></i>
-            <span>
-              Pay with Stripe
-              <small>Card, Apple Pay, Google Pay</small>
-            </span>
-            <i class="fas fa-arrow-right"></i>
-          </button>
-          {% else %}
-          <div class="provider-missing">
-            Stripe is not configured.
-          </div>
-          {% endif %}
+              <span class="payment-method-copy">
+                <strong>Pay with Stripe</strong>
+                <small>Card, Apple Pay or Google Pay</small>
+              </span>
 
-          {% if paypal_enabled %}
-          <button id="paypal-direct-btn" class="pay-method paypal">
-            <i class="fab fa-paypal"></i>
-            <span>
-              Pay with PayPal
-              <small>PayPal balance or card</small>
-            </span>
-            <i class="fas fa-arrow-right"></i>
-          </button>
-          {% else %}
-          <div class="provider-missing">
-            PayPal is not configured.
-          </div>
-          {% endif %}
-        </div>
+              <i class="fas fa-chevron-right payment-method-arrow"></i>
+            </button>
+            {% else %}
+            <div class="provider-missing">
+              <i class="fas fa-exclamation-circle"></i>
+              Stripe payments are currently unavailable.
+            </div>
+            {% endif %}
 
-        <div class="pay-lock">
-          <i class="fas fa-lock"></i>
-          Secure checkout
+            {% if paypal_enabled %}
+            <button
+              id="paypal-direct-btn"
+              class="payment-method paypal"
+              type="button"
+            >
+              <span class="payment-method-icon">
+                <i class="fab fa-paypal"></i>
+              </span>
+
+              <span class="payment-method-copy">
+                <strong>Pay with PayPal</strong>
+                <small>PayPal balance, bank or card</small>
+              </span>
+
+              <i class="fas fa-chevron-right payment-method-arrow"></i>
+            </button>
+            {% else %}
+            <div class="provider-missing">
+              <i class="fas fa-exclamation-circle"></i>
+              PayPal payments are currently unavailable.
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="checkout-security">
+            <div class="checkout-security-row">
+              <i class="fas fa-lock"></i>
+              Your payment information is securely processed
+            </div>
+
+            <div class="checkout-security-row">
+              <i class="fas fa-shield-alt"></i>
+              Your order is saved to your account after payment
+            </div>
+          </div>
         </div>
       </aside>
-
     </div>
   </div>
 </section>
@@ -503,162 +753,261 @@
 
 {% block extra_scripts %}
 <script>
-const CART_KEY = 'moeCart';
-const CSRF = {{ csrf_token()|tojson }};
-let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-let discountCode = (localStorage.getItem('moeDiscountCode') || '').toUpperCase();
+  const CART_KEY = 'moeCart';
+  const CSRF = {{ csrf_token()|tojson }};
 
-const msg = document.getElementById('pay-message');
-const list = document.getElementById('checkout-list');
+  let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+  let discountCode = (
+    localStorage.getItem('moeDiscountCode') || ''
+  ).toUpperCase();
 
-function setMsg(text, busy = false, type = '') {
-  msg.classList.remove('error', 'success');
+  const messageElement = document.getElementById('pay-message');
+  const checkoutList = document.getElementById('checkout-list');
+  const discountInput = document.getElementById('discount-code');
+  const applyDiscountButton = document.getElementById('apply-discount');
+  const stripeButton = document.getElementById('stripe-btn');
+  const paypalButton = document.getElementById('paypal-direct-btn');
 
-  if (type) {
-    msg.classList.add(type);
-  }
+  function setMessage(text, busy = false, type = '') {
+    messageElement.classList.remove('error', 'success');
 
-  msg.innerHTML = (busy ? '<span class="spinner"></span>' : '') + text;
-}
-
-function money(value) {
-  return '$' + Number(value || 0).toFixed(2);
-}
-
-function esc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, match => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  }[match]));
-}
-
-function payload() {
-  return {
-    items: cart.map(item => ({
-      slug: item.slug,
-      option_id: item.optionId || item.uniqid,
-      quantity: item.quantity || 1
-    })),
-    discount_code: discountCode
-  };
-}
-
-async function post(url, data) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': CSRF
-    },
-    body: JSON.stringify(data)
-  });
-
-  const json = await response.json().catch(() => ({
-    ok: false,
-    error: 'Invalid server response'
-  }));
-
-  if (!response.ok || !json.ok) {
-    throw new Error(json.error || 'Request failed');
-  }
-
-  return json;
-}
-
-async function preview() {
-  if (!cart.length) {
-    list.innerHTML = `
-      <div class="pay-note">
-        Your cart is empty. <a href="/store">Browse the store</a>.
-      </div>
-    `;
-
-    setMsg('Add an item before checkout.');
-
-    document.querySelectorAll('.pay-method').forEach(button => {
-      button.disabled = true;
-    });
-
-    return;
-  }
-
-  try {
-    const json = await post('/api/checkout/preview', payload());
-    const checkout = json.cart;
-
-    document.getElementById('subtotal').textContent = money(checkout.subtotal);
-    document.getElementById('discount').textContent = '-'+money(checkout.discount || 0);
-    document.getElementById('fee').textContent = money(checkout.fee);
-    document.getElementById('total').textContent = money(checkout.total);
-    document.getElementById('discount-lines').innerHTML = (checkout.discounts || []).map(d => `<div class="discount-pill"><span>${esc(d.label || 'Discount')}</span><strong>-${money(d.amount || 0)}</strong></div>`).join('');
-
-    list.innerHTML = checkout.items.map(item => `
-      <div class="checkout-item-clean">
-        <img src="${esc(item.image || '/static/logo.png')}" alt="${esc(item.product_name)}">
-
-        <div>
-          <h3>${esc(item.product_name)}</h3>
-          <p>${esc(item.option_name)} × ${item.quantity}</p>
-        </div>
-
-        <strong>${money(item.line_amount)}</strong>
-      </div>
-    `).join('');
-
-    setMsg('Ready for payment.', false, 'success');
-  } catch (error) {
-    setMsg(error.message, false, 'error');
-
-    document.querySelectorAll('.pay-method').forEach(button => {
-      button.disabled = true;
-    });
-  }
-}
-
-document.getElementById('stripe-btn')?.addEventListener('click', async () => {
-  try {
-    setMsg('Starting Stripe checkout...', true);
-
-    const json = await post('/checkout/stripe', payload());
-
-    location.href = json.url;
-  } catch (error) {
-    setMsg(error.message, false, 'error');
-  }
-});
-
-document.getElementById('paypal-direct-btn')?.addEventListener('click', async () => {
-  const button = document.getElementById('paypal-direct-btn');
-
-  try {
-    button.disabled = true;
-    setMsg('Starting PayPal checkout...', true);
-
-    const json = await post('/checkout/paypal/create', payload());
-
-    if (!json.approve_url) {
-      throw new Error('PayPal did not return an approval link.');
+    if (type) {
+      messageElement.classList.add(type);
     }
 
-    localStorage.setItem('moePendingPayPalOrder', json.order_id || '');
-    location.href = json.approve_url;
-  } catch (error) {
-    button.disabled = false;
-    setMsg(error.message, false, 'error');
+    messageElement.innerHTML =
+      (busy ? '<span class="loading-spinner"></span>' : '') + text;
   }
-});
 
-const discountInput = document.getElementById('discount-code');
-if (discountInput) discountInput.value = discountCode;
-document.getElementById('apply-discount')?.addEventListener('click', async () => {
-  discountCode = (discountInput.value || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0,32);
-  localStorage.setItem('moeDiscountCode', discountCode);
-  await preview();
-});
+  function money(value) {
+    return '$' + Number(value || 0).toFixed(2);
+  }
 
-preview();
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[character]));
+  }
+
+  function getPayload() {
+    return {
+      items: cart.map(item => ({
+        slug: item.slug,
+        option_id: item.optionId || item.uniqid,
+        quantity: Number(item.quantity || 1)
+      })),
+      discount_code: discountCode
+    };
+  }
+
+  function setPaymentButtonsDisabled(disabled) {
+    document.querySelectorAll('.payment-method').forEach(button => {
+      button.disabled = disabled;
+    });
+  }
+
+  async function postJson(url, data) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF
+      },
+      body: JSON.stringify(data)
+    });
+
+    const json = await response.json().catch(() => ({
+      ok: false,
+      error: 'The server returned an invalid response.'
+    }));
+
+    if (!response.ok || !json.ok) {
+      throw new Error(json.error || 'The request could not be completed.');
+    }
+
+    return json;
+  }
+
+  async function loadCheckoutPreview() {
+    if (!cart.length) {
+      checkoutList.innerHTML = `
+        <div class="checkout-message">
+          Your cart is empty.
+          <a href="/store">Return to the store</a> to add a product.
+        </div>
+      `;
+
+      document.getElementById('subtotal').textContent = '$0.00';
+      document.getElementById('discount').textContent = '-$0.00';
+      document.getElementById('fee').textContent = '$0.00';
+      document.getElementById('total').textContent = '$0.00';
+      document.getElementById('discount-lines').innerHTML = '';
+
+      setMessage('Add an item before continuing to payment.');
+      setPaymentButtonsDisabled(true);
+      return;
+    }
+
+    setPaymentButtonsDisabled(true);
+    setMessage('Loading your order...', true);
+
+    try {
+      const json = await postJson(
+        '/api/checkout/preview',
+        getPayload()
+      );
+
+      const checkout = json.cart;
+
+      document.getElementById('subtotal').textContent =
+        money(checkout.subtotal);
+
+      document.getElementById('discount').textContent =
+        '-' + money(checkout.discount || 0);
+
+      document.getElementById('fee').textContent =
+        money(checkout.fee);
+
+      document.getElementById('total').textContent =
+        money(checkout.total);
+
+      document.getElementById('discount-lines').innerHTML =
+        (checkout.discounts || []).map(discount => `
+          <div class="discount-pill">
+            <span>${escapeHtml(discount.label || 'Discount')}</span>
+            <strong>-${money(discount.amount || 0)}</strong>
+          </div>
+        `).join('');
+
+      checkoutList.innerHTML = (checkout.items || []).map(item => `
+        <article class="checkout-item">
+          <img
+            src="${escapeHtml(item.image || '/static/logo.png')}"
+            alt="${escapeHtml(item.product_name || 'Product')}"
+            onerror="this.src='/static/logo.png'"
+          >
+
+          <div class="checkout-item-copy">
+            <h3>${escapeHtml(item.product_name || 'Product')}</h3>
+            <p>
+              ${escapeHtml(item.option_name || 'Standard option')}
+              &nbsp;×&nbsp;
+              ${Number(item.quantity || 1)}
+            </p>
+          </div>
+
+          <strong>${money(item.line_amount)}</strong>
+        </article>
+      `).join('');
+
+      setPaymentButtonsDisabled(false);
+      setMessage(
+        'Your order is ready. Select a payment method to continue.',
+        false,
+        'success'
+      );
+    } catch (error) {
+      setPaymentButtonsDisabled(true);
+      setMessage(
+        escapeHtml(error.message),
+        false,
+        'error'
+      );
+    }
+  }
+
+  stripeButton?.addEventListener('click', async () => {
+    try {
+      setPaymentButtonsDisabled(true);
+      setMessage('Opening secure Stripe checkout...', true);
+
+      const json = await postJson(
+        '/checkout/stripe',
+        getPayload()
+      );
+
+      if (!json.url) {
+        throw new Error('Stripe did not return a checkout link.');
+      }
+
+      window.location.href = json.url;
+    } catch (error) {
+      setPaymentButtonsDisabled(false);
+      setMessage(
+        escapeHtml(error.message),
+        false,
+        'error'
+      );
+    }
+  });
+
+  paypalButton?.addEventListener('click', async () => {
+    try {
+      setPaymentButtonsDisabled(true);
+      setMessage('Opening secure PayPal checkout...', true);
+
+      const json = await postJson(
+        '/checkout/paypal/create',
+        getPayload()
+      );
+
+      if (!json.approve_url) {
+        throw new Error('PayPal did not return an approval link.');
+      }
+
+      localStorage.setItem(
+        'moePendingPayPalOrder',
+        json.order_id || ''
+      );
+
+      window.location.href = json.approve_url;
+    } catch (error) {
+      setPaymentButtonsDisabled(false);
+      setMessage(
+        escapeHtml(error.message),
+        false,
+        'error'
+      );
+    }
+  });
+
+  discountInput.value = discountCode;
+
+  discountInput.addEventListener('input', () => {
+    discountInput.value = (discountInput.value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9_-]/g, '')
+      .slice(0, 32);
+  });
+
+  discountInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyDiscountButton.click();
+    }
+  });
+
+  applyDiscountButton.addEventListener('click', async () => {
+    discountCode = (discountInput.value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9_-]/g, '')
+      .slice(0, 32);
+
+    discountInput.value = discountCode;
+
+    if (discountCode) {
+      localStorage.setItem('moeDiscountCode', discountCode);
+    } else {
+      localStorage.removeItem('moeDiscountCode');
+    }
+
+    await loadCheckoutPreview();
+  });
+
+  loadCheckoutPreview();
 </script>
 {% endblock %}
