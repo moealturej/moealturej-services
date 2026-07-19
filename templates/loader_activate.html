@@ -1,34 +1,681 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Connect Loader | moealturej</title>
-  <style>
-    :root{color-scheme:dark;--bg:#08060d;--card:#110c18;--line:#2d213b;--text:#f7f2ff;--muted:#a99db6;--purple:#8b5cf6;--green:#5ee0a2}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 0%,rgba(139,92,246,.18),transparent 38%),var(--bg);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text)}
-    .card{width:min(520px,100%);padding:34px;border:1px solid var(--line);border-radius:24px;background:rgba(17,12,24,.94);box-shadow:0 30px 90px rgba(0,0,0,.42)}
-    .brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}.logo{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:var(--purple);font-weight:800}.brand b{font-size:18px}.brand span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
-    h1{font-size:28px;margin:0 0 8px}p{color:var(--muted);line-height:1.6;margin:0 0 22px}.account{padding:13px 15px;border:1px solid var(--line);border-radius:14px;background:#0c0911;margin-bottom:18px;font-size:13px}.account strong{color:#fff}
-    label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}input{width:100%;padding:15px 16px;border:1px solid var(--line);border-radius:13px;background:#09070d;color:#fff;font-size:20px;font-weight:750;letter-spacing:.12em;text-align:center;outline:none}input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(139,92,246,.14)}button{width:100%;margin-top:14px;padding:14px 18px;border:0;border-radius:13px;background:linear-gradient(135deg,#8b5cf6,#a46cff);color:#fff;font-weight:750;font-size:14px;cursor:pointer}.message{padding:14px;border-radius:13px;margin-bottom:18px;border:1px solid #543a75;background:#21152f;color:#e5d8fa}.message.ok{border-color:#285d46;background:#10261d;color:#8cf1bd}.fine{font-size:12px;color:#766b82;margin-top:18px;text-align:center}
-  </style>
-</head>
-<body>
-  <main class="card">
-    <div class="brand"><div class="logo">M</div><div><b>moealturej Loader</b><span>Secure device connection</span></div></div>
-    <h1>{{ 'Loader connected' if success else 'Connect your loader' }}</h1>
-    <p>{{ 'The app will finish signing in automatically.' if success else 'Enter the code shown in the Windows loader. This grants only your purchased-product library to that device.' }}</p>
-    <div class="account">Signed in as <strong>{{ user.username or user.email }}</strong></div>
-    {% if message %}<div class="message {{ 'ok' if success else '' }}">{{ message }}</div>{% endif %}
-    {% if not success %}
-    <form method="post">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label for="code">Device code</label>
-      <input id="code" name="code" value="{{ code }}" maxlength="9" autocomplete="one-time-code" placeholder="ABCD-1234" required>
-      <button type="submit">Approve this device</button>
-    </form>
-    {% endif %}
-    <div class="fine">Never approve a code you did not request from your own loader.</div>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Connect Loader | moealturej{% endblock %}
+
+{% block extra_head %}
+<style>
+  .loader-connect-page {
+    --loader-bg: #08060d;
+    --loader-card: rgba(16, 11, 23, 0.94);
+    --loader-card-soft: rgba(12, 8, 18, 0.82);
+    --loader-line: rgba(154, 105, 255, 0.18);
+    --loader-line-strong: rgba(154, 105, 255, 0.38);
+    --loader-text: #f8f4ff;
+    --loader-muted: #a99db6;
+    --loader-purple: #8b5cf6;
+    --loader-purple-light: #ad7cff;
+    --loader-green: #64e3a6;
+    --loader-red: #ff718f;
+
+    position: relative;
+    min-height: calc(100vh - 80px);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 72px 20px;
+    isolation: isolate;
+  }
+
+  .loader-connect-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -3;
+    background:
+      radial-gradient(
+        circle at 50% -8%,
+        rgba(139, 92, 246, 0.2),
+        transparent 38%
+      ),
+      radial-gradient(
+        circle at 12% 82%,
+        rgba(113, 62, 196, 0.1),
+        transparent 32%
+      ),
+      radial-gradient(
+        circle at 92% 76%,
+        rgba(178, 111, 255, 0.08),
+        transparent 30%
+      );
+  }
+
+  .loader-connect-page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    opacity: 0.35;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, black, transparent 86%);
+  }
+
+  .loader-connect-orb {
+    position: absolute;
+    z-index: -1;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.14;
+    pointer-events: none;
+  }
+
+  .loader-connect-orb.one {
+    top: 4%;
+    left: 12%;
+    background: #7c3aed;
+  }
+
+  .loader-connect-orb.two {
+    right: 8%;
+    bottom: 2%;
+    background: #a855f7;
+  }
+
+  .loader-connect-shell {
+    width: min(560px, 100%);
+  }
+
+  .loader-connect-card {
+    position: relative;
+    overflow: hidden;
+    padding: 34px;
+    border: 1px solid var(--loader-line);
+    border-radius: 26px;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(25, 16, 36, 0.96),
+        rgba(12, 8, 18, 0.96)
+      );
+    box-shadow:
+      0 32px 90px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(20px);
+  }
+
+  .loader-connect-card::before {
+    content: "";
+    position: absolute;
+    top: -140px;
+    left: 50%;
+    width: 420px;
+    height: 250px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: rgba(139, 92, 246, 0.14);
+    filter: blur(22px);
+    pointer-events: none;
+  }
+
+  .loader-connect-brand {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 28px;
+  }
+
+  .loader-connect-logo {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--loader-line-strong);
+    border-radius: 15px;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(139, 92, 246, 0.22),
+        rgba(22, 13, 31, 0.9)
+      );
+    box-shadow:
+      0 12px 28px rgba(79, 34, 142, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .loader-connect-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .loader-connect-brand-copy strong {
+    display: block;
+    color: var(--loader-text);
+    font-size: 16px;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+
+  .loader-connect-brand-copy span {
+    display: block;
+    margin-top: 4px;
+    color: var(--loader-muted);
+    font-size: 11px;
+  }
+
+  .loader-connect-status {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 15px;
+    padding: 7px 10px;
+    border: 1px solid
+      {% if success %}
+        rgba(100, 227, 166, 0.25)
+      {% else %}
+        rgba(154, 105, 255, 0.25)
+      {% endif %};
+    border-radius: 999px;
+    background:
+      {% if success %}
+        rgba(100, 227, 166, 0.08)
+      {% else %}
+        rgba(139, 92, 246, 0.09)
+      {% endif %};
+    color:
+      {% if success %}
+        var(--loader-green)
+      {% else %}
+        #c5a7ff
+      {% endif %};
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .loader-connect-status i {
+    font-size: 9px;
+  }
+
+  .loader-connect-heading {
+    position: relative;
+    margin: 0;
+    color: var(--loader-text);
+    font-size: clamp(28px, 5vw, 36px);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+  }
+
+  .loader-connect-description {
+    position: relative;
+    margin: 12px 0 24px;
+    color: var(--loader-muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .loader-connect-account {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 13px 14px;
+    border: 1px solid rgba(255,255,255,.065);
+    border-radius: 14px;
+    background: var(--loader-card-soft);
+  }
+
+  .loader-connect-account-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--loader-line);
+    border-radius: 10px;
+    background: rgba(139, 92, 246, 0.08);
+    color: #b995ff;
+  }
+
+  .loader-connect-account-copy small {
+    display: block;
+    color: #7f7489;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .loader-connect-account-copy strong {
+    display: block;
+    overflow: hidden;
+    margin-top: 3px;
+    color: var(--loader-text);
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .loader-connect-message {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    margin-bottom: 19px;
+    padding: 14px 15px;
+    border: 1px solid rgba(255, 113, 143, 0.24);
+    border-radius: 14px;
+    background: rgba(255, 113, 143, 0.075);
+    color: #ffd8e1;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .loader-connect-message.success {
+    border-color: rgba(100, 227, 166, 0.25);
+    background: rgba(100, 227, 166, 0.075);
+    color: #baf4d5;
+  }
+
+  .loader-connect-message i {
+    margin-top: 2px;
+  }
+
+  .loader-connect-form {
+    position: relative;
+  }
+
+  .loader-connect-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 9px;
+    color: #b9afc2;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .loader-connect-label span {
+    color: #746a7f;
+    font-size: 9px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .loader-connect-code-wrap {
+    position: relative;
+  }
+
+  .loader-connect-code-icon {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    z-index: 2;
+    transform: translateY(-50%);
+    color: #9f7aea;
+    pointer-events: none;
+  }
+
+  .loader-connect-code {
+    width: 100%;
+    height: 58px;
+    padding: 0 50px;
+    border: 1px solid var(--loader-line);
+    border-radius: 15px;
+    outline: none;
+    background: rgba(7, 5, 11, 0.8);
+    color: #fff;
+    caret-color: var(--loader-purple-light);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-align: center;
+    text-transform: uppercase;
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      background 0.18s ease;
+  }
+
+  .loader-connect-code::placeholder {
+    color: #5f5668;
+  }
+
+  .loader-connect-code:hover {
+    border-color: rgba(154, 105, 255, 0.32);
+    background: rgba(10, 7, 15, 0.9);
+  }
+
+  .loader-connect-code:focus {
+    border-color: var(--loader-purple);
+    background: rgba(11, 7, 17, 0.96);
+    box-shadow:
+      0 0 0 4px rgba(139, 92, 246, 0.12),
+      0 14px 28px rgba(55, 25, 91, 0.14);
+  }
+
+  .loader-connect-submit {
+    position: relative;
+    width: 100%;
+    min-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 14px;
+    padding: 13px 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px;
+    background:
+      linear-gradient(
+        135deg,
+        #7c3aed 0%,
+        #8b5cf6 52%,
+        #a66fff 100%
+      );
+    box-shadow:
+      0 14px 30px rgba(86, 39, 151, 0.3),
+      inset 0 1px 0 rgba(255,255,255,.18);
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .loader-connect-submit::before {
+    content: "";
+    position: absolute;
+    top: -100%;
+    left: -40%;
+    width: 30%;
+    height: 300%;
+    transform: rotate(24deg);
+    background: rgba(255,255,255,.17);
+    transition: left 0.45s ease;
+  }
+
+  .loader-connect-submit:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow:
+      0 18px 38px rgba(86, 39, 151, 0.38),
+      inset 0 1px 0 rgba(255,255,255,.2);
+  }
+
+  .loader-connect-submit:hover::before {
+    left: 115%;
+  }
+
+  .loader-connect-submit:active {
+    transform: translateY(0);
+  }
+
+  .loader-connect-success-panel {
+    position: relative;
+    padding: 21px;
+    border: 1px solid rgba(100, 227, 166, 0.22);
+    border-radius: 16px;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(100, 227, 166, 0.08),
+        rgba(15, 31, 24, 0.42)
+      );
+    text-align: center;
+  }
+
+  .loader-connect-success-icon {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 13px;
+    border: 1px solid rgba(100, 227, 166, 0.26);
+    border-radius: 16px;
+    background: rgba(100, 227, 166, 0.1);
+    color: var(--loader-green);
+    font-size: 20px;
+  }
+
+  .loader-connect-success-panel strong {
+    display: block;
+    color: #eafff3;
+    font-size: 15px;
+  }
+
+  .loader-connect-success-panel span {
+    display: block;
+    margin-top: 6px;
+    color: #9fb8aa;
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .loader-connect-security {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 19px;
+    color: #766c80;
+    font-size: 10px;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .loader-connect-security i {
+    margin-top: 2px;
+    color: #8c6cc3;
+  }
+
+  .loader-connect-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 16px;
+    color: #655c6e;
+    font-size: 10px;
+  }
+
+  .loader-connect-footer span {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #574d61;
+  }
+
+  @media (max-width: 620px) {
+    .loader-connect-page {
+      min-height: calc(100vh - 64px);
+      padding: 38px 14px;
+    }
+
+    .loader-connect-card {
+      padding: 25px 20px;
+      border-radius: 21px;
+    }
+
+    .loader-connect-brand {
+      margin-bottom: 23px;
+    }
+
+    .loader-connect-heading {
+      font-size: 29px;
+    }
+
+    .loader-connect-description {
+      font-size: 13px;
+    }
+
+    .loader-connect-code {
+      height: 55px;
+      font-size: 17px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loader-connect-submit,
+    .loader-connect-submit::before,
+    .loader-connect-code {
+      transition: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="loader-connect-page">
+  <div class="loader-connect-orb one"></div>
+  <div class="loader-connect-orb two"></div>
+
+  <div class="loader-connect-shell">
+    <main class="loader-connect-card">
+      <div class="loader-connect-brand">
+        <div class="loader-connect-logo">
+          <img
+            src="{{ url_for('static', filename='logo.png') }}"
+            alt="moealturej"
+          >
+        </div>
+
+        <div class="loader-connect-brand-copy">
+          <strong>moealturej Loader</strong>
+          <span>Secure device connection</span>
+        </div>
+      </div>
+
+      <div class="loader-connect-status">
+        {% if success %}
+          <i class="fas fa-circle-check"></i>
+          Device approved
+        {% else %}
+          <i class="fas fa-link"></i>
+          Connection request
+        {% endif %}
+      </div>
+
+      <h1 class="loader-connect-heading">
+        {{ 'Loader connected' if success else 'Connect your loader' }}
+      </h1>
+
+      <p class="loader-connect-description">
+        {% if success %}
+          Your device was approved successfully. The Windows loader will finish
+          signing in automatically.
+        {% else %}
+          Enter the code shown in your Windows loader. Approval only grants this
+          device access to the products and account features you already own.
+        {% endif %}
+      </p>
+
+      <div class="loader-connect-account">
+        <div class="loader-connect-account-icon">
+          <i class="fas fa-user-shield"></i>
+        </div>
+
+        <div class="loader-connect-account-copy">
+          <small>Signed in account</small>
+          <strong>{{ user.username or user.email }}</strong>
+        </div>
+      </div>
+
+      {% if message %}
+        <div class="loader-connect-message {{ 'success' if success else '' }}">
+          <i class="fas {{ 'fa-circle-check' if success else 'fa-circle-info' }}"></i>
+          <span>{{ message }}</span>
+        </div>
+      {% endif %}
+
+      {% if success %}
+        <div class="loader-connect-success-panel">
+          <div class="loader-connect-success-icon">
+            <i class="fas fa-check"></i>
+          </div>
+
+          <strong>Connection complete</strong>
+          <span>
+            You can safely return to the loader. This page may now be closed.
+          </span>
+        </div>
+      {% else %}
+        <form method="post" class="loader-connect-form">
+          <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+          >
+
+          <label class="loader-connect-label" for="code">
+            Device code
+            <span>Shown inside the loader</span>
+          </label>
+
+          <div class="loader-connect-code-wrap">
+            <i class="fas fa-key loader-connect-code-icon"></i>
+
+            <input
+              class="loader-connect-code"
+              id="code"
+              name="code"
+              type="text"
+              value="{{ code }}"
+              maxlength="9"
+              autocomplete="one-time-code"
+              autocapitalize="characters"
+              spellcheck="false"
+              inputmode="text"
+              placeholder="ABCD-1234"
+              aria-describedby="loader-security-note"
+              required
+              autofocus
+            >
+          </div>
+
+          <button class="loader-connect-submit" type="submit">
+            <i class="fas fa-shield-halved"></i>
+            <span>Approve this device</span>
+          </button>
+        </form>
+      {% endif %}
+
+      <div
+        class="loader-connect-security"
+        id="loader-security-note"
+      >
+        <i class="fas fa-lock"></i>
+        <span>
+          Never approve a code you did not request from your own loader.
+        </span>
+      </div>
+    </main>
+
+    <div class="loader-connect-footer">
+      <span></span>
+      Secure account-bound authorization
+      <span></span>
+    </div>
+  </div>
+</section>
+{% endblock %}
