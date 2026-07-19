@@ -1,4 +1,5 @@
 import html as html_escape
+import hashlib
 import json
 import logging
 import mimetypes
@@ -25,6 +26,14 @@ from werkzeug.utils import safe_join, secure_filename
 import requests
 
 
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 # -----------------------------------------------------------------------------
 # Environment / Setup
 # -----------------------------------------------------------------------------
@@ -35,6 +44,7 @@ DATA_DIR = BASE_DIR / "data"
 STATIC_DIR = BASE_DIR / "static"
 PRODUCTS_FILE = DATA_DIR / "products.json"
 FILES_DIR = DATA_DIR / "files"
+DOWNLOADS_DIR = BASE_DIR / "downloads"
 UPLOADS_DIR = DATA_DIR / "uploads"
 MEDIA_FILE = DATA_DIR / "media.json"
 ORDERS_FILE = DATA_DIR / "orders.json"
@@ -44,7 +54,7 @@ SETTINGS_FILE = DATA_DIR / "site_settings.json"
 DISCOUNT_CODE_MAX_LEN = 32
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 ALLOWED_FILE_EXTENSIONS = {"zip", "rar", "7z", "pdf", "txt", "json", "png", "jpg", "jpeg", "gif", "webp"}
-MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "30"))
+MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "150"))
 MAX_SUPPORT_ATTACHMENT_MB = max(1, min(15, int(os.getenv("MAX_SUPPORT_ATTACHMENT_MB", "8"))))
 MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE = max(1, min(5, int(os.getenv("MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE", "3"))))
 
@@ -2437,87 +2447,71 @@ def get_allowed_download_files() -> set[str]:
 # -----------------------------------------------------------------------------
 # Logged-in guides / knowledge base
 # -----------------------------------------------------------------------------
+def _default_basic_guide_sections() -> list[dict]:
+    return [
+        {"id":"requirements","title":"Basic PC requirements","type":"text","content":"Use this guide before running the loader. Complete the checks in order so Windows, drivers, security settings, and required platform features are ready.","items":[],"image_url":"","image_caption":""},
+        {"id":"update-drivers","title":"Update drivers","type":"steps","content":"Outdated graphics, chipset, network, and motherboard drivers commonly cause crashes, launch errors, and missing runtime components.","items":["Open Settings → Windows Update and install every available update.","Open Advanced options → Optional updates and install relevant hardware-driver updates.","Install the latest graphics driver directly from NVIDIA, AMD, or Intel.","Restart the PC before continuing."],"image_url":"","image_caption":""},
+        {"id":"open-windows-security","title":"1. Open Windows Security","type":"steps","content":"Open Windows Security and keep it available while you complete the remaining checks.","items":["Press the Windows key and search for Windows Security.","Open it and confirm you are on the Security at a glance page."],"image_url":"","image_caption":"Windows Security home"},
+        {"id":"virus-threat-protection","title":"2. Virus & threat protection","type":"steps","content":"Review protection settings and recent detections that may affect the loader.","items":["Select Virus & threat protection from the left side.","Under Virus & threat protection settings, choose Manage settings.","Check Protection history for entries related to the loader or its required files."],"image_url":"","image_caption":"Virus & threat protection"},
+        {"id":"manage-protection-settings","title":"3. Manage protection settings","type":"steps","content":"For verified files, use a narrow folder exception instead of disabling all Windows security.","items":["Scroll to Exclusions and select Add or remove exclusions.","Select Add an exclusion → Folder.","Choose only the folder where your verified loader is stored.","Do not exclude your entire Downloads folder, Windows drive, or user profile."],"image_url":"","image_caption":"Protection settings"},
+        {"id":"restore-blocked-file","title":"4. Restore a blocked file","type":"steps","content":"Only restore a file after confirming its exact filename, source, and download time.","items":["Open Protection history.","Find the detection matching the exact filename and time of your download.","Confirm the file came directly from your account on this website.","Choose Allow on device or Restore only after confirming those details."],"image_url":"","image_caption":"Protection history"},
+        {"id":"firewall-network","title":"5. Firewall and network access","type":"steps","content":"Allow the specific loader application through Windows Firewall rather than turning the firewall off.","items":["Open Windows Security → Firewall & network protection.","Select Allow an app through firewall.","Choose Change settings → Allow another app.","Select the loader executable and allow it on the required network types."],"image_url":"","image_caption":"Firewall & network protection"},
+        {"id":"app-browser-control","title":"6. App & browser control","type":"steps","content":"Review SmartScreen warnings carefully and confirm the file is the verified loader before continuing.","items":["Open App & browser control → Reputation-based protection settings.","Review the current settings and any warning shown for the loader.","Confirm the filename and source before choosing to run the verified file."],"image_url":"","image_caption":"App & browser control"},
+        {"id":"core-isolation","title":"7. Core Isolation and Memory Integrity","type":"steps","content":"Check the product-specific requirement before changing Memory Integrity or other Core Isolation settings.","items":["Open Windows Security → Device security.","Select Core isolation details.","Check the current state of Memory integrity.","Only change it when the product guide explicitly requires a different state, then restart the PC."],"image_url":"","image_caption":"Core isolation"},
+        {"id":"virtualization","title":"Virtualization, Secure Boot, and Hyper-V","type":"checklist","content":"Confirm these platform settings match the requirement for the specific product you are using.","items":["Virtualization is enabled in Task Manager → Performance → CPU.","Secure Boot state has been checked in msinfo32.","Hyper-V and related Windows features match the product requirement.","Memory Integrity matches the product requirement."],"image_url":"","image_caption":""},
+        {"id":"final-checklist","title":"Final checklist","type":"checklist","content":"Complete every item before opening the loader.","items":["Windows Update is complete and the PC has been restarted.","Graphics and chipset drivers are current.","The loader was downloaded directly from my account on this site.","Only the verified loader folder was excluded if an exception was needed.","The loader is allowed through Windows Firewall.","Virtualization, Secure Boot, Hyper-V, and Memory Integrity match the product guide."],"image_url":"","image_caption":""},
+    ]
+
+
 def default_guides_settings() -> dict:
     now = utc_now().isoformat()
-    return {
-        "enabled": True,
-        "items": [
-            {
-                "id": "getting-started",
-                "slug": "getting-started",
-                "title": "Getting started",
-                "summary": "Set up your account, find your purchases, and learn where keys and downloads appear.",
-                "category": "Start here",
-                "icon": "fa-rocket",
-                "badge": "Recommended",
-                "sort_order": 10,
-                "enabled": True,
-                "body": "Sign in with the same email used at checkout.\nOpen your Account dashboard to confirm your order status.\nWhen an order is paid, your key or download appears inside the matching order.\nUse Purchase Support from the order if you need help.",
-                "created_at": now,
-                "updated_at": now,
-            },
-            {
-                "id": "downloads-and-installation",
-                "slug": "downloads-and-installation",
-                "title": "Downloads & installation",
-                "summary": "A clean checklist for downloading files and preparing your system before installation.",
-                "category": "Setup",
-                "icon": "fa-download",
-                "badge": "Setup",
-                "sort_order": 20,
-                "enabled": True,
-                "body": "Open Downloads from your account or the site navigation.\nDownload only the file connected to your purchased product.\nRead any product-specific notes shown beside the download.\nKeep your key private and never share your account login.\nIf a download is missing, open a support ticket tied to the paid order.",
-                "created_at": now,
-                "updated_at": now,
-            },
-            {
-                "id": "orders-keys-support",
-                "slug": "orders-keys-support",
-                "title": "Orders, keys & support",
-                "summary": "Understand order statuses, key delivery, refunds, and the fastest way to get support.",
-                "category": "Account",
-                "icon": "fa-key",
-                "badge": "Account",
-                "sort_order": 30,
-                "enabled": True,
-                "body": "Pending means the payment is still being confirmed.\nPaid means the order is complete and delivery can begin.\nRefunded means the payment was returned and access may be removed.\nDelivered keys are stored inside the matching order in your Account page.\nFor help, create a purchase ticket from the paid order so support receives the correct product and order details.",
-                "created_at": now,
-                "updated_at": now,
-            },
-        ],
-    }
+    return {"enabled": True, "items": [{
+        "id":"basic-pc-requirements","slug":"basic-pc-requirements","title":"Basic PC requirements",
+        "summary":"Complete the required Windows, driver, security, firewall, virtualization, Secure Boot, Hyper-V, and Memory Integrity checks.",
+        "category":"Individual guides","icon":"fa-desktop","badge":"Start here","sort_order":5,"enabled":True,
+        "body":"","sections":_default_basic_guide_sections(),"created_at":now,"updated_at":now,
+    }]}
 
 
 def clean_guide_slug(value: str) -> str:
     return (clean_slug(value or "guide")[:80] or f"guide-{int(utc_now().timestamp())}")
 
 
+def normalize_guide_section(data: dict, index: int = 0) -> dict:
+    if not isinstance(data, dict): data = {}
+    section_type = str(data.get("type") or "steps").lower()
+    if section_type not in {"text", "steps", "checklist", "note", "warning"}: section_type = "steps"
+    sid = clean_guide_slug(str(data.get("id") or data.get("title") or f"section-{index+1}"))
+    items = data.get("items") or []
+    if isinstance(items, str): items = [x.strip() for x in items.splitlines() if x.strip()]
+    return {
+        "id": sid[:80], "title": str(data.get("title") or f"Section {index+1}").strip()[:140],
+        "type": section_type, "content": str(data.get("content") or "").strip()[:8000],
+        "items": [str(x).strip()[:1000] for x in items if str(x).strip()][:100],
+        "image_url": str(data.get("image_url") or "").strip()[:1000],
+        "image_caption": str(data.get("image_caption") or "").strip()[:300],
+    }
+
+
 def normalize_guide(data: dict) -> dict:
-    if not isinstance(data, dict):
-        data = {}
+    if not isinstance(data, dict): data = {}
     title = str(data.get("title") or "Guide").strip()[:120] or "Guide"
     slug = clean_guide_slug(data.get("slug") or title)
     icon = str(data.get("icon") or "fa-book-open").strip()[:60]
-    if not re.fullmatch(r"fa-[a-z0-9-]+", icon):
-        icon = "fa-book-open"
-    try:
-        sort_order = max(0, min(9999, int(data.get("sort_order", 100))))
-    except (TypeError, ValueError):
-        sort_order = 100
-    return {
-        "id": str(data.get("id") or slug or secrets.token_hex(6))[:80],
-        "slug": slug,
-        "title": title,
-        "summary": str(data.get("summary") or "").strip()[:300],
-        "category": str(data.get("category") or "General").strip()[:60] or "General",
-        "icon": icon,
-        "badge": str(data.get("badge") or "").strip()[:40],
-        "sort_order": sort_order,
-        "enabled": bool(data.get("enabled", True)),
-        "body": str(data.get("body") or "").strip()[:12000],
-        "created_at": str(data.get("created_at") or utc_now().isoformat()),
-        "updated_at": str(data.get("updated_at") or utc_now().isoformat()),
-    }
+    if not re.fullmatch(r"fa-[a-z0-9-]+", icon): icon = "fa-book-open"
+    try: sort_order = max(0, min(9999, int(data.get("sort_order", 100))))
+    except (TypeError, ValueError): sort_order = 100
+    raw_sections = data.get("sections") or []
+    if isinstance(raw_sections, str):
+        try: raw_sections = json.loads(raw_sections)
+        except Exception: raw_sections = []
+    sections = [normalize_guide_section(x, i) for i, x in enumerate(raw_sections) if isinstance(x, dict)][:100]
+    if not sections and slug == "basic-pc-requirements": sections = _default_basic_guide_sections()
+    return {"id":str(data.get("id") or slug or secrets.token_hex(6))[:80],"slug":slug,"title":title,
+        "summary":str(data.get("summary") or "").strip()[:300],"category":str(data.get("category") or "General").strip()[:60] or "General",
+        "icon":icon,"badge":str(data.get("badge") or "").strip()[:40],"sort_order":sort_order,"enabled":bool(data.get("enabled",True)),
+        "body":str(data.get("body") or "").strip()[:12000],"sections":sections,
+        "created_at":str(data.get("created_at") or utc_now().isoformat()),"updated_at":str(data.get("updated_at") or utc_now().isoformat())}
 
 
 def get_guides_settings() -> dict:
@@ -2525,38 +2519,31 @@ def get_guides_settings() -> dict:
     defaults = default_guides_settings()
     if isinstance(raw, dict):
         defaults.update(raw)
-        if "items" not in raw:
-            defaults["items"] = default_guides_settings()["items"]
+        # Keep only Basic PC Requirements for now.
+        raw_items = [x for x in (raw.get("items") or []) if isinstance(x, dict) and str(x.get("slug") or x.get("id")) == "basic-pc-requirements"]
+        defaults["items"] = raw_items or default_guides_settings()["items"]
     defaults["items"] = [normalize_guide(item) for item in defaults.get("items") or [] if isinstance(item, dict)]
     return defaults
 
 
 def save_guides_settings(guides_settings: dict) -> None:
-    settings = load_site_settings()
-    merged = {"enabled": True, "items": []}
-    if isinstance(guides_settings, dict):
-        merged.update(guides_settings)
-    merged["items"] = [normalize_guide(item) for item in merged.get("items") or []]
-    settings["guides"] = merged
-    save_site_settings(settings)
+    settings = load_site_settings(); merged = {"enabled":True,"items":[]}
+    if isinstance(guides_settings, dict): merged.update(guides_settings)
+    merged["items"] = [normalize_guide(item) for item in merged.get("items") or [] if str(item.get("slug") or item.get("id")) == "basic-pc-requirements"]
+    settings["guides"] = merged; save_site_settings(settings)
 
 
 def visible_guides(include_disabled: bool = False) -> list[dict]:
-    data = get_guides_settings()
-    items = data.get("items") or []
+    data=get_guides_settings(); items=data.get("items") or []
     if not include_disabled:
-        if not data.get("enabled", True):
-            return []
-        items = [item for item in items if item.get("enabled")]
-    return sorted(items, key=lambda item: (item.get("sort_order", 100), item.get("title", "").lower()))
+        if not data.get("enabled",True): return []
+        items=[x for x in items if x.get("enabled")]
+    return sorted(items,key=lambda x:(x.get("sort_order",100),x.get("title","").lower()))
 
 
 def find_guide(slug: str, include_disabled: bool = False) -> dict | None:
-    slug = clean_guide_slug(slug)
-    for item in visible_guides(include_disabled=include_disabled):
-        if item.get("slug") == slug or item.get("id") == slug:
-            return item
-    return None
+    slug=clean_guide_slug(slug)
+    return next((x for x in visible_guides(include_disabled) if x.get("slug")==slug or x.get("id")==slug),None)
 
 
 def guide_steps(guide: dict) -> list[str]:
@@ -2808,6 +2795,16 @@ def default_site_settings() -> dict:
         "status_url": "/status",
         "applications_url": "/applications",
         "legal_url": "/legal",
+        "loader_release": {
+            "version": "1.0.0",
+            "mandatory": True,
+            "file_name": "Loader.exe",
+            "download_url": "/download/Loader.exe",
+            "sha256": "",
+            "file_size": 0,
+            "release_notes": "",
+            "published_at": "",
+        },
         "discounts": default_discount_settings(),
         "applications": default_applications_settings(),
         "updated_at": utc_now().isoformat(),
@@ -3055,6 +3052,33 @@ def product_detail(slug):
 @app.route("/downloads")
 def downloads():
     return render_template("downloads.html", active_page="downloads")
+
+
+@app.route("/free-downloads")
+def free_downloads():
+    """Public standalone downloads that do not use the account loader."""
+    products = []
+    for product in load_products():
+        downloads_data = product.get("downloads", {}) if isinstance(product.get("downloads"), dict) else {}
+        store_data = product.get("store", {}) if isinstance(product.get("store"), dict) else {}
+        if downloads_data.get("enabled") is not True:
+            continue
+        is_free = store_data.get("enabled") is not True or str(store_data.get("stockStatus", "")).lower() == "free"
+        if not is_free:
+            continue
+        download_url = str(downloads_data.get("downloadUrl") or downloads_data.get("download_url") or "").strip()
+        products.append({
+            "id": product.get("id"),
+            "slug": product.get("slug", ""),
+            "name": product.get("name", "Standalone download"),
+            "image": product.get("image") or url_for("static", filename="logo.png"),
+            "version": downloads_data.get("version") or "Latest",
+            "file_size": downloads_data.get("fileSize") or downloads_data.get("file_size") or "Size unavailable",
+            "download_url": download_url,
+            "available": bool(download_url),
+            "description": product.get("detailedDescription") or "A free standalone download that does not require the moealturej Loader.",
+        })
+    return render_template("free_downloads.html", active_page="free_downloads", products=products)
 
 
 @app.route("/status")
@@ -3614,8 +3638,6 @@ def account():
 
 @app.route("/guides")
 def guides():
-    if not current_user():
-        return redirect(url_for("login", next=request.path))
     items = visible_guides()
     categories = []
     for item in items:
@@ -3626,13 +3648,15 @@ def guides():
 
 @app.route("/guides/<slug>")
 def guide_detail(slug):
-    if not current_user():
-        return redirect(url_for("login", next=request.path))
     guide = find_guide(slug)
     if not guide:
         abort(404)
     items = visible_guides()
-    return render_template("guide_detail.html", active_page="guides", guide=guide, guide_steps=guide_steps(guide), guides=items)
+    categories = []
+    for item in items:
+        if item.get("category") not in categories:
+            categories.append(item.get("category"))
+    return render_template("guide_detail.html", active_page="guides", guide=guide, guide_steps=guide_steps(guide), guides=items, categories=categories)
 
 
 @app.route("/admin/guides", methods=["POST"])
@@ -3686,6 +3710,7 @@ def admin_guide_update(guide_id):
         "badge": request.form.get("badge"),
         "sort_order": request.form.get("sort_order", target.get("sort_order", 100)),
         "body": request.form.get("body"),
+        "sections": request.form.get("sections_json") or target.get("sections") or [],
         "enabled": bool(request.form.get("enabled")),
         "updated_at": utc_now().isoformat(),
     }))
@@ -3693,6 +3718,25 @@ def admin_guide_update(guide_id):
     record_audit("guide_updated", target.get("slug", guide_id))
     flash("Guide updated.", "success")
     return redirect(url_for("admin_dashboard") + "#guides")
+
+
+@app.route("/admin/guides/image-upload", methods=["POST"])
+@owner_required
+@limiter.limit("30 per minute")
+def admin_guide_image_upload():
+    upload = request.files.get("image")
+    if not upload or not upload.filename or not allowed_upload(upload.filename, "image"):
+        return jsonify({"ok": False, "error": "Choose a PNG, JPG, GIF, or WEBP image."}), 400
+    original = secure_filename(upload.filename)
+    ext = original.rsplit(".", 1)[-1].lower()
+    filename = f"guide-{utc_now_naive().strftime('%Y%m%d')}-{uuid.uuid4().hex[:12]}.{ext}"
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    local_path = UPLOADS_DIR / filename
+    upload.save(local_path)
+    mime_type = mimetypes.guess_type(original)[0] or "application/octet-stream"
+    gridfs_id = save_upload_to_mongo_storage(local_path, filename, original, "image", mime_type)
+    save_media_record({"filename":filename,"original_name":original,"kind":"image","url":url_for("media_file",filename=filename),"mime_type":mime_type,"size_bytes":local_path.stat().st_size,"storage":"mongodb_gridfs" if gridfs_id else "local_disk","gridfs_id":gridfs_id,"created_at":utc_now().isoformat(),"created_by":(current_user() or {}).get("email")})
+    return jsonify({"ok": True, "url": url_for("media_file", filename=filename)})
 
 
 @app.route("/admin/guides/<guide_id>/delete", methods=["POST"])
@@ -3825,6 +3869,118 @@ def admin_site_settings():
     flash("Site settings updated.", "success")
     return redirect(url_for("admin_dashboard") + "#owner")
 
+
+
+@app.route("/admin/loader-release", methods=["POST"])
+@owner_required
+@limiter.limit("10 per minute")
+def admin_loader_release():
+    if not verify_csrf():
+        abort(400)
+
+    version = (request.form.get("version") or "").strip()
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?", version):
+        flash("Use a valid loader version such as 1.0.1.", "danger")
+        return redirect(url_for("admin_dashboard") + "#loader-release")
+
+    upload = request.files.get("loader_file")
+    current = load_site_settings()
+    release = dict(current.get("loader_release") or {})
+
+    if upload and upload.filename:
+        original = secure_filename(upload.filename)
+        if not original.lower().endswith(".exe"):
+            flash("The loader release must be a Windows .exe file.", "danger")
+            return redirect(url_for("admin_dashboard") + "#loader-release")
+
+        FILES_DIR.mkdir(parents=True, exist_ok=True)
+        local_path = FILES_DIR / "Loader.exe"
+        temp_path = FILES_DIR / f".loader-{uuid.uuid4().hex}.tmp"
+        upload.save(temp_path)
+
+        if temp_path.stat().st_size < 1024:
+            temp_path.unlink(missing_ok=True)
+            flash("That loader file is empty or invalid.", "danger")
+            return redirect(url_for("admin_dashboard") + "#loader-release")
+
+        temp_path.replace(local_path)
+        sha256 = _file_sha256(local_path)
+        mime_type = "application/vnd.microsoft.portable-executable"
+        gridfs_id = save_upload_to_mongo_storage(local_path, "Loader.exe", original, "file", mime_type)
+
+        release.update({
+            "file_name": "Loader.exe",
+            "sha256": sha256,
+            "file_size": local_path.stat().st_size,
+            "storage": "mongodb_gridfs" if gridfs_id else "local_disk",
+        })
+    elif not release.get("sha256"):
+        local_path = FILES_DIR / "Loader.exe"
+        if local_path.is_file():
+            release.update({
+                "file_name": "Loader.exe",
+                "sha256": _file_sha256(local_path),
+                "file_size": local_path.stat().st_size,
+                "storage": "local_disk",
+            })
+
+    release.update({
+        "version": version,
+        "mandatory": bool(request.form.get("mandatory")),
+        "download_url": "/download/Loader.exe",
+        "release_notes": (request.form.get("release_notes") or "").strip()[:4000],
+        "published_at": utc_now().isoformat(),
+        "published_by": (current_user() or {}).get("email", "owner"),
+    })
+    current["loader_release"] = release
+    save_site_settings(current)
+    record_audit("loader_release_publish", version, {
+        "file_size": release.get("file_size", 0),
+        "sha256": release.get("sha256", ""),
+        "mandatory": release.get("mandatory", True),
+    })
+    flash(f"Loader version {version} published.", "success")
+    return redirect(url_for("admin_dashboard") + "#loader-release")
+
+
+@app.route("/api/loader/version")
+@limiter.limit("120 per minute")
+def api_loader_version():
+    release = dict(load_site_settings().get("loader_release") or {})
+    version = str(release.get("version") or "1.0.0").strip()
+    file_name = "Loader.exe"
+
+    file_exists = (FILES_DIR / file_name).is_file() or get_mongo_stored_file(file_name) is not None
+    if not file_exists:
+        response = jsonify({
+            "ok": False,
+            "error": "loader_not_published",
+            "message": "The current loader build is unavailable.",
+        })
+        response.status_code = 503
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+        return response
+
+    configured_url = str(release.get("download_url") or "/download/Loader.exe").strip()
+    download_url = configured_url if configured_url.startswith("http") else request.host_url.rstrip("/") + configured_url
+    response = jsonify({
+        "ok": True,
+        "version": version,
+        "latest_version": version,
+        "mandatory": bool(release.get("mandatory", True)),
+        "required": bool(release.get("mandatory", True)),
+        "force_update": bool(release.get("mandatory", True)),
+        "download_url": download_url,
+        "sha256": str(release.get("sha256") or ""),
+        "file_size": int(release.get("file_size") or 0),
+        "file_name": file_name,
+        "release_notes": str(release.get("release_notes") or ""),
+        "message": str(release.get("release_notes") or "A new loader update is available."),
+        "published_at": str(release.get("published_at") or ""),
+    })
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 @app.route("/admin/email/send", methods=["POST"])
 @owner_required
@@ -4905,6 +5061,49 @@ def api_status():
 # -----------------------------------------------------------------------------
 # Downloads
 # -----------------------------------------------------------------------------
+@app.route("/download/loader")
+@app.route("/download/Loader.exe")
+@limiter.limit("20 per minute")
+def download_loader():
+    """Serve Loader.exe using the same data/files storage as product downloads."""
+    configured_name = os.getenv("LOADER_DOWNLOAD_FILENAME", "Loader.exe").strip() or "Loader.exe"
+    candidate_names = []
+    for name in (configured_name, "Loader.exe", "MoealturejLoader.exe"):
+        safe_name = secure_filename(name)
+        if safe_name and safe_name not in candidate_names:
+            candidate_names.append(safe_name)
+
+    # Use the same local storage directory as every other downloadable product:
+    # <project>/data/files/Loader.exe
+    for filename in candidate_names:
+        safe_path = safe_join(str(FILES_DIR), filename)
+        if not safe_path:
+            continue
+        file_path = Path(safe_path)
+        if file_path.exists() and file_path.is_file():
+            return send_from_directory(
+                directory=str(FILES_DIR),
+                path=filename,
+                as_attachment=True,
+                download_name="Loader.exe",
+                conditional=True,
+            )
+
+    # Keep the existing Mongo/GridFS fallback used by hosted downloads.
+    for filename in candidate_names:
+        mongo_response = send_mongo_stored_file(filename, as_attachment=True)
+        if mongo_response is not None:
+            mongo_response.headers["Content-Disposition"] = 'attachment; filename="Loader.exe"'
+            return mongo_response
+
+    app.logger.warning(
+        "Loader download requested but no loader file was found in %s. Tried: %s",
+        FILES_DIR,
+        ", ".join(candidate_names),
+    )
+    abort(404)
+
+
 @app.route("/download/<path:filename>")
 @limiter.limit("30 per minute")
 def download_file(filename):

@@ -1,19 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Guides | {{ site_settings.site_name or 'moealturej' }}{% endblock %}
+{% block title %}Guides & Documentation | {{ site_settings.site_name or 'moealturej' }}{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/guides-hub.css') }}">{% endblock %}
 {% block content %}
-<section class="guide-page"><div class="container guide-shell">
-  <aside class="guide-sidebar">
-    <div class="guide-side-brand"><span><i class="fas fa-book-open"></i></span><div><strong>Member guides</strong><small>Private knowledge base</small></div></div>
-    <nav><a class="active" href="/guides"><i class="fas fa-grid-2"></i> All guides</a>{% for category in categories %}<a href="#{{ category|lower|replace(' ','-') }}"><i class="fas fa-folder"></i> {{ category }}</a>{% endfor %}</nav>
-    <div class="guide-side-help"><i class="fas fa-headset"></i><strong>Still need help?</strong><p>Open a purchase ticket and include your order details.</p><a href="{{ url_for('support') }}">Open support</a></div>
-  </aside>
-  <main class="guide-main">
-    <header class="guide-hero"><div><div class="eyebrow">member knowledge base</div><h1>Everything you need, in order.</h1><p>Clean, private setup and account guides made specifically for your purchases on {{ site_settings.site_name or 'moealturej' }}.</p></div><div class="guide-account-pill"><i class="fas fa-lock"></i><span>Logged-in access</span></div></header>
-    <div class="guide-search"><i class="fas fa-magnifying-glass"></i><input id="guideSearch" type="search" placeholder="Search guides, setup steps, orders…" autocomplete="off"><span id="guideCount">{{ guides|length }} guides</span></div>
-    {% for category in categories %}<section class="guide-category" id="{{ category|lower|replace(' ','-') }}"><div class="guide-category-head"><div><span>{{ loop.index|string|zfill(2) if false else '0' ~ loop.index }}</span><h2>{{ category }}</h2></div><p>Follow these guides in the order shown.</p></div><div class="guide-grid">{% for guide in guides if guide.category == category %}<a class="guide-card" href="{{ url_for('guide_detail', slug=guide.slug) }}" data-guide-search="{{ guide.title }} {{ guide.summary }} {{ guide.category }}"><div class="guide-icon"><i class="fas {{ guide.icon }}"></i></div><div class="guide-card-copy"><div class="guide-card-meta"><span>{{ guide.category }}</span>{% if guide.badge %}<em>{{ guide.badge }}</em>{% endif %}</div><h3>{{ guide.title }}</h3><p>{{ guide.summary or 'Open this guide for complete instructions.' }}</p><div class="guide-open">Open guide <i class="fas fa-arrow-right"></i></div></div></a>{% endfor %}</div></section>{% endfor %}
-    {% if not guides %}<div class="guide-empty"><i class="fas fa-book"></i><h2>No guides published yet</h2><p>The owner is still preparing this knowledge base.</p></div>{% endif %}
-  </main>
-</div></section>
+<section class="docs-page">
+  <div class="docs-layout">
+    <aside class="docs-sidebar" aria-label="Guide navigation">
+      <div class="docs-brand">
+        <a href="{{ url_for('guides') }}"><img src="{{ url_for('static', filename='logo.png') }}" alt=""><span><strong>{{ site_settings.site_name or 'moealturej' }}</strong><small>GUIDES</small></span></a>
+      </div>
+      <label class="docs-side-search"><i class="fas fa-magnifying-glass"></i><input id="sideGuideSearch" type="search" placeholder="Search guides..." autocomplete="off"></label>
+      <nav class="docs-tree">
+        {% for category in categories %}
+        <section class="docs-tree-group" data-guide-group>
+          <button type="button" class="docs-tree-heading" aria-expanded="true"><span>{{ category }}</span><em>{{ guides|selectattr('category','equalto',category)|list|length }}</em><i class="fas fa-chevron-up"></i></button>
+          <div class="docs-tree-items">
+            {% for guide in guides if guide.category == category %}
+            <a href="{{ url_for('guide_detail', slug=guide.slug) }}" data-guide-link data-search="{{ guide.title }} {{ guide.summary }} {{ guide.category }}"><i class="fas {{ guide.icon }}"></i><span>{{ guide.title }}</span></a>
+            {% endfor %}
+          </div>
+        </section>
+        {% endfor %}
+      </nav>
+      <div class="docs-side-footer"><a href="{{ url_for('support') }}"><i class="fas fa-headset"></i> Need help?</a></div>
+    </aside>
+
+    <main class="docs-content docs-index">
+      <header class="docs-index-hero">
+        <div class="docs-kicker"><span></span> DOCUMENTATION</div>
+        <h1>{{ site_settings.site_name or 'moealturej' }} guides & documentation</h1>
+        <p>Setup, downloads, account help, troubleshooting, and product instructions — searchable by title, category, or keyword.</p>
+      </header>
+
+      <label class="docs-main-search"><i class="fas fa-magnifying-glass"></i><input id="mainGuideSearch" type="search" placeholder="Search guides by title, category, or keyword..." autocomplete="off"><kbd>/</kbd></label>
+
+      <div class="docs-filter-row">
+        <button class="active" type="button" data-filter="all">All <span>{{ guides|length }}</span></button>
+        {% for category in categories %}<button type="button" data-filter="{{ category|lower }}">{{ category }} <span>{{ guides|selectattr('category','equalto',category)|list|length }}</span></button>{% endfor %}
+      </div>
+
+      <div id="guideResults">
+      {% for category in categories %}
+      <section class="docs-list-section" data-category="{{ category|lower }}">
+        <div class="docs-section-label"><span>{{ category|upper }}</span><i></i><em>{{ '%02d'|format(guides|selectattr('category','equalto',category)|list|length) }}</em></div>
+        <div class="docs-guide-list">
+          {% for guide in guides if guide.category == category %}
+          <a class="docs-guide-row" href="{{ url_for('guide_detail', slug=guide.slug) }}" data-guide-card data-category="{{ guide.category|lower }}" data-search="{{ guide.title }} {{ guide.summary }} {{ guide.category }} {{ guide.badge }}">
+            <span class="docs-row-icon"><i class="fas {{ guide.icon }}"></i></span>
+            <span class="docs-row-copy"><strong>{{ guide.title }}</strong><small>{{ guide.summary or 'Open this guide for complete instructions.' }}</small></span>
+            {% if guide.badge %}<span class="docs-row-badge">{{ guide.badge }}</span>{% endif %}
+            <i class="fas fa-arrow-right docs-row-arrow"></i>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+      </div>
+      <div class="docs-empty" id="guidesEmpty" hidden><i class="fas fa-magnifying-glass"></i><h2>No matching guides</h2><p>Try a different keyword or category.</p></div>
+    </main>
+  </div>
+</section>
 {% endblock %}
-{% block extra_scripts %}<script>document.addEventListener('DOMContentLoaded',()=>{const input=document.getElementById('guideSearch'),cards=[...document.querySelectorAll('.guide-card')],count=document.getElementById('guideCount');input?.addEventListener('input',()=>{const q=input.value.trim().toLowerCase();let shown=0;cards.forEach(card=>{const hit=!q||(card.dataset.guideSearch||'').toLowerCase().includes(q);card.hidden=!hit;if(hit)shown++});document.querySelectorAll('.guide-category').forEach(section=>section.hidden=![...section.querySelectorAll('.guide-card')].some(card=>!card.hidden));if(count)count.textContent=`${shown} guide${shown===1?'':'s'}`})});</script>{% endblock %}
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+  const side=document.getElementById('sideGuideSearch'), main=document.getElementById('mainGuideSearch');
+  const cards=[...document.querySelectorAll('[data-guide-card]')], sections=[...document.querySelectorAll('.docs-list-section')], empty=document.getElementById('guidesEmpty');
+  const filters=[...document.querySelectorAll('[data-filter]')]; let active='all';
+  const apply=()=>{const q=(main?.value||side?.value||'').trim().toLowerCase();let shown=0;cards.forEach(c=>{const hitText=!q||(c.dataset.search||'').toLowerCase().includes(q);const hitCat=active==='all'||c.dataset.category===active;const show=hitText&&hitCat;c.hidden=!show;if(show)shown++});sections.forEach(s=>s.hidden=![...s.querySelectorAll('[data-guide-card]')].some(c=>!c.hidden));if(empty)empty.hidden=shown>0;document.querySelectorAll('[data-guide-link]').forEach(a=>a.hidden=!!q&&!(a.dataset.search||'').toLowerCase().includes(q));};
+  [side,main].forEach(input=>input?.addEventListener('input',()=>{if(input===side&&main)main.value=side.value;if(input===main&&side)side.value=main.value;apply()}));
+  filters.forEach(b=>b.addEventListener('click',()=>{filters.forEach(x=>x.classList.remove('active'));b.classList.add('active');active=b.dataset.filter;apply()}));
+  document.querySelectorAll('.docs-tree-heading').forEach(btn=>btn.addEventListener('click',()=>{const group=btn.closest('[data-guide-group]');const closed=group.classList.toggle('closed');btn.setAttribute('aria-expanded',String(!closed));}));
+  document.addEventListener('keydown',e=>{if(e.key==='/'&&!/input|textarea/i.test(document.activeElement.tagName)){e.preventDefault();main?.focus()}});
+});
+</script>
+{% endblock %}

@@ -315,6 +315,7 @@ updatePricingButtons();
 
   <nav class="admin-tabs" aria-label="Admin sections">
     <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
+    <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
     <a class="admin-tab" href="#emails"><i class="fas fa-envelope-open-text"></i> Email sender</a>
     <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Add product</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
@@ -369,6 +370,48 @@ updatePricingButtons();
         <div class="security-item"><i class="fas fa-database"></i><span><strong>Storage:</strong> {{ stats.storage }}<br><small>{{ mongo_status_reason if mongo_status_reason is defined else 'Open diagnostics for details.' }}</small></span></div>
         <div class="security-item"><i class="fas fa-money-check-dollar"></i><span><strong>Payments:</strong> {{ stats.payments }}<br><small>Stripe/PayPal checkout is signed-in-only and server validated.</small></span></div>
       </div>
+    </section>
+
+
+    <section class="admin-card admin-section" id="loader-release">
+      {% set loader_release = site_settings.loader_release or {} %}
+      <div class="section-top">
+        <div>
+          <div class="eyebrow">desktop app publishing</div>
+          <h2>Loader release management</h2>
+          <p class="muted">Upload the newest Loader.exe and set the version checked by every loader at startup. Publishing here updates the API immediately—no environment variable changes required.</p>
+        </div>
+        <a class="secondary-cta" href="/api/loader/version" target="_blank"><i class="fas fa-code"></i> View version API</a>
+      </div>
+
+      <div class="security-grid" style="margin-bottom:16px">
+        <div class="security-item"><i class="fas fa-tag"></i><span><strong>Current version:</strong> {{ loader_release.version or '1.0.0' }}<br><small>{{ 'Mandatory update' if loader_release.mandatory is not sameas false else 'Optional update' }}</small></span></div>
+        <div class="security-item"><i class="fas fa-file-shield"></i><span><strong>Published file:</strong> {{ loader_release.file_name or 'Loader.exe' }}<br><small>{{ ((loader_release.file_size or 0) / 1048576)|round(2) }} MB · {{ loader_release.storage or 'not uploaded yet' }}</small></span></div>
+        <div class="security-item"><i class="fas fa-clock-rotate-left"></i><span><strong>Last published:</strong> {{ loader_release.published_at or 'Never' }}<br><small>{{ loader_release.published_by or 'No release has been published.' }}</small></span></div>
+        <div class="security-item"><i class="fas fa-fingerprint"></i><span><strong>SHA-256:</strong><br><small style="word-break:break-all">{{ loader_release.sha256 or 'Calculated automatically when a file is uploaded.' }}</small></span></div>
+      </div>
+
+      <form class="admin-form-grid" action="/admin/loader-release" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Release version
+          <input name="version" value="{{ loader_release.version or '1.0.0' }}" required pattern="\d+\.\d+\.\d+([\-+][0-9A-Za-z.\-]+)?" placeholder="1.0.1">
+          <small class="helper-text">This must exactly match the version compiled into the new loader.</small>
+        </label>
+        <label>New Loader.exe
+          <input name="loader_file" type="file" accept=".exe,application/vnd.microsoft.portable-executable">
+          <small class="helper-text">Leave empty to change only the version or release notes.</small>
+        </label>
+        <label class="wide">Release notes
+          <textarea name="release_notes" rows="5" maxlength="4000" placeholder="Fixed login, improved updater, and added stability improvements.">{{ loader_release.release_notes or '' }}</textarea>
+        </label>
+        <div class="check-row wide">
+          <label><input type="checkbox" name="mandatory" {% if loader_release.mandatory is not sameas false %}checked{% endif %}> Block older loader versions until they update</label>
+        </div>
+        <div class="admin-actions wide">
+          <button class="primary-cta" type="submit" onclick="return confirm('Publish this loader version now? Existing loaders may be forced to update immediately.')"><i class="fas fa-cloud-arrow-up"></i> Publish loader release</button>
+          <a class="secondary-cta" href="/download/Loader.exe"><i class="fas fa-download"></i> Test current download</a>
+        </div>
+      </form>
     </section>
 
     <section class="admin-card admin-section" id="emails">
@@ -516,14 +559,16 @@ updatePricingButtons();
 
 
     <section class="admin-card admin-section" id="guides">
-      <div class="section-top"><div><div class="eyebrow">member knowledge base</div><h2>Guides</h2><p class="muted">Create and order private guides that only signed-in users can access. Use one instruction per line to build a clean, checkable step list.</p></div><a class="secondary-cta" href="/guides" target="_blank"><i class="fas fa-up-right-from-square"></i> Preview guides</a></div>
-      <div class="admin-two-col">
-        <div class="admin-card"><h3>Create guide</h3><form class="admin-form-grid" action="/admin/guides" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Title<input name="title" required placeholder="Getting started"></label><label>Slug<input name="slug" placeholder="getting-started"></label><label>Category<input name="category" value="General" placeholder="Setup"></label><label>Order<input name="sort_order" type="number" min="0" max="9999" value="100"></label><label>Icon<input name="icon" value="fa-book-open" placeholder="fa-download"></label><label>Badge<input name="badge" placeholder="Recommended"></label><label class="wide">Summary<textarea name="summary" rows="2" maxlength="300" placeholder="A short description shown on the guide card."></textarea></label><label class="wide">Steps / content<textarea name="body" rows="9" maxlength="12000" placeholder="Sign in to your account.&#10;Open your order.&#10;Copy your delivered key."></textarea><small class="helper-text">Each non-empty line becomes one numbered checklist step.</small></label><div class="check-row"><label><input type="checkbox" name="enabled" checked> Published</label></div><button class="primary-cta wide" type="submit"><i class="fas fa-plus"></i> Create guide</button></form></div>
-        <div class="admin-card"><h3>Guide publishing tips</h3><div class="security-grid"><div class="security-item"><i class="fas fa-list-ol"></i><span>Use order values such as 10, 20, and 30 so new guides can be inserted later.</span></div><div class="security-item"><i class="fas fa-lock"></i><span>Guide routes redirect visitors to login. Disabled guides are hidden immediately.</span></div><div class="security-item"><i class="fas fa-wand-magic-sparkles"></i><span>Keep each line short and action-focused. Users can save checklist progress in their browser.</span></div></div></div>
-      </div>
-      <div class="product-list" style="margin-top:16px">{% for guide in guides_settings['items']|sort(attribute='sort_order') %}<article class="admin-product"><div class="admin-product-main"><div class="guide-admin-icon"><i class="fas {{ guide.icon }}"></i></div><div><h3>{{ guide.title }}</h3><p class="muted">/{{ guide.slug }} · {{ guide.category }} · order {{ guide.sort_order }}</p><div class="admin-tags"><span>{{ 'Published' if guide.enabled else 'Hidden' }}</span><span>{{ guide.body.splitlines()|length }} steps</span>{% if guide.badge %}<span>{{ guide.badge }}</span>{% endif %}</div></div></div><details class="json-editor"><summary>Edit guide</summary><form class="admin-form-grid" action="/admin/guides/{{ guide.id }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Title<input name="title" value="{{ guide.title }}" required></label><label>Slug<input name="slug" value="{{ guide.slug }}" required></label><label>Category<input name="category" value="{{ guide.category }}"></label><label>Order<input name="sort_order" type="number" min="0" max="9999" value="{{ guide.sort_order }}"></label><label>Icon<input name="icon" value="{{ guide.icon }}"></label><label>Badge<input name="badge" value="{{ guide.badge }}"></label><label class="wide">Summary<textarea name="summary" rows="2">{{ guide.summary }}</textarea></label><label class="wide">Steps / content<textarea name="body" rows="10">{{ guide.body }}</textarea></label><div class="check-row"><label><input type="checkbox" name="enabled" {% if guide.enabled %}checked{% endif %}> Published</label></div><button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save guide</button></form><form action="/admin/guides/{{ guide.id }}/delete" method="post" onsubmit="return confirm('Delete this guide?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete guide</button></form></details></article>{% else %}<p class="muted">No guides created yet.</p>{% endfor %}</div>
+      <div class="section-top"><div><div class="eyebrow">visual documentation builder</div><h2>Guide editor</h2><p class="muted">Full control over every section, instruction list, checklist, image, caption, and page order. Only Basic PC Requirements is kept for now.</p></div><a class="secondary-cta" href="/guides/basic-pc-requirements" target="_blank"><i class="fas fa-up-right-from-square"></i> Preview guide</a></div>
+      {% for guide in guides_settings['items'] %}<div class="admin-card guide-builder-card" data-guide-builder>
+        <form action="/admin/guides/{{ guide.id }}" method="post" class="admin-form-grid guide-main-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="sections_json" class="guide-sections-json">
+          <label>Title<input name="title" value="{{ guide.title }}" required></label><label>Slug<input name="slug" value="{{ guide.slug }}" required></label><label>Category<input name="category" value="{{ guide.category }}"></label><label>Icon<input name="icon" value="{{ guide.icon }}"></label><label>Badge<input name="badge" value="{{ guide.badge }}"></label><label>Order<input name="sort_order" type="number" value="{{ guide.sort_order }}"></label><label class="wide">Summary<textarea name="summary" rows="3">{{ guide.summary }}</textarea></label><div class="check-row"><label><input type="checkbox" name="enabled" {% if guide.enabled %}checked{% endif %}> Published</label></div>
+          <div class="wide guide-builder-toolbar"><div><strong>Page sections</strong><small>Drag sections to reorder. Each section can have text, numbered steps, a checklist, note, warning, and an image.</small></div><button type="button" class="secondary-cta add-guide-section"><i class="fas fa-plus"></i> Add section</button></div>
+          <div class="wide guide-section-list" data-sections='{{ guide.sections|tojson|forceescape }}'></div>
+          <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save complete guide</button>
+        </form>
+      </div>{% endfor %}
     </section>
-
     <section class="admin-card admin-section" id="applications">
       <div class="section-top"><div><div class="eyebrow">custom forms</div><h2>Applications</h2><p class="muted">Create public application listings. Visitors can see open applications, but only logged-in accounts can submit. Each application can send submissions to its own Discord webhook.</p></div><a class="secondary-cta" href="/applications" target="_blank"><i class="fas fa-up-right-from-square"></i> View page</a></div>
       <div class="admin-two-col">
@@ -770,4 +815,12 @@ updatePricingButtons();
     </section>
   </div>
 </div></section>
+<script>
+(()=>{const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function card(s={}){return `<article class="guide-section-editor" draggable="true"><div class="guide-section-head"><span class="guide-drag"><i class="fas fa-grip-vertical"></i></span><strong>Section</strong><div><button type="button" class="icon-btn move-up" title="Move up"><i class="fas fa-arrow-up"></i></button><button type="button" class="icon-btn move-down" title="Move down"><i class="fas fa-arrow-down"></i></button><button type="button" class="danger-btn remove-section"><i class="fas fa-trash"></i></button></div></div><div class="admin-form-grid"><label>Section title<input data-f="title" value="${esc(s.title||'New section')}"></label><label>Anchor / ID<input data-f="id" value="${esc(s.id||'new-section')}"></label><label>Layout<select data-f="type"><option value="text">Text</option><option value="steps">Numbered steps</option><option value="checklist">Checklist</option><option value="note">Info note</option><option value="warning">Warning</option></select></label><label class="wide">Introduction / body<textarea data-f="content" rows="4">${esc(s.content||'')}</textarea></label><label class="wide">Items<textarea data-f="items" rows="6" placeholder="One step or checklist item per line">${esc((s.items||[]).join('\n'))}</textarea></label><label>Image URL<input data-f="image_url" value="${esc(s.image_url||'')}" placeholder="/media/..."></label><label>Image caption<input data-f="image_caption" value="${esc(s.image_caption||'')}"></label><label class="wide guide-image-upload">Upload image<input type="file" accept="image/png,image/jpeg,image/gif,image/webp"><button type="button" class="secondary-cta upload-guide-image"><i class="fas fa-upload"></i> Upload into this section</button><small class="upload-status"></small></label></div></article>`}
+function init(root){let list=root.querySelector('.guide-section-list'),data=[];try{data=JSON.parse(list.dataset.sections||'[]')}catch(e){};list.innerHTML=data.map(card).join('');[...list.children].forEach((el,i)=>el.querySelector('[data-f=type]').value=data[i]?.type||'steps');
+const bind=()=>{list.querySelectorAll('.remove-section').forEach(b=>b.onclick=()=>b.closest('article').remove());list.querySelectorAll('.move-up').forEach(b=>b.onclick=()=>{let e=b.closest('article');if(e.previousElementSibling)list.insertBefore(e,e.previousElementSibling)});list.querySelectorAll('.move-down').forEach(b=>b.onclick=()=>{let e=b.closest('article');if(e.nextElementSibling)list.insertBefore(e.nextElementSibling,e)});list.querySelectorAll('.upload-guide-image').forEach(b=>b.onclick=async()=>{let e=b.closest('article'),f=e.querySelector('input[type=file]').files[0],st=e.querySelector('.upload-status');if(!f){st.textContent='Choose an image first.';return}let fd=new FormData();fd.append('image',f);fd.append('csrf_token',root.querySelector('[name=csrf_token]').value);st.textContent='Uploading...';let r=await fetch('/admin/guides/image-upload',{method:'POST',body:fd}),j=await r.json();if(j.ok){e.querySelector('[data-f=image_url]').value=j.url;st.textContent='Uploaded.'}else st.textContent=j.error||'Upload failed.'})};bind();
+root.querySelector('.add-guide-section').onclick=()=>{list.insertAdjacentHTML('beforeend',card({}));bind()};root.querySelector('form').addEventListener('submit',()=>{let out=[...list.children].map(e=>({id:e.querySelector('[data-f=id]').value,title:e.querySelector('[data-f=title]').value,type:e.querySelector('[data-f=type]').value,content:e.querySelector('[data-f=content]').value,items:e.querySelector('[data-f=items]').value.split(/\n/).map(x=>x.trim()).filter(Boolean),image_url:e.querySelector('[data-f=image_url]').value,image_caption:e.querySelector('[data-f=image_caption]').value}));root.querySelector('.guide-sections-json').value=JSON.stringify(out)})}
+document.querySelectorAll('[data-guide-builder]').forEach(init)})();
+</script>
 {% endblock %}
