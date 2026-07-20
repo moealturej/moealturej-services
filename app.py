@@ -4256,30 +4256,78 @@ def admin_product_new():
     except ValueError as exc:
         flash(str(exc), "danger")
         return redirect(url_for("admin_dashboard") + "#create")
+    existing_products = load_products()
+    if any(str(item.get("slug", "")).strip().lower() == slug.lower() for item in existing_products):
+        flash("A product with that slug already exists. Choose a different product name or slug.", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    features = [line.strip().lstrip("•- ").strip() for line in request.form.get("features_text", "").splitlines()]
+    features = [item[:180] for item in features if item][:30]
+
+    try:
+        discount_value = max(0, float(request.form.get("product_discount_value") or 0))
+        discount_min_quantity = max(1, int(request.form.get("product_discount_min_quantity") or 1))
+        discount_min_subtotal = max(0, float(request.form.get("product_discount_min_subtotal") or 0))
+    except (TypeError, ValueError):
+        flash("The product discount values were invalid.", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    stock_status = request.form.get("stock_status", "In Stock").strip()
+    if stock_status not in {"In Stock", "Low Stock", "Out of Stock", "Coming Soon", "Unavailable"}:
+        stock_status = "In Stock"
+    status_state = request.form.get("status_state", "Operational").strip()
+    if status_state not in {"Operational", "Degraded", "Offline", "Updating"}:
+        status_state = "Operational"
+    product_type = request.form.get("product_type", "product").strip().lower()
+    if product_type not in {"product", "service", "download"}:
+        product_type = "product"
+
     product = normalize_product({
         "id": int(utc_now().timestamp() * 1000),
         "slug": slug,
         "name": name,
         "description": short_description,
         "detailedDescription": detailed_description,
-        "image": request.form.get("image", "/static/logo.png"),
-        "category": request.form.get("category", "general"),
-        "type": "product",
-        "displayOrder": len(load_products()),
+        "image": request.form.get("image", "/static/logo.png").strip() or "/static/logo.png",
+        "category": request.form.get("category", "general").strip() or "general",
+        "type": product_type,
+        "displayOrder": len(existing_products),
         "featured": bool(request.form.get("featured")),
-        "features": [],
-        "store": {"enabled": bool(request.form.get("store_enabled")), "stockStatus": "In Stock", "options": store_options},
-        "downloads": {"enabled": bool(request.form.get("downloads_enabled")), "version": "Latest", "downloadUrl": request.form.get("download_url", ""), "fileSize": request.form.get("file_size", "")},
-        "status": {"enabled": bool(request.form.get("status_enabled")), "state": "Operational", "label": "Online", "lastUpdated": today_utc_date()},
+        "features": features,
+        "store": {
+            "enabled": bool(request.form.get("store_enabled")),
+            "stockStatus": stock_status,
+            "options": store_options,
+            "autoDiscount": {
+                "enabled": bool(request.form.get("product_discount_enabled")),
+                "label": request.form.get("product_discount_label", "Product discount").strip()[:80] or "Product discount",
+                "type": "fixed" if request.form.get("product_discount_type") == "fixed" else "percent",
+                "value": discount_value,
+                "min_quantity": discount_min_quantity,
+                "min_subtotal": discount_min_subtotal,
+            },
+        },
+        "downloads": {
+            "enabled": bool(request.form.get("downloads_enabled")),
+            "version": request.form.get("download_version", "Latest").strip()[:40] or "Latest",
+            "downloadUrl": request.form.get("download_url", "").strip(),
+            "fileSize": request.form.get("file_size", "").strip()[:40],
+        },
+        "status": {
+            "enabled": bool(request.form.get("status_enabled")),
+            "state": status_state,
+            "label": request.form.get("status_label", "Online").strip()[:50] or "Online",
+            "lastUpdated": today_utc_date(),
+        },
     })
     if using_mongo():
-        products_col.update_one({"slug": product["slug"]}, {"$set": product}, upsert=True)
+        products_col.insert_one(product)
     else:
-        products = [p for p in load_products() if p.get("slug") != product["slug"]]
-        products.append(product)
-        save_products_file(products)
-    flash("Product added.", "success")
-    return redirect(url_for("admin_dashboard"))
+        existing_products.append(product)
+        save_products_file(existing_products)
+    record_audit("product.created", product["slug"], {"name": product["name"], "options": len(store_options)})
+    flash(f"{product['name']} was created successfully.", "success")
+    return redirect(url_for("admin_dashboard") + "#products")
 
 @app.route("/admin/product/<slug>", methods=["POST"])
 @owner_required

@@ -380,7 +380,6 @@ updatePricingButtons();
     <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
     <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
     <a class="admin-tab" href="#emails"><i class="fas fa-envelope-open-text"></i> Email sender</a>
-    <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Add product</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
     <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
     <a class="admin-tab" href="#support"><i class="fas fa-headset"></i> Support</a>
@@ -516,44 +515,7 @@ updatePricingButtons();
       </div>
     </section>
 
-    <section class="admin-two-col admin-section" id="create">
-      <div class="admin-card">
-        <div class="section-top"><div><div class="eyebrow">quick add</div><h2>Add product</h2><p class="muted">Create an item once, then decide if it appears in Store, Downloads, and Status.</p></div></div>
-        <form class="admin-form-grid" action="/admin/product/new" method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <label>Name<input name="name" required placeholder="New product"></label>
-          <label>Slug<input name="slug" placeholder="new-product"></label>
-          <label>Category<input name="category" placeholder="cod"></label>
-          <label>Image URL<input name="image" placeholder="/media/your-image.png"></label>
-          <label class="wide">Short description<textarea name="description" rows="3" placeholder="Short store-card description..."></textarea></label>
-          <label class="wide">Detailed description parser
-            <textarea id="detailSource" name="detailed_source" rows="12" placeholder="Paste raw feature text here. Headings like Aimbot, ESP, Misc, Config will be converted into the product JSON detailedDescription format."></textarea>
-            <small class="helper-text">On save, this turns raw lists into lines like <code>• Aimbot: Silent Aim, FOV Circle...</code> inside <code>detailedDescription</code>.</small>
-            <div class="parser-actions"><button class="small-btn" type="button" onclick="previewDetailedDescription()"><i class="fas fa-wand-magic-sparkles"></i> Preview parsed description</button><button class="small-btn" type="button" onclick="clearDetailPreview()">Clear preview</button></div>
-            <pre id="detailPreview" class="detail-preview" hidden></pre>
-          </label>
-          <div class="wide pricing-builder">
-            <label>Pricing options</label>
-            <small class="helper-text">Starts with 1 option. Add as many as you need; these become <code>store.options</code> in product JSON.</small>
-            <div id="pricingOptions">
-              <div class="pricing-row">
-                <label>Option name<input name="option_name" value="DAY KEY" placeholder="DAY KEY" required></label>
-                <label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label>
-                <label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day"></label>
-                <label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label>
-                <button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled><i class="fas fa-trash"></i></button>
-              </div>
-            </div>
-            <button class="small-btn" type="button" onclick="addPricingOption()"><i class="fas fa-plus"></i> Add pricing option</button>
-          </div>
-          <label>Download URL<input name="download_url" placeholder="/download/file.zip"></label>
-          <label>File size<input name="file_size" placeholder="25 MB"></label>
-          <div class="check-row"><label><input type="checkbox" name="store_enabled" checked> Store</label><label><input type="checkbox" name="downloads_enabled"> Downloads</label><label><input type="checkbox" name="status_enabled" checked> Status</label><label><input type="checkbox" name="featured"> Featured</label></div>
-          <button class="primary-cta" type="submit"><i class="fas fa-plus"></i> Add item</button>
-        </form>
-      </div>
-
-      <div class="admin-card" id="uploads">
+    <section class="admin-card admin-section" id="uploads">
         <div class="section-top"><div><div class="eyebrow">safe storage</div><h2>Upload files/images</h2><p class="muted">Images become <code>/media/...</code>. Download files become <code>/download/...</code> and only work publicly once attached to a product.</p></div></div>
         <form class="admin-form-grid" action="/admin/media/upload" method="post" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -573,7 +535,6 @@ updatePricingButtons();
           </article>
           {% else %}<p class="muted">No uploads yet.</p>{% endfor %}
         </div>
-      </div>
     </section>
 
     <section class="admin-card admin-section" id="discounts">
@@ -708,7 +669,59 @@ updatePricingButtons();
     </section>
 
     <section class="admin-card admin-section" id="products">
-      <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Drag products into the order you want customers to see, then save. You can also edit status, downloads, auto-delivery, discounts, or full JSON below.</p></div></div>
+      <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Create products, arrange their display order, and manage every store, download, delivery, discount, and status setting from one place.</p></div><button class="primary-cta" type="button" id="openNewProduct"><i class="fas fa-plus"></i> New product</button></div>
+
+      <details class="new-product-panel" id="newProductPanel">
+        <summary><span class="new-product-summary-icon"><i class="fas fa-box-open"></i></span><span><strong>Create a new product</strong><small>Complete the guided setup below. Advanced settings are included, but grouped so the form stays easy to follow.</small></span><i class="fas fa-chevron-down new-product-chevron"></i></summary>
+        <form class="new-product-form" action="/admin/product/new" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <fieldset class="product-form-step"><legend><span>1</span> Basic information</legend><div class="admin-form-grid">
+            <label>Product name<input name="name" required maxlength="100" placeholder="MW19 Internal"></label>
+            <label>URL slug<input name="slug" maxlength="100" placeholder="mw19-internal"><small class="helper-text">Leave blank to generate it from the name.</small></label>
+            <label>Category<input name="category" value="general" maxlength="60" placeholder="cod"></label>
+            <label>Product type<select name="product_type"><option value="product">Digital product</option><option value="service">Service</option><option value="download">Free download</option></select></label>
+            <label class="wide">Product image URL<input name="image" value="/static/logo.png" placeholder="/media/product-image.png"><small class="helper-text">Upload art in the Uploads section, then paste its /media/ URL here.</small></label>
+            <label class="wide">Short description<textarea name="description" rows="3" maxlength="400" placeholder="A clear summary shown on store cards."></textarea></label>
+            <label class="wide">Features <textarea name="features_text" rows="5" placeholder="Undetected updates&#10;Instant delivery&#10;24/7 support"></textarea><small class="helper-text">One feature per line.</small></label>
+          </div></fieldset>
+
+          <fieldset class="product-form-step"><legend><span>2</span> Full product description</legend>
+            <label class="wide">Detailed description parser<textarea id="detailSource" name="detailed_source" rows="10" placeholder="Paste headings, feature lists, setup notes, or raw product details here. The site will format them automatically."></textarea><small class="helper-text">Headings and lists are converted into the product page description format.</small></label>
+            <div class="parser-actions"><button class="small-btn" type="button" onclick="previewDetailedDescription()"><i class="fas fa-wand-magic-sparkles"></i> Preview formatting</button><button class="small-btn" type="button" onclick="clearDetailPreview()">Clear preview</button></div><pre id="detailPreview" class="detail-preview" hidden></pre>
+          </fieldset>
+
+          <fieldset class="product-form-step"><legend><span>3</span> Pricing & automatic delivery</legend>
+            <div class="pricing-builder"><div class="product-step-head"><div><strong>Pricing options</strong><small>Add each duration or package customers can purchase.</small></div><button class="small-btn" type="button" onclick="addPricingOption()"><i class="fas fa-plus"></i> Add option</button></div>
+              <div id="pricingOptions"><div class="pricing-row"><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/1day"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled aria-label="Remove pricing option"><i class="fas fa-trash"></i></button></div></div>
+            </div>
+          </fieldset>
+
+          <fieldset class="product-form-step"><legend><span>4</span> Download settings</legend><div class="admin-form-grid">
+            <label class="wide">Download URL<input name="download_url" placeholder="/download/product.zip"></label>
+            <label>Version<input name="download_version" value="Latest" maxlength="40" placeholder="1.0.0"></label>
+            <label>Displayed file size<input name="file_size" maxlength="40" placeholder="25 MB"></label>
+          </div></fieldset>
+
+          <fieldset class="product-form-step"><legend><span>5</span> Availability & status</legend><div class="admin-form-grid">
+            <label>Stock status<select name="stock_status"><option>In Stock</option><option>Low Stock</option><option>Out of Stock</option><option>Coming Soon</option><option>Unavailable</option></select></label>
+            <label>Status state<select name="status_state"><option>Operational</option><option>Degraded</option><option>Offline</option><option>Updating</option></select></label>
+            <label>Status label<input name="status_label" value="Online" maxlength="50"></label>
+            <div class="check-row wide"><label><input type="checkbox" name="store_enabled" checked> Show in Store</label><label><input type="checkbox" name="downloads_enabled"> Show in Downloads</label><label><input type="checkbox" name="status_enabled" checked> Show on Status page</label><label><input type="checkbox" name="featured"> Featured product</label></div>
+          </div></fieldset>
+
+          <fieldset class="product-form-step"><legend><span>6</span> Optional product discount</legend><div class="admin-form-grid">
+            <label class="inline-check wide"><input type="checkbox" name="product_discount_enabled"> Enable an automatic discount for this product</label>
+            <label>Discount label<input name="product_discount_label" value="Product discount"></label>
+            <label>Discount type<select name="product_discount_type"><option value="percent">Percent</option><option value="fixed">Fixed USD</option></select></label>
+            <label>Discount value<input name="product_discount_value" type="number" min="0" step="0.01" value="0"></label>
+            <label>Minimum quantity<input name="product_discount_min_quantity" type="number" min="1" step="1" value="1"></label>
+            <label>Minimum subtotal<input name="product_discount_min_subtotal" type="number" min="0" step="0.01" value="0"></label>
+          </div></fieldset>
+
+          <div class="new-product-submit"><div><strong>Ready to create the product?</strong><small>You can edit every setting again after creation.</small></div><button class="primary-cta" type="submit"><i class="fas fa-plus"></i> Create product</button></div>
+        </form>
+      </details>
       <form id="productOrderForm" class="product-order-shell" action="{{ url_for('admin_products_reorder') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" id="productOrderInput" name="product_order" value="">
@@ -924,7 +937,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   const quick=document.createElement('div'); quick.className='admin-quick-actions'; quick.setAttribute('aria-label','Common admin actions');
   [
-    ['#create','fa-plus','Add product','Create a new store item'],
+    ['#products','fa-plus','Add product','Create a new store item'],
     ['#orders','fa-key','Orders & keys','Deliver and manage purchases'],
     ['#support','fa-headset','Support queue','Handle customer tickets'],
     ['#loader-release','fa-rocket','Publish loader','Release a new desktop build']
@@ -944,7 +957,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   /* Group navigation by workflow so the rail scans quickly. */
   const groups={
     owner:'Workspace','loader-release':'Workspace','emails':'Workspace',
-    create:'Catalog','products':'Catalog','uploads':'Catalog','discounts':'Catalog',
+    products:'Catalog','uploads':'Catalog','discounts':'Catalog',
     orders:'Customers','support':'Customers','accounts':'Customers',
     applications:'Content','guides':'Content',security:'System'
   };
@@ -1037,6 +1050,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('adminDensity')?.addEventListener('click',()=>localStorage.setItem('moe-admin-density',page.classList.contains('compact-mode')?'compact':'comfortable'));
 
 
+  const openNewProduct=document.getElementById('openNewProduct');
+  const newProductPanel=document.getElementById('newProductPanel');
+  openNewProduct?.addEventListener('click',()=>{
+    newProductPanel.open=true;
+    newProductPanel.scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(()=>newProductPanel.querySelector('input[name=name]')?.focus(),350);
+  });
+
   document.querySelectorAll('.product-edit-toggle').forEach(btn=>btn.addEventListener('click',event=>{
     event.stopPropagation(); const card=btn.closest('.admin-product'); const body=card?.querySelector('.product-editor-body'); if(!body)return;
     const opening=body.hidden; body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening)); btn.querySelector('span').textContent=opening?'Close':'Edit';
@@ -1091,6 +1112,9 @@ document.addEventListener('DOMContentLoaded',()=>{
  .admin-section.is-dirty>.section-top:after,.admin-section.is-dirty>.accordion-section-top:after{display:none}
 }
 
+/* Guided new product creator */
+.new-product-panel{margin:0 0 18px;border:1px solid rgba(196,139,255,.22);border-radius:22px;background:linear-gradient(180deg,rgba(168,85,247,.085),rgba(255,255,255,.022));overflow:hidden;scroll-margin-top:130px}.new-product-panel>summary{display:flex;align-items:center;gap:13px;padding:17px 18px;cursor:pointer;list-style:none}.new-product-panel>summary::-webkit-details-marker{display:none}.new-product-panel>summary>span:nth-child(2){display:grid;gap:3px;flex:1}.new-product-panel>summary strong{font-size:16px}.new-product-panel>summary small,.product-step-head small,.new-product-submit small{color:#a99bbd;line-height:1.4}.new-product-summary-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:rgba(168,85,247,.16);border:1px solid rgba(196,139,255,.2);color:#e8c9ff}.new-product-chevron{transition:transform .2s ease}.new-product-panel[open] .new-product-chevron{transform:rotate(180deg)}.new-product-form{display:grid;gap:14px;padding:0 18px 18px}.product-form-step{display:grid;gap:14px;margin:0;padding:17px;border:1px solid rgba(255,255,255,.075);border-radius:18px;background:rgba(7,3,14,.4)}.product-form-step legend{display:flex;align-items:center;gap:9px;padding:0 8px;font-weight:950}.product-form-step legend span{width:26px;height:26px;display:grid;place-items:center;border-radius:9px;background:rgba(168,85,247,.18);border:1px solid rgba(196,139,255,.22);font-size:12px}.product-step-head,.new-product-submit{display:flex;align-items:center;justify-content:space-between;gap:14px}.product-step-head>div,.new-product-submit>div{display:grid;gap:3px}.new-product-submit{padding:16px 17px;border-radius:18px;background:rgba(168,85,247,.1);border:1px solid rgba(196,139,255,.2)}.new-product-submit .primary-cta{flex:0 0 auto}.new-product-panel .pricing-row{grid-template-columns:minmax(150px,1fr) 120px minmax(220px,1.4fr) auto auto}.new-product-panel textarea{resize:vertical}@media(max-width:900px){.new-product-panel .pricing-row{grid-template-columns:1fr 130px}.new-product-panel .pricing-row .auto-url-field{grid-column:1/-1}.new-product-panel .auto-toggle{align-self:center}.product-step-head,.new-product-submit{align-items:stretch;display:grid}.new-product-submit .primary-cta{width:100%}}@media(max-width:600px){.new-product-panel>summary{padding:14px}.new-product-form{padding:0 12px 12px}.product-form-step{padding:14px}.new-product-panel .pricing-row{grid-template-columns:1fr}.new-product-panel .pricing-row .auto-url-field{grid-column:auto}}
+
 /* Compact product manager */
 .product-list{grid-template-columns:1fr!important}.admin-product{padding:0!important;overflow:hidden}.admin-product-main{padding:14px 16px!important;border-bottom:0!important}.admin-product-summary{min-width:0;flex:1}.product-edit-toggle{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:8px 12px;border-radius:12px;border:1px solid rgba(196,139,255,.2);background:rgba(168,85,247,.1);color:#fff;font-weight:900;cursor:pointer}.admin-product.is-editing{border-color:rgba(196,139,255,.35)!important}.admin-product.is-editing .admin-product-main{border-bottom:1px solid rgba(255,255,255,.08)!important;background:rgba(168,85,247,.045)}.product-editor-body{display:grid;gap:14px;padding:16px}.product-editor-body[hidden]{display:none!important}.product-editor-body>details{margin:0}.product-editor-body>form:last-child{padding-top:4px}.order-number{z-index:3}.product-order-control{flex-wrap:wrap}
 /* Multi-guide manager */
@@ -1110,7 +1134,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     owner:['Owner site controls','Brand, links, announcements and global switches'],
     'loader-release':['Loader release','Publish Loader.exe and control update versions'],
     emails:['Email sender','Compose and send branded customer updates'],
-    create:['Products & uploads','Create products and manage uploaded files'],
     discounts:['Discounts & promos','Automatic discounts, codes and account offers'],
     guides:['Member guides','Create and organize logged-in help content'],
     applications:['Applications','Forms, questions and recent submissions'],
