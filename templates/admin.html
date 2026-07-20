@@ -1029,4 +1029,126 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 
+
+<style>
+/* Accordion admin workspace: compact by default, full controls only while editing. */
+.admin-layout{gap:12px!important}
+.admin-section{border-radius:24px!important;overflow:visible;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease!important}
+.admin-section>.section-top,.admin-section>.accordion-section-top{min-height:86px;margin:0!important;padding:18px 64px 18px 20px!important;align-items:center!important;cursor:pointer;border-radius:23px;transition:background .18s ease}
+.admin-section>.section-top:hover,.admin-section>.accordion-section-top:hover{background:rgba(168,85,247,.055)}
+.admin-section>.section-top h2,.admin-section>.accordion-section-top h2{font-size:clamp(20px,2vw,27px)!important}
+.admin-section>.section-top .muted,.admin-section>.accordion-section-top .muted{margin-top:5px!important;line-height:1.45!important;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.admin-section:not(.is-collapsed){border-color:rgba(195,120,255,.3)!important;box-shadow:0 22px 64px rgba(0,0,0,.34),0 0 0 1px rgba(168,85,247,.04)!important}
+.admin-section:not(.is-collapsed)>.section-top,.admin-section:not(.is-collapsed)>.accordion-section-top{border-bottom:1px solid rgba(213,156,255,.10);border-radius:23px 23px 0 0;margin-bottom:18px!important}
+.admin-section.is-collapsed{padding:0!important;box-shadow:0 10px 28px rgba(0,0,0,.18)!important;background:linear-gradient(180deg,rgba(16,9,29,.82),rgba(8,4,16,.9))!important}
+.admin-section.is-collapsed>.section-top,.admin-section.is-collapsed>.accordion-section-top{padding-top:15px!important;padding-bottom:15px!important;min-height:74px}
+.admin-section.is-collapsed>.section-top .eyebrow,.admin-section.is-collapsed>.accordion-section-top .eyebrow{display:none}
+.admin-section.is-collapsed>.section-top .muted,.admin-section.is-collapsed>.accordion-section-top .muted{-webkit-line-clamp:1}
+.admin-section>.section-top>.secondary-cta{margin-right:4px}
+.section-collapse{top:50%!important;right:18px!important;transform:translateY(-50%);width:42px!important;height:42px!important;border-radius:14px!important}
+.admin-section.is-collapsed .section-collapse i{transform:rotate(-90deg)}
+.admin-section:not(.is-collapsed) .section-collapse{background:rgba(168,85,247,.13);border-color:rgba(213,156,255,.28)}
+.accordion-section-top{display:flex;justify-content:space-between;gap:16px;position:relative}
+.accordion-section-top .section-collapse{position:absolute}
+.accordion-state{display:inline-flex;align-items:center;gap:7px;margin-top:8px;color:#bca9cf;font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+.admin-section:not(.is-collapsed) .accordion-state{color:#dfb9ff}
+.admin-section.is-dirty>.section-top:after,.admin-section.is-dirty>.accordion-section-top:after{content:"Unsaved changes";position:absolute;right:72px;top:50%;transform:translateY(-50%);margin:0!important}
+.admin-section:not(.is-collapsed){padding:22px!important}
+.admin-section:not(.is-collapsed)>.section-top{margin:-22px -22px 18px!important;padding:18px 86px 18px 22px!important}
+.admin-section:not(.is-collapsed)>.accordion-section-top{margin:-22px -22px 18px!important;padding:18px 86px 18px 22px!important}
+.admin-section.admin-two-col:not(.is-collapsed){display:grid!important;grid-template-columns:1fr 1fr!important}
+.admin-section.admin-two-col:not(.is-collapsed)>.accordion-section-top{grid-column:1/-1}
+.admin-section.is-collapsed>.accordion-section-top~*{display:none!important}
+@media(max-width:900px){
+ .admin-section>.section-top,.admin-section>.accordion-section-top{padding-right:60px!important}
+ .admin-section>.section-top>.secondary-cta{display:none}
+ .admin-section.admin-two-col:not(.is-collapsed){grid-template-columns:1fr!important}
+ .admin-section:not(.is-collapsed)>.section-top,.admin-section:not(.is-collapsed)>.accordion-section-top{padding-right:66px!important}
+ .admin-section.is-dirty>.section-top:after,.admin-section.is-dirty>.accordion-section-top:after{display:none}
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+  const layout=document.querySelector('.admin-layout');
+  if(!layout)return;
+  const sections=[...layout.querySelectorAll(':scope > .admin-section')];
+  if(!sections.length)return;
+
+  const labels={
+    owner:['Owner site controls','Brand, links, announcements and global switches'],
+    'loader-release':['Loader release','Publish Loader.exe and control update versions'],
+    emails:['Email sender','Compose and send branded customer updates'],
+    create:['Products & uploads','Create products and manage uploaded files'],
+    discounts:['Discounts & promos','Automatic discounts, codes and account offers'],
+    guides:['Member guides','Create and organize logged-in help content'],
+    applications:['Applications','Forms, questions and recent submissions'],
+    products:['Product management','Order, status, downloads and full product editing'],
+    support:['Support tickets','Review and manage customer support requests'],
+    accounts:['Accounts','Roles, access, balances and account controls'],
+    orders:['Orders & keys','Statuses, delivery history and product keys'],
+    security:['Security setup','Authentication, delivery and production safeguards']
+  };
+
+  function directHeader(section){return [...section.children].find(el=>el.classList?.contains('section-top')||el.classList?.contains('accordion-section-top'));}
+  sections.forEach(section=>{
+    let header=directHeader(section);
+    if(!header){
+      const [title,desc]=labels[section.id]||[section.id,'Open this admin section'];
+      header=document.createElement('div');
+      header.className='accordion-section-top';
+      header.innerHTML=`<div><div class="eyebrow">admin section</div><h2>${title}</h2><p class="muted">${desc}</p><span class="accordion-state"><i class="fas fa-pen-to-square"></i> Click to edit</span></div>`;
+      section.prepend(header);
+    } else if(!header.querySelector('.accordion-state')){
+      const holder=header.querySelector(':scope > div')||header;
+      const state=document.createElement('span');state.className='accordion-state';state.innerHTML='<i class="fas fa-pen-to-square"></i> Click to edit';holder.appendChild(state);
+    }
+
+    const old=header.querySelector('.section-collapse');
+    const button=old?old.cloneNode(true):document.createElement('button');
+    if(old)old.replaceWith(button);else header.appendChild(button);
+    button.type='button';button.className='section-collapse';button.innerHTML='<i class="fas fa-chevron-down"></i>';
+
+    const setState=(open)=>{
+      section.classList.toggle('is-collapsed',!open);
+      button.setAttribute('aria-expanded',String(open));
+      button.setAttribute('aria-label',open?'Collapse section':'Expand section');
+      const state=header.querySelector('.accordion-state');
+      if(state)state.innerHTML=open?'<i class="fas fa-circle-check"></i> Editing section':'<i class="fas fa-pen-to-square"></i> Click to edit';
+    };
+    section._setAccordionState=setState;
+    setState(false);
+
+    const toggle=(event)=>{
+      if(event.target.closest('a,button,input,select,textarea,label,details,summary')){
+        if(!event.target.closest('.section-collapse'))return;
+      }
+      const opening=section.classList.contains('is-collapsed');
+      if(opening){
+        sections.forEach(other=>{if(other!==section&&!other.classList.contains('is-dirty'))other._setAccordionState?.(false)});
+      }
+      setState(opening);
+      if(opening)setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'start'}),60);
+    };
+    header.addEventListener('click',toggle);
+  });
+
+  const openTarget=(hash,scroll=true)=>{
+    const target=document.querySelector(hash);if(!target)return;
+    const section=target.classList.contains('admin-section')?target:target.closest('.admin-section');if(!section)return;
+    sections.forEach(other=>{if(other!==section&&!other.classList.contains('is-dirty'))other._setAccordionState?.(false)});
+    section._setAccordionState?.(true);
+    if(scroll)setTimeout(()=>target.scrollIntoView({behavior:'smooth',block:'start'}),50);
+  };
+
+  document.querySelectorAll('.admin-tab,.admin-quick-action').forEach(link=>link.addEventListener('click',e=>{
+    const hash=link.getAttribute('href');if(!hash?.startsWith('#'))return;e.preventDefault();history.replaceState(null,'',hash);openTarget(hash,true);
+  },true));
+  document.getElementById('adminExpandAll')?.addEventListener('click',()=>sections.forEach(s=>s._setAccordionState?.(true)),true);
+  document.getElementById('adminCollapseAll')?.addEventListener('click',()=>sections.forEach(s=>{if(!s.classList.contains('is-dirty'))s._setAccordionState?.(false)}),true);
+
+  document.querySelectorAll('.admin-section form').forEach(form=>form.addEventListener('focusin',()=>form.closest('.admin-section')?._setAccordionState?.(true)));
+  if(location.hash)openTarget(location.hash,false);
+});
+</script>
+
 {% endblock %}
