@@ -198,16 +198,20 @@ updatePricingButtons();
   const count=document.getElementById('adminResultCount');
   const key='moe-admin-density';
   const focusKey='moe-admin-focus';
+  // Focus mode must never survive a reload. Older builds stored this setting,
+  // which caused the command center to flash and then disappear on page load.
+  localStorage.removeItem(focusKey);
+  page.classList.remove('focus-mode');
   const sync=()=>{
     const compact=localStorage.getItem(key)==='compact';
-    const focused=localStorage.getItem(focusKey)==='on';
-    page.classList.toggle('compact-mode',compact);page.classList.toggle('focus-mode',focused);
+    const focused=page.classList.contains('focus-mode');
+    page.classList.toggle('compact-mode',compact);
     density?.classList.toggle('is-active',compact);focus?.classList.toggle('is-active',focused);
     if(density)density.innerHTML=`<i class="fas ${compact?'fa-grip':'fa-table-cells'}"></i> ${compact?'Comfortable':'Compact'}`;
     if(focus)focus.innerHTML=`<i class="fas ${focused?'fa-compress':'fa-expand'}"></i> ${focused?'Overview':'Focus'}`;
   };
   density?.addEventListener('click',()=>{localStorage.setItem(key,localStorage.getItem(key)==='compact'?'comfortable':'compact');sync()});
-  focus?.addEventListener('click',()=>{localStorage.setItem(focusKey,localStorage.getItem(focusKey)==='on'?'off':'on');sync()});
+  focus?.addEventListener('click',()=>{page.classList.toggle('focus-mode');sync()});
   const search=document.getElementById('adminSearch');
   const updateCount=()=>{const visible=[...document.querySelectorAll('.admin-section')].filter(el=>getComputedStyle(el).display!=='none').length; if(count)count.innerHTML=`<strong>${visible}</strong> sections visible`;};
   search?.addEventListener('input',()=>requestAnimationFrame(updateCount));
