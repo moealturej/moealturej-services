@@ -622,15 +622,27 @@ updatePricingButtons();
 
 
     <section class="admin-card admin-section" id="guides">
-      <div class="section-top"><div><div class="eyebrow">visual documentation builder</div><h2>Guide editor</h2><p class="muted">Full control over every section, instruction list, checklist, image, caption, and page order. Only Basic PC Requirements is kept for now.</p></div><a class="secondary-cta" href="/guides/basic-pc-requirements" target="_blank"><i class="fas fa-up-right-from-square"></i> Preview guide</a></div>
-      {% for guide in guides_settings['items'] %}<div class="admin-card guide-builder-card" data-guide-builder>
+      <div class="section-top"><div><div class="eyebrow">visual documentation builder</div><h2>Guide editor</h2><p class="muted">Create as many individual guides as needed, then build each guide from reusable text, steps, checklist, note, warning, and image sections.</p></div><a class="secondary-cta" href="/guides" target="_blank"><i class="fas fa-up-right-from-square"></i> Preview guides</a></div>
+      <details class="guide-create-panel">
+        <summary><i class="fas fa-plus"></i><span><strong>Create another individual guide</strong><small>Add a new page to the guides sidebar and documentation hub.</small></span></summary>
+        <form class="admin-form-grid" action="/admin/guides" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Guide title<input name="title" placeholder="Product setup guide" required></label><label>Slug<input name="slug" placeholder="product-setup-guide"></label><label>Category<input name="category" value="Individual guides"></label><label>Icon<input name="icon" value="fa-book-open"></label><label>Badge<input name="badge" placeholder="New"></label><label>Order<input name="sort_order" type="number" value="100"></label><label class="wide">Summary<textarea name="summary" rows="3" placeholder="A short description shown on the guides page."></textarea></label><label class="inline-check wide"><input type="checkbox" name="enabled" checked> Publish immediately</label><button class="primary-cta wide" type="submit"><i class="fas fa-plus"></i> Create guide</button>
+        </form>
+      </details>
+      <div class="guide-admin-list">
+      {% for guide in guides_settings['items'] %}<article class="guide-builder-card" data-guide-builder>
+        <div class="guide-admin-head"><div><span class="guide-admin-icon"><i class="fas {{ guide.icon }}"></i></span><div><h3>{{ guide.title }}</h3><p>{{ guide.category }} · /guides/{{ guide.slug }} · {{ guide.sections|length }} sections</p></div></div><div class="guide-admin-head-actions"><a class="small-btn" href="/guides/{{ guide.slug }}" target="_blank"><i class="fas fa-eye"></i> Preview</a><button class="small-btn guide-edit-toggle" type="button" aria-expanded="false"><i class="fas fa-pen"></i> Edit</button></div></div>
+        <div class="guide-editor-body" hidden>
         <form action="/admin/guides/{{ guide.id }}" method="post" class="admin-form-grid guide-main-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="sections_json" class="guide-sections-json">
           <label>Title<input name="title" value="{{ guide.title }}" required></label><label>Slug<input name="slug" value="{{ guide.slug }}" required></label><label>Category<input name="category" value="{{ guide.category }}"></label><label>Icon<input name="icon" value="{{ guide.icon }}"></label><label>Badge<input name="badge" value="{{ guide.badge }}"></label><label>Order<input name="sort_order" type="number" value="{{ guide.sort_order }}"></label><label class="wide">Summary<textarea name="summary" rows="3">{{ guide.summary }}</textarea></label><div class="check-row"><label><input type="checkbox" name="enabled" {% if guide.enabled %}checked{% endif %}> Published</label></div>
-          <div class="wide guide-builder-toolbar"><div><strong>Page sections</strong><small>Drag sections to reorder. Each section can have text, numbered steps, a checklist, note, warning, and an image.</small></div><button type="button" class="secondary-cta add-guide-section"><i class="fas fa-plus"></i> Add section</button></div>
+          <div class="wide guide-builder-toolbar"><div><strong>Page sections</strong><small>Drag sections to reorder. Add unlimited focused sections to this guide.</small></div><button type="button" class="secondary-cta add-guide-section"><i class="fas fa-plus"></i> Add section</button></div>
           <div class="wide guide-section-list" data-sections='{{ guide.sections|tojson|forceescape }}'></div>
-          <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save complete guide</button>
+          <div class="admin-actions wide"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save complete guide</button></div>
         </form>
-      </div>{% endfor %}
+        {% if guide.slug != 'basic-pc-requirements' %}<form action="/admin/guides/{{ guide.id }}/delete" method="post" onsubmit="return confirm('Delete this guide and all of its sections?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete guide</button></form>{% endif %}
+        </div>
+      </article>{% endfor %}
+      </div>
     </section>
     <section class="admin-card admin-section" id="applications">
       <div class="section-top"><div><div class="eyebrow">custom forms</div><h2>Applications</h2><p class="muted">Create public application listings. Visitors can see open applications, but only logged-in accounts can submit. Each application can send submissions to its own Discord webhook.</p></div><a class="secondary-cta" href="/applications" target="_blank"><i class="fas fa-up-right-from-square"></i> View page</a></div>
@@ -712,7 +724,8 @@ updatePricingButtons();
         {% for product in products %}
         <article class="admin-product" data-slug="{{ product.slug }}" data-name="{{ product.name|lower }}">
           <span class="order-number">{{ loop.index }}</span>
-          <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Order: {{ product.displayOrder if product.displayOrder is defined else loop.index0 }}</span><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div><div class="product-order-control"><span class="drag-handle"><i class="fas fa-grip-vertical"></i> Drag</span><button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button><button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button></div></div>
+          <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div class="admin-product-summary"><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Order: {{ product.displayOrder if product.displayOrder is defined else loop.index0 }}</span><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div><div class="product-order-control"><span class="drag-handle"><i class="fas fa-grip-vertical"></i> Drag</span><button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button><button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button><button class="product-edit-toggle" type="button" aria-expanded="false"><i class="fas fa-sliders"></i><span>Edit</span></button></div></div>
+          <div class="product-editor-body" hidden>
           <form class="status-mini" action="/admin/status/{{ product.slug }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label><input type="checkbox" name="enabled" {% if product.status.enabled %}checked{% endif %}> Track</label>
@@ -775,6 +788,7 @@ updatePricingButtons();
           </details>
           <details class="json-editor"><summary>Edit full product JSON</summary><form action="/admin/product/{{ product.slug }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="product_json" rows="18">{{ product|tojson(indent=2) }}</textarea><div class="admin-actions"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save JSON</button></div></form></details>
           <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete item</button></form>
+          </div>
         </article>
         {% else %}<p class="muted">No products yet. Add your first item above.</p>{% endfor %}
       </div>
@@ -1022,6 +1036,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   const density=localStorage.getItem('moe-admin-density');if(density==='compact')page.classList.add('compact-mode');
   document.getElementById('adminDensity')?.addEventListener('click',()=>localStorage.setItem('moe-admin-density',page.classList.contains('compact-mode')?'compact':'comfortable'));
 
+
+  document.querySelectorAll('.product-edit-toggle').forEach(btn=>btn.addEventListener('click',event=>{
+    event.stopPropagation(); const card=btn.closest('.admin-product'); const body=card?.querySelector('.product-editor-body'); if(!body)return;
+    const opening=body.hidden; body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening)); btn.querySelector('span').textContent=opening?'Close':'Edit';
+  }));
+  document.querySelectorAll('.guide-edit-toggle').forEach(btn=>btn.addEventListener('click',()=>{
+    const card=btn.closest('.guide-builder-card'); const body=card?.querySelector('.guide-editor-body'); if(!body)return;
+    const opening=body.hidden; body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening)); btn.innerHTML=opening?'<i class="fas fa-xmark"></i> Close':'<i class="fas fa-pen"></i> Edit';
+  }));
+
   document.querySelectorAll('.admin-section form').forEach(form=>{
     const required=[...form.querySelectorAll('[required]')];
     required.forEach(field=>field.addEventListener('invalid',()=>{field.closest('.admin-section')?.classList.remove('is-collapsed');field.scrollIntoView({behavior:'smooth',block:'center'})}));
@@ -1066,6 +1090,14 @@ document.addEventListener('DOMContentLoaded',()=>{
  .admin-section:not(.is-collapsed)>.section-top,.admin-section:not(.is-collapsed)>.accordion-section-top{padding-right:66px!important}
  .admin-section.is-dirty>.section-top:after,.admin-section.is-dirty>.accordion-section-top:after{display:none}
 }
+
+/* Compact product manager */
+.product-list{grid-template-columns:1fr!important}.admin-product{padding:0!important;overflow:hidden}.admin-product-main{padding:14px 16px!important;border-bottom:0!important}.admin-product-summary{min-width:0;flex:1}.product-edit-toggle{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:8px 12px;border-radius:12px;border:1px solid rgba(196,139,255,.2);background:rgba(168,85,247,.1);color:#fff;font-weight:900;cursor:pointer}.admin-product.is-editing{border-color:rgba(196,139,255,.35)!important}.admin-product.is-editing .admin-product-main{border-bottom:1px solid rgba(255,255,255,.08)!important;background:rgba(168,85,247,.045)}.product-editor-body{display:grid;gap:14px;padding:16px}.product-editor-body[hidden]{display:none!important}.product-editor-body>details{margin:0}.product-editor-body>form:last-child{padding-top:4px}.order-number{z-index:3}.product-order-control{flex-wrap:wrap}
+/* Multi-guide manager */
+.guide-create-panel{margin-bottom:14px;border:1px solid rgba(196,139,255,.2);border-radius:18px;background:rgba(168,85,247,.045);overflow:hidden}.guide-create-panel>summary{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;list-style:none}.guide-create-panel>summary::-webkit-details-marker{display:none}.guide-create-panel>summary>i{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:rgba(168,85,247,.16);color:#d7a7ff}.guide-create-panel>summary span{display:grid;gap:3px}.guide-create-panel>summary small{color:#9f91ad}.guide-create-panel>form{padding:0 18px 18px}.guide-admin-list{display:grid;gap:10px}.guide-builder-card{border:1px solid rgba(196,139,255,.14);border-radius:18px;background:rgba(255,255,255,.025);overflow:hidden}.guide-admin-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px}.guide-admin-head>div:first-child{display:flex;align-items:center;gap:12px;min-width:0}.guide-admin-icon{width:44px;height:44px;display:grid;place-items:center;flex:0 0 auto;border-radius:13px;background:rgba(168,85,247,.12);color:#d8aaff}.guide-admin-head h3{margin:0;font-size:17px}.guide-admin-head p{margin:4px 0 0;color:#998ba8;font-size:12px}.guide-admin-head-actions{display:flex;gap:8px}.guide-editor-body{display:grid;gap:14px;padding:16px;border-top:1px solid rgba(255,255,255,.08);background:rgba(5,2,10,.25)}.guide-editor-body[hidden]{display:none!important}.guide-builder-card.is-editing{border-color:rgba(196,139,255,.32)}
+/* Confirmation must always sit above the site footer/header and viewport effects. */
+.admin-confirm-layer{position:fixed!important;inset:0!important;z-index:2147483647!important;isolation:isolate!important;transform:none!important;contain:none!important}.admin-confirm-box{position:relative!important;z-index:2!important;margin:auto!important}.admin-confirm-layer:before{content:"";position:absolute;inset:0;background:rgba(2,1,5,.82)}
+@media(max-width:760px){.admin-product-main{display:grid!important;grid-template-columns:auto 1fr}.product-order-control{grid-column:1/-1;width:100%;margin:0!important}.product-edit-toggle{flex:1;justify-content:center}.guide-admin-head{align-items:flex-start;display:grid}.guide-admin-head-actions{width:100%}.guide-admin-head-actions>*{flex:1;justify-content:center}.status-mini{grid-template-columns:1fr!important}}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{

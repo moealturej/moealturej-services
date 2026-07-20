@@ -2519,8 +2519,8 @@ def get_guides_settings() -> dict:
     defaults = default_guides_settings()
     if isinstance(raw, dict):
         defaults.update(raw)
-        # Keep only Basic PC Requirements for now.
-        raw_items = [x for x in (raw.get("items") or []) if isinstance(x, dict) and str(x.get("slug") or x.get("id")) == "basic-pc-requirements"]
+        # Preserve every valid guide created in the admin builder.
+        raw_items = [x for x in (raw.get("items") or []) if isinstance(x, dict)]
         defaults["items"] = raw_items or default_guides_settings()["items"]
     defaults["items"] = [normalize_guide(item) for item in defaults.get("items") or [] if isinstance(item, dict)]
     return defaults
@@ -2529,7 +2529,7 @@ def get_guides_settings() -> dict:
 def save_guides_settings(guides_settings: dict) -> None:
     settings = load_site_settings(); merged = {"enabled":True,"items":[]}
     if isinstance(guides_settings, dict): merged.update(guides_settings)
-    merged["items"] = [normalize_guide(item) for item in merged.get("items") or [] if str(item.get("slug") or item.get("id")) == "basic-pc-requirements"]
+    merged["items"] = [normalize_guide(item) for item in merged.get("items") or [] if isinstance(item, dict)]
     settings["guides"] = merged; save_site_settings(settings)
 
 
