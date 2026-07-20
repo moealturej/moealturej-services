@@ -962,4 +962,67 @@ document.addEventListener('DOMContentLoaded',()=>{
   addEventListener('scroll',()=>top.classList.toggle('show',scrollY>700),{passive:true});top.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
 });
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+  const page=document.querySelector('.admin-page');
+  if(!page)return;
+
+  const listConfigs=[
+    ['products','#productOrderList','.admin-product','Search products by name, slug, category or status'],
+    ['orders','#orders .users-grid','.user-row','Search orders, customers, products or status'],
+    ['accounts','#accounts .users-grid','.user-row','Search accounts, usernames, roles or status'],
+    ['support','#support .users-grid','.user-row','Search tickets, customers, products or status'],
+    ['applications','#applications .users-grid','.user-row','Search application submissions'],
+    ['uploads','#uploads .media-grid','.media-item','Search uploaded files or URLs']
+  ];
+  listConfigs.forEach(([sectionId,listSelector,itemSelector,placeholder])=>{
+    const section=document.getElementById(sectionId);
+    const list=document.querySelector(listSelector);
+    if(!section||!list||section.querySelector('.section-list-tools'))return;
+    const items=[...list.querySelectorAll(itemSelector)];
+    if(items.length<2)return;
+    const tools=document.createElement('div');tools.className='section-list-tools';
+    tools.innerHTML=`<div class="section-list-search"><i class="fas fa-magnifying-glass"></i><input type="search" placeholder="${placeholder}" aria-label="${placeholder}"></div><span class="section-list-count"><strong>${items.length}</strong> shown</span>`;
+    const empty=document.createElement('div');empty.className='list-empty-state';empty.innerHTML='<i class="fas fa-filter-circle-xmark"></i><br>No matching items in this section.';
+    const anchor=section.querySelector('.section-top');
+    if(anchor)anchor.insertAdjacentElement('afterend',tools);else section.prepend(tools);
+    list.insertAdjacentElement('afterend',empty);
+    const input=tools.querySelector('input'),count=tools.querySelector('.section-list-count strong');
+    const apply=()=>{const q=input.value.trim().toLowerCase();let shown=0;items.forEach(item=>{const hit=!q||item.innerText.toLowerCase().includes(q);item.classList.toggle('is-list-hidden',!hit);if(hit)shown++});count.textContent=shown;empty.classList.toggle('show',shown===0)};
+    input.addEventListener('input',apply);
+  });
+
+  const layer=document.createElement('div');layer.className='admin-confirm-layer';layer.setAttribute('role','dialog');layer.setAttribute('aria-modal','true');layer.innerHTML='<div class="admin-confirm-box"><div class="admin-confirm-icon"><i class="fas fa-triangle-exclamation"></i></div><h3>Confirm this action</h3><p></p><div class="admin-confirm-actions"><button type="button" class="secondary-cta" data-cancel>Cancel</button><button type="button" class="danger-btn" data-confirm>Confirm action</button></div></div>';document.body.append(layer);
+  let pending=null;
+  const close=()=>{layer.classList.remove('show');pending=null};
+  layer.querySelector('[data-cancel]').addEventListener('click',close);layer.addEventListener('click',e=>{if(e.target===layer)close()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&layer.classList.contains('show'))close()});
+  layer.querySelector('[data-confirm]').addEventListener('click',()=>{if(!pending)return;const {form,submitter}=pending;form.dataset.confirmed='1';close();if(form.requestSubmit)form.requestSubmit(submitter||undefined);else form.submit()});
+  document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form=>{form.dataset.confirmMessage=(form.getAttribute('onsubmit').match(/confirm\((.*)\)/)||[])[1]||'';form.removeAttribute('onsubmit')});
+  document.addEventListener('submit',e=>{
+    const form=e.target;if(form.dataset.confirmed==='1'){delete form.dataset.confirmed;return}
+    const submitter=e.submitter;const action=(form.getAttribute('action')||'').toLowerCase();
+    const dangerous=submitter?.classList.contains('danger-btn')||/delete|status/.test(action);
+    if(!dangerous)return;
+    e.preventDefault();
+    let message='This changes stored data and may affect customers.';
+    if(action.includes('/delete'))message='This permanently removes the selected record. This cannot be undone.';
+    else if(action.includes('/status'))message='Review the selected status before applying it. Customers may see this change immediately.';
+    layer.querySelector('p').textContent=message;pending={form,submitter};layer.classList.add('show');layer.querySelector('[data-cancel]').focus();
+  },true);
+
+  const toast=document.createElement('div');toast.className='admin-copy-toast';toast.textContent='Copied to clipboard';document.body.append(toast);let toastTimer;
+  document.querySelectorAll('.copy-field button').forEach(btn=>btn.addEventListener('click',()=>{clearTimeout(toastTimer);toast.classList.add('show');toastTimer=setTimeout(()=>toast.classList.remove('show'),1500)}));
+
+  const density=localStorage.getItem('moe-admin-density');if(density==='compact')page.classList.add('compact-mode');
+  document.getElementById('adminDensity')?.addEventListener('click',()=>localStorage.setItem('moe-admin-density',page.classList.contains('compact-mode')?'compact':'comfortable'));
+
+  document.querySelectorAll('.admin-section form').forEach(form=>{
+    const required=[...form.querySelectorAll('[required]')];
+    required.forEach(field=>field.addEventListener('invalid',()=>{field.closest('.admin-section')?.classList.remove('is-collapsed');field.scrollIntoView({behavior:'smooth',block:'center'})}));
+  });
+});
+</script>
+
 {% endblock %}
