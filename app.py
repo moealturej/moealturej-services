@@ -51,6 +51,7 @@ ORDERS_FILE = DATA_DIR / "orders.json"
 SUPPORT_TICKETS_FILE = DATA_DIR / "support_tickets.json"
 SUPPORT_UPLOADS_DIR = DATA_DIR / "support_uploads"
 SETTINGS_FILE = DATA_DIR / "site_settings.json"
+NOTIFICATIONS_FILE = DATA_DIR / "notifications.json"
 DISCOUNT_CODE_MAX_LEN = 32
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 ALLOWED_FILE_EXTENSIONS = {"zip", "rar", "7z", "pdf", "txt", "json", "png", "jpg", "jpeg", "gif", "webp"}
@@ -1204,6 +1205,8 @@ def notify_buyer_delivery(order: dict, item: dict, delivery: dict) -> dict:
         dm_sent = send_discord_key_dm(buyer.get("discord_id"), order, item, product_key, note)
     delivery["email_sent"] = email_sent
     delivery["discord_dm_sent"] = dm_sent
+    if order.get("user_email"):
+        create_notification(order.get("user_email"), "Product key delivered", f"Your {item.get('product_name') or item.get('productName') or 'product'} delivery is ready.", "delivery", "/account#products")
     return delivery
 
 
@@ -2315,6 +2318,7 @@ def append_ticket_message(ticket: dict, user: dict, body: str, attachments: list
         send_support_ticket_email(OWNER_EMAIL, ticket, msg.get("body"), staff_update=False)
     else:
         send_support_ticket_email(ticket.get("user_email"), ticket, msg.get("body"), staff_update=True)
+        create_notification(ticket.get("user_email"), "Support replied", f"A staff member replied to ticket {ticket.get('ticket_id', '')}.", "support", f"/support/tickets/{ticket.get('ticket_id', '')}")
     return msg
 
 def order_amount_matches(order: dict, paid_cents: int | None, currency: str | None = None) -> bool:
@@ -2846,6 +2850,131 @@ def is_maintenance_mode() -> bool:
     return bool(load_site_settings().get("maintenance_enabled"))
 
 
+
+# -----------------------------------------------------------------------------
+# Customer product hub, notification center, preferences, and health reporting
+# -----------------------------------------------------------------------------
+def _read_json_list(path: Path) -> list:
+    try:
+        if path.exists():
+            value = json.loads(path.read_text(encoding="utf-8"))
+            return value if isinstance(value, list) else []
+    except Exception:
+        logger.exception("Could not read %s", path)
+    return []
+
+
+def _write_json_list(path: Path, value: list) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, default=str), encoding="utf-8")
+
+
+def get_user_preferences(email: str | None) -> dict:
+    defaults = {"email_product_updates": True, "email_ticket_replies": True, "email_expiry_reminders": True, "reduced_motion": False}
+    if not email or not using_mongo():
+        return defaults
+    user = users_col.find_one({"email": email.lower()}, {"preferences": 1}) or {}
+    prefs = user.get("preferences") if isinstance(user.get("preferences"), dict) else {}
+    defaults.update(prefs)
+    return defaults
+
+
+def save_user_preferences(email: str, prefs: dict) -> None:
+    if using_mongo():
+        users_col.update_one({"email": email.lower()}, {"$set": {"preferences": prefs, "updated_at": utc_now_naive()}})
+
+
+def create_notification(email: str, title: str, message: str, kind: str = "info", url: str = "/account") -> None:
+    if not email:
+        return
+    item = {"id": uuid.uuid4().hex, "email": email.lower(), "title": title[:120], "message": message[:500], "kind": kind[:24], "url": url[:500], "read": False, "created_at": utc_now().isoformat()}
+    if using_mongo():
+        users_col.update_one({"email": email.lower()}, {"$push": {"notifications": {"$each": [item], "$position": 0, "$slice": 100}}})
+    else:
+        items = _read_json_list(NOTIFICATIONS_FILE)
+        items.insert(0, item)
+        _write_json_list(NOTIFICATIONS_FILE, items[:500])
+
+
+def load_notifications(email: str | None, limit: int = 30) -> list:
+    if not email:
+        return []
+    if using_mongo():
+        user = users_col.find_one({"email": email.lower()}, {"notifications": 1}) or {}
+        items = user.get("notifications") if isinstance(user.get("notifications"), list) else []
+    else:
+        items = [x for x in _read_json_list(NOTIFICATIONS_FILE) if x.get("email") == email.lower()]
+    return sorted(items, key=lambda x: str(x.get("created_at", "")), reverse=True)[:limit]
+
+
+def mark_notifications_read(email: str, notification_id: str | None = None) -> None:
+    if using_mongo():
+        user = users_col.find_one({"email": email.lower()}, {"notifications": 1}) or {}
+        items = user.get("notifications") if isinstance(user.get("notifications"), list) else []
+        for item in items:
+            if not notification_id or item.get("id") == notification_id:
+                item["read"] = True
+        users_col.update_one({"email": email.lower()}, {"$set": {"notifications": items}})
+    else:
+        items = _read_json_list(NOTIFICATIONS_FILE)
+        for item in items:
+            if item.get("email") == email.lower() and (not notification_id or item.get("id") == notification_id):
+                item["read"] = True
+        _write_json_list(NOTIFICATIONS_FILE, items)
+
+
+def build_my_products(orders: list) -> list:
+    products_by_key = {}
+    catalog = load_products()
+    by_slug = {str(p.get("slug")): p for p in catalog}
+    by_id = {str(p.get("id")): p for p in catalog}
+    for order in orders:
+        if str(order.get("status", "")).lower() not in {"paid", "completed", "delivered"}:
+            continue
+        deliveries = order.get("deliveries") or {}
+        for idx, item in enumerate((order.get("cart") or {}).get("items") or []):
+            slug = str(item.get("slug") or "")
+            pid = str(item.get("productId") or item.get("product_id") or "")
+            product = by_slug.get(slug) or by_id.get(pid) or {}
+            key = slug or pid or str(item.get("productName") or idx)
+            delivery = deliveries.get(str(idx)) if isinstance(deliveries, dict) else None
+            if not delivery and isinstance(deliveries, list) and idx < len(deliveries):
+                delivery = deliveries[idx]
+            row = products_by_key.setdefault(key, {
+                "name": item.get("productName") or product.get("name") or "Product",
+                "slug": slug or product.get("slug", ""),
+                "image": item.get("image") or product.get("image") or "/static/logo.png",
+                "status": product.get("status") or {"state": "Operational", "label": "Online"},
+                "downloads": product.get("downloads") or {},
+                "features": product.get("features") or [],
+                "purchases": [], "latest_key": "", "latest_order": "", "option_name": item.get("optionName") or "License"
+            })
+            row["purchases"].append({"order_id": order.get("order_id"), "created_at": order.get("created_at"), "option_name": item.get("optionName"), "delivery": delivery or {}})
+            if delivery and (delivery.get("key") or delivery.get("product_key")):
+                row["latest_key"] = delivery.get("key") or delivery.get("product_key")
+            row["latest_order"] = order.get("order_id", "")
+    return sorted(products_by_key.values(), key=lambda x: x.get("name", "").lower())
+
+
+def load_audit_logs(limit: int = 100) -> list:
+    if not (using_mongo() and audit_col is not None):
+        return []
+    return list(audit_col.find({}, {"_id": 0}).sort("created_at", -1).limit(limit))
+
+
+def system_health_snapshot() -> list:
+    release = (load_site_settings().get("loader_release") or {})
+    checks = [
+        {"name": "MongoDB", "ok": using_mongo(), "detail": mongo_status_reason},
+        {"name": "Stripe", "ok": bool(STRIPE_SECRET_KEY), "detail": "Configured" if STRIPE_SECRET_KEY else "Missing STRIPE_SECRET_KEY"},
+        {"name": "PayPal", "ok": bool(PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET), "detail": "Configured" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "Credentials missing"},
+        {"name": "Resend email", "ok": bool(RESEND_API_KEY), "detail": "Configured" if RESEND_API_KEY else "Missing RESEND_API_KEY"},
+        {"name": "Discord OAuth", "ok": discord_oauth_ready(), "detail": "Configured" if discord_oauth_ready() else ", ".join(discord_oauth_missing())},
+        {"name": "Auto delivery", "ok": bool(RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY), "detail": "Ready" if RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY else "Disabled or API key missing"},
+        {"name": "Loader release", "ok": bool(release.get("sha256")), "detail": f"Version {release.get('version', '1.0.0')}" if release.get("sha256") else "No verified release uploaded"},
+    ]
+    return checks
+
 # -----------------------------------------------------------------------------
 # Template globals
 # -----------------------------------------------------------------------------
@@ -2874,6 +3003,7 @@ def inject_global_template_vars():
         "using_mongo": using_mongo(),
         "application_questions_to_text": application_questions_to_text,
         "support_webhook_configured": bool(SUPPORT_TICKET_WEBHOOK_URL),
+        "notification_unread_count": len([n for n in load_notifications((current_user() or {}).get("email"), 100) if not n.get("read")]),
     }
 
 
@@ -3628,11 +3758,39 @@ def logout():
 @app.route("/account")
 def account():
     cleanup_expired_pending_orders()
-    if not current_user():
+    user = current_user()
+    if not user:
         return redirect(url_for("login", next=request.path))
-    orders = load_orders_for_user((current_user() or {}).get("email"))
-    tickets = load_support_tickets_for_user((current_user() or {}).get("email"))
-    return render_template("account.html", active_page="account", orders=orders, tickets=tickets, guides=visible_guides())
+    email = user.get("email")
+    orders = load_orders_for_user(email)
+    tickets = load_support_tickets_for_user(email)
+    notifications = load_notifications(email)
+    return render_template("account.html", active_page="account", orders=orders, tickets=tickets,
+                           guides=visible_guides(), my_products=build_my_products(orders),
+                           notifications=notifications, preferences=get_user_preferences(email))
+
+
+@app.route("/account/preferences", methods=["POST"])
+@login_required
+def account_preferences():
+    email = (current_user() or {}).get("email")
+    prefs = {
+        "email_product_updates": bool(request.form.get("email_product_updates")),
+        "email_ticket_replies": bool(request.form.get("email_ticket_replies")),
+        "email_expiry_reminders": bool(request.form.get("email_expiry_reminders")),
+        "reduced_motion": bool(request.form.get("reduced_motion")),
+    }
+    save_user_preferences(email, prefs)
+    record_audit("account_preferences_update", email, prefs)
+    flash("Notification and display preferences saved.", "success")
+    return redirect(url_for("account") + "#settings")
+
+
+@app.route("/account/notifications/read", methods=["POST"])
+@login_required
+def account_notifications_read():
+    mark_notifications_read((current_user() or {}).get("email"), (request.form.get("notification_id") or "").strip() or None)
+    return redirect(url_for("account") + "#notifications")
 
 
 
@@ -3823,8 +3981,14 @@ def admin_dashboard():
         "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
         "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
-    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin")
+    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot())
 
+
+
+@app.route("/admin/system-health")
+@owner_required
+def admin_system_health():
+    return jsonify({"ok": True, "checked_at": utc_now().isoformat(), "checks": system_health_snapshot()})
 
 @app.route("/admin/settings", methods=["POST"])
 @owner_required

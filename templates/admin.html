@@ -388,6 +388,8 @@ updatePricingButtons();
     <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
     <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
     <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
+    <a class="admin-tab" href="#health"><i class="fas fa-heart-pulse"></i> System health</a>
+    <a class="admin-tab" href="#audit"><i class="fas fa-clock-rotate-left"></i> Audit log</a>
     <a class="admin-tab" href="#security"><i class="fas fa-shield-halved"></i> Security</a>
   </nav>
 
@@ -894,6 +896,16 @@ updatePricingButtons();
       </div>
     </section>
 
+    <section class="admin-card admin-section" id="health">
+      <div class="section-top"><div><div class="eyebrow">production monitoring</div><h2>System health</h2><p class="muted">A clear readiness check for the services your store, delivery system, and loader depend on.</p></div><a class="secondary-cta" href="/admin/system-health" target="_blank"><i class="fas fa-code"></i> Health JSON</a></div>
+      <div class="security-grid">{% for check in health_checks %}<div class="security-item"><i class="fas {{ 'fa-circle-check' if check.ok else 'fa-circle-exclamation' }}" style="color:{{ '#62e5a1' if check.ok else '#ffc85c' }}"></i><span><strong>{{ check.name }}</strong><br><small>{{ check.detail }}</small></span></div>{% endfor %}</div>
+    </section>
+
+    <section class="admin-card admin-section" id="audit">
+      <div class="section-top"><div><div class="eyebrow">accountability</div><h2>Audit log</h2><p class="muted">Recent owner, staff, delivery, order, and settings actions. Sensitive credentials are never displayed here.</p></div><span class="tiny-pill">{{ audit_logs|length }} recent entries</span></div>
+      {% if audit_logs %}<div style="display:grid;gap:9px">{% for log in audit_logs %}<article class="security-item" style="align-items:flex-start"><i class="fas fa-clock-rotate-left"></i><span style="min-width:0"><strong>{{ log.action|replace('_',' ')|title }}</strong> · {{ log.target or 'site' }}<br><small>{{ log.actor or 'system' }} · {{ log.created_at|string }}{% if log.ip %} · {{ log.ip }}{% endif %}</small></span></article>{% endfor %}</div>{% else %}<div class="admin-search-empty" style="display:block">Audit history becomes available when MongoDB is connected and actions are recorded.</div>{% endif %}
+    </section>
+
     <section class="admin-card admin-section" id="security">
       <div class="section-top"><div><div class="eyebrow">security setup</div><h2>Sign-in protection</h2><p class="muted">Email codes use <strong>{{ config.SECURITY_FROM_EMAIL if config.SECURITY_FROM_EMAIL is defined else 'security@moealturej.com' }}</strong> through <strong>{{ config.EMAIL_PROVIDER|upper if config.EMAIL_PROVIDER is defined else 'RESEND' }}</strong>. Discord OAuth is rate-limited and protected with state tokens. Bot token configured: <strong>{{ "yes" if discord_bot_enabled else "no" }}</strong>.</p></div></div>
       <div class="security-grid">
@@ -959,7 +971,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     owner:'Workspace','loader-release':'Workspace','emails':'Workspace',
     products:'Catalog','uploads':'Catalog','discounts':'Catalog',
     orders:'Customers','support':'Customers','accounts':'Customers',
-    applications:'Content','guides':'Content',security:'System'
+    applications:'Content','guides':'Content',health:'System',audit:'System',security:'System'
   };
   let last='';
   [...tabs.querySelectorAll('.admin-tab')].forEach(tab=>{
