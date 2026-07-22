@@ -1218,4 +1218,117 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 
+
+<style>
+/* Smart admin form layer */
+.admin-page .smart-field-wrap{position:relative}
+.admin-page .smart-slug-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.admin-page .smart-slug-toggle{height:42px;padding:0 12px;border-radius:12px;border:1px solid rgba(196,139,255,.22);background:rgba(168,85,247,.09);color:#eadcff;font-weight:900;font-size:11px;cursor:pointer}
+.admin-page .smart-slug-toggle.is-manual{background:rgba(255,255,255,.045);color:#a99bb9}
+.admin-page .smart-field-meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:#8d7e9d;font-size:10px;font-weight:750}
+.admin-page .smart-field-meta .ok{color:#68dca3}.admin-page .smart-field-meta .warn{color:#ffd27d}
+.admin-page .smart-url-preview{display:block;margin-top:6px;padding:7px 9px;border-radius:10px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.055);font:700 10px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;color:#cbb4e7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-page label.has-required>span:first-child::after{content:" *";color:#ff7e95}
+.admin-page input.is-invalid-smart{border-color:rgba(255,112,136,.7)!important;box-shadow:0 0 0 3px rgba(255,112,136,.08)!important}
+.admin-page .smart-duplicate{color:#ff8ca0!important}
+</style>
+<script>
+(function(){
+  const slugify=(value)=>(value||'').toString().trim().toLowerCase()
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/&/g,' and ').replace(/['’]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,100);
+
+  function labelText(input){
+    const label=input.closest('label');
+    if(!label) return '';
+    return (label.childNodes[0]&&label.childNodes[0].textContent||'').trim();
+  }
+
+  function addCounter(input){
+    if(!input.maxLength || input.maxLength < 1 || input.dataset.smartCounter) return;
+    input.dataset.smartCounter='1';
+    const meta=document.createElement('div');
+    meta.className='smart-field-meta';
+    const hint=document.createElement('span');
+    hint.textContent=input.required?'Required':'Optional';
+    const count=document.createElement('span');
+    const update=()=>{
+      count.textContent=`${input.value.length}/${input.maxLength}`;
+      count.className=input.value.length>input.maxLength*.9?'warn':'';
+    };
+    meta.append(hint,count);
+    input.insertAdjacentElement('afterend',meta);
+    input.addEventListener('input',update); update();
+  }
+
+  function enhanceSlug(slugInput){
+    if(slugInput.dataset.smartSlug) return;
+    slugInput.dataset.smartSlug='1';
+    const form=slugInput.form || slugInput.closest('form');
+    if(!form) return;
+    const source=form.querySelector('input[name="name"],input[name="title"]');
+    if(!source) return;
+
+    const row=document.createElement('div'); row.className='smart-slug-row';
+    slugInput.parentNode.insertBefore(row,slugInput);
+    row.appendChild(slugInput);
+    const toggle=document.createElement('button');
+    toggle.type='button'; toggle.className='smart-slug-toggle'; toggle.innerHTML='<i class="fas fa-link"></i> Auto';
+    row.appendChild(toggle);
+
+    const preview=document.createElement('span');
+    preview.className='smart-url-preview';
+    row.insertAdjacentElement('afterend',preview);
+
+    let manual=false;
+    const refresh=()=>{
+      const generated=slugify(source.value);
+      if(!manual || !slugInput.value.trim()) slugInput.value=generated;
+      slugInput.value=slugify(slugInput.value);
+      preview.textContent=slugInput.value ? `${location.origin}/${slugInput.name==='slug'?'…/':''}${slugInput.value}` : 'URL preview will appear here';
+      toggle.classList.toggle('is-manual',manual);
+      toggle.innerHTML=manual?'<i class="fas fa-pen"></i> Manual':'<i class="fas fa-wand-magic-sparkles"></i> Auto';
+      checkDuplicates();
+    };
+    source.addEventListener('input',refresh);
+    slugInput.addEventListener('input',()=>{ manual=true; refresh(); });
+    toggle.addEventListener('click',()=>{ manual=!manual; if(!manual) slugInput.value=slugify(source.value); refresh(); });
+    if(!slugInput.value.trim()) manual=false;
+    refresh();
+  }
+
+  function checkDuplicates(){
+    const groups={};
+    document.querySelectorAll('.admin-page input[name="slug"]').forEach(input=>{
+      const key=(input.value||'').trim().toLowerCase();
+      input.classList.remove('is-invalid-smart');
+      const preview=input.closest('label')?.querySelector('.smart-url-preview');
+      if(preview) preview.classList.remove('smart-duplicate');
+      if(!key) return;
+      (groups[key] ||= []).push(input);
+    });
+    Object.values(groups).filter(items=>items.length>1).forEach(items=>items.forEach(input=>{
+      input.classList.add('is-invalid-smart');
+      const preview=input.closest('label')?.querySelector('.smart-url-preview');
+      if(preview){preview.classList.add('smart-duplicate');preview.textContent='Duplicate slug — choose a unique URL';}
+    }));
+  }
+
+  function enhanceForm(form){
+    form.querySelectorAll('input,textarea').forEach(input=>{
+      addCounter(input);
+      if(input.required) input.closest('label')?.classList.add('has-required');
+    });
+    form.querySelectorAll('input[name="slug"]').forEach(enhanceSlug);
+  }
+
+  function init(){
+    document.querySelectorAll('.admin-page form').forEach(enhanceForm);
+    checkDuplicates();
+  }
+  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+})();
+</script>
+
 {% endblock %}

@@ -2299,13 +2299,21 @@ def send_support_discord_webhook(ticket: dict, message: dict) -> bool:
 
 def append_ticket_message(ticket: dict, user: dict, body: str, attachments: list[dict] | None = None) -> dict:
     actor_kind = support_actor_kind(user)
+    now_iso = utc_now().isoformat()
     msg = {
         "id": secrets.token_urlsafe(10),
         "body": (body or "").strip()[:3000],
         "actor_kind": actor_kind,
         "actor": sanitize_user_for_session(user) or {},
         "attachments": attachments or [],
-        "created_at": utc_now().isoformat(),
+        "created_at": now_iso,
+        # Delivery/read state is tracked per audience. The sender has obviously
+        # seen their own message; the opposite side is marked when they open
+        # the ticket conversation.
+        "read_by_staff": actor_kind == "staff",
+        "read_by_customer": actor_kind != "staff",
+        "read_at_staff": now_iso if actor_kind == "staff" else None,
+        "read_at_customer": now_iso if actor_kind != "staff" else None,
     }
     ticket.setdefault("messages", []).append(msg)
     ticket["last_message_by"] = actor_kind
@@ -3288,7 +3296,23 @@ def support_ticket_detail(ticket_id):
     user = current_user() or {}
     if not user_can_view_ticket(ticket, user):
         abort(404)
-    return render_template("ticket_detail.html", active_page="support", ticket=ticket, staff_view=has_support_access(user))
+
+    staff_view = has_support_access(user)
+    changed = False
+    seen_at = utc_now().isoformat()
+    for msg in ticket.get("messages") or []:
+        if staff_view and msg.get("actor_kind") != "staff" and not msg.get("read_by_staff"):
+            msg["read_by_staff"] = True
+            msg["read_at_staff"] = seen_at
+            changed = True
+        elif not staff_view and msg.get("actor_kind") == "staff" and not msg.get("read_by_customer"):
+            msg["read_by_customer"] = True
+            msg["read_at_customer"] = seen_at
+            changed = True
+    if changed:
+        save_support_ticket(ticket)
+
+    return render_template("ticket_detail.html", active_page="support", ticket=ticket, staff_view=staff_view)
 
 
 @app.route("/support/tickets/<ticket_id>/reply", methods=["POST"])
