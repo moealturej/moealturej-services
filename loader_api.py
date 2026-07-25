@@ -257,19 +257,39 @@ def register_loader_api(
 
         return wrapped
 
-    def _owned_slugs(email: str) -> set[str]:
+    def _owned_product_refs(email: str) -> tuple[set[str], set[str]]:
+        """Return immutable product ids plus legacy slugs for paid purchases."""
         user = get_user_by_email(email) or {}
+        products = load_products()
         if user.get("is_owner") or user.get("role") in {"owner", "admin"}:
-            return {str(p.get("slug")) for p in load_products() if p.get("slug")}
-        owned: set[str] = set()
+            return (
+                {str(p.get("id")) for p in products if p.get("id") is not None},
+                {str(p.get("slug")) for p in products if p.get("slug")},
+            )
+        owned_ids: set[str] = set()
+        owned_slugs: set[str] = set()
         for order in load_orders_for_user(email):
             if str(order.get("status", "")).lower() != "paid":
                 continue
             for item in ((order.get("cart") or {}).get("items") or []):
-                slug = str(item.get("slug") or "").strip()
+                product_id = str(item.get("product_id") or item.get("productId") or "").strip()
+                slug = str(item.get("slug") or item.get("product_slug") or "").strip()
+                if product_id:
+                    owned_ids.add(product_id)
                 if slug:
-                    owned.add(slug)
-        return owned
+                    owned_slugs.add(slug)
+        return owned_ids, owned_slugs
+
+    def _product_is_owned(product: dict, refs: tuple[set[str], set[str]]) -> bool:
+        owned_ids, owned_slugs = refs
+        product_id = str(product.get("id") or "").strip()
+        slug = str(product.get("slug") or "").strip()
+        aliases = {str(value).strip() for value in (product.get("legacySlugs") or []) if str(value).strip()}
+        return bool(
+            (product_id and product_id in owned_ids)
+            or (slug and slug in owned_slugs)
+            or bool(aliases.intersection(owned_slugs))
+        )
 
     def _product_for_slug(slug: str) -> dict | None:
         return next((p for p in load_products() if str(p.get("slug")) == slug), None)
@@ -370,6 +390,7 @@ def register_loader_api(
                 result.append({
                     "order_id": str(order.get("order_id") or ""),
                     "item_index": index,
+                    "product_id": str(item.get("product_id") or item.get("productId") or ""),
                     "product_name": str(item.get("product_name") or item.get("name") or "Product"),
                     "option_name": str(item.get("option_name") or item.get("option") or ""),
                     "slug": str(item.get("slug") or ""),
@@ -595,11 +616,10 @@ def register_loader_api(
     @_api_auth
     def library():
         auth = request.loader_session  # type: ignore[attr-defined]
-        owned_slugs = _owned_slugs(auth.get("email", ""))
+        owned_refs = _owned_product_refs(auth.get("email", ""))
         products = []
         for product in load_products():
-            slug = str(product.get("slug") or "")
-            products.append(_public_product(product, owned=slug in owned_slugs))
+            products.append(_public_product(product, owned=_product_is_owned(product, owned_refs)))
         products.sort(key=lambda item: (not item.get("owned", False), not item.get("available", False), str(item.get("name", "")).lower()))
         return jsonify({
             "ok": True,
@@ -612,21 +632,23 @@ def register_loader_api(
     @_api_auth
     def manifest(slug: str):
         auth = request.loader_session  # type: ignore[attr-defined]
-        if slug not in _owned_slugs(auth.get("email", "")):
-            return jsonify({"ok": False, "error": "not_owned"}), 403
         product = _product_for_slug(slug)
         if not product:
             return jsonify({"ok": False, "error": "not_found"}), 404
+        if not _product_is_owned(product, _owned_product_refs(auth.get("email", ""))):
+            return jsonify({"ok": False, "error": "not_owned"}), 403
         return jsonify({"ok": True, "product": _public_product(product, owned=True)})
 
     @bp.get("/api/loader/products/<slug>/download")
     @_api_auth
     def loader_download(slug: str):
         auth = request.loader_session  # type: ignore[attr-defined]
-        if slug not in _owned_slugs(auth.get("email", "")):
-            abort(403)
         product = _product_for_slug(slug)
-        file_info = _product_file(product or {})
+        if not product:
+            abort(404)
+        if not _product_is_owned(product, _owned_product_refs(auth.get("email", ""))):
+            abort(403)
+        file_info = _product_file(product)
         if not product or not (product.get("downloads") or {}).get("enabled") or not file_info:
             abort(404)
         return send_from_directory(str(files_dir), file_info[1], as_attachment=True, conditional=True)

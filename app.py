@@ -1989,6 +1989,75 @@ def load_orders_for_user(email: str | None = None) -> list:
 
 
 
+
+def sync_product_purchase_references(old_product: dict, updated_product: dict) -> int:
+    """Keep historical purchases attached when editable product details change.
+
+    Product ownership is anchored to the immutable product id. Older orders that
+    predate product_id are safely backfilled by the previous slug/name.
+    """
+    old_id = str(old_product.get("id") or "").strip()
+    old_slug = str(old_product.get("slug") or "").strip().lower()
+    old_name = str(old_product.get("name") or "").strip().lower()
+    new_id = updated_product.get("id")
+    new_slug = str(updated_product.get("slug") or "").strip()
+    new_name = str(updated_product.get("name") or "Product").strip()
+    new_image = str(updated_product.get("image") or "/static/logo.png").strip()
+
+    def update_order(order: dict) -> bool:
+        changed = False
+        items = ((order.get("cart") or {}).get("items") or [])
+        for item in items:
+            item_id = str(item.get("product_id") or item.get("productId") or "").strip()
+            item_slug = str(item.get("slug") or item.get("product_slug") or "").strip().lower()
+            item_name = str(item.get("product_name") or item.get("name") or "").strip().lower()
+            matches = bool(
+                (old_id and item_id == old_id)
+                or (old_slug and item_slug == old_slug)
+                or (not item_id and old_name and item_name == old_name)
+            )
+            if not matches:
+                continue
+            item["product_id"] = new_id
+            item.pop("productId", None)
+            item["slug"] = new_slug
+            item["product_name"] = new_name
+            item["image"] = new_image
+            changed = True
+        if changed:
+            order["updated_at"] = utc_now().isoformat()
+        return changed
+
+    changed_count = 0
+    if using_mongo() and orders_col is not None:
+        query_parts = []
+        if old_id:
+            query_parts.extend([{"cart.items.product_id": old_id}, {"cart.items.productId": old_id}])
+        if old_slug:
+            query_parts.append({"cart.items.slug": {"$regex": f"^{re.escape(old_slug)}$", "$options": "i"}})
+        if old_name:
+            query_parts.append({"cart.items.product_name": {"$regex": f"^{re.escape(old_name)}$", "$options": "i"}})
+        cursor = orders_col.find({"$or": query_parts}, {"_id": 0}) if query_parts else []
+        for order in cursor:
+            if update_order(order):
+                orders_col.update_one({"order_id": order.get("order_id")}, {"$set": {"cart": order.get("cart"), "updated_at": order.get("updated_at")}})
+                changed_count += 1
+        return changed_count
+
+    if not ORDERS_FILE.exists():
+        return 0
+    try:
+        orders = json.loads(ORDERS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        logger.exception("Could not read orders while syncing product references")
+        return 0
+    for order in orders:
+        if update_order(order):
+            changed_count += 1
+    if changed_count:
+        ORDERS_FILE.write_text(json.dumps(orders[:1000], indent=2), encoding="utf-8")
+    return changed_count
+
 def parse_order_datetime(value) -> datetime | None:
     """Return an aware UTC datetime from the mixed formats used in saved orders."""
     if isinstance(value, datetime):
@@ -4801,8 +4870,12 @@ def admin_product_update(slug):
         downloads["fileSize"] = downloads["fileSize"] or human_file_size(local_path.stat().st_size)
         save_media_record({"filename": filename, "original_name": original, "kind": "file", "url": file_url, "mime_type": mime_type, "size_bytes": local_path.stat().st_size, "storage": "mongodb_gridfs" if gridfs_id else "local_disk", "gridfs_id": gridfs_id, "created_at": utc_now().isoformat(), "created_by": (current_user() or {}).get("email")})
 
+    legacy_slugs = {str(x).strip().lower() for x in (product.get("legacySlugs") or []) if str(x).strip()}
+    if old_slug and old_slug != new_slug:
+        legacy_slugs.add(old_slug)
+
     updated = normalize_product({
-        "id": product.get("id"), "slug": new_slug, "name": name,
+        "id": product.get("id"), "slug": new_slug, "legacySlugs": sorted(legacy_slugs), "name": name,
         "description": (request.form.get("description") or "").strip()[:500],
         "detailedDescription": (request.form.get("detailed_description") or "").strip(),
         "image": (request.form.get("image") or "/static/logo.png").strip(),
@@ -4819,8 +4892,10 @@ def admin_product_update(slug):
     else:
         saved = [updated if str(p.get("slug", "")).lower() == old_slug else p for p in products]
         save_products_file(sorted(saved, key=lambda p: (int(p.get("displayOrder", 9999)), str(p.get("name", "")).lower())))
-    record_audit("product.updated", new_slug, {"old_slug": old_slug, "options": len(options)})
-    flash(f"{name} was fully updated.", "success")
+
+    synced_orders = sync_product_purchase_references(product, updated)
+    record_audit("product.updated", new_slug, {"old_slug": old_slug, "options": len(options), "synced_orders": synced_orders})
+    flash(f"{name} was fully updated. {synced_orders} existing purchase record(s) were kept in sync.", "success")
     return redirect(url_for("admin_dashboard") + "#products")
 
 
