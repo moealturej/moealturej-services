@@ -67,10 +67,16 @@ def register_loader_api(
     send_security_email: Callable[[str, str, str], bool] | None = None,
     require_email_codes: bool = True,
     login_endpoint: str = "login",
+    limiter=None,
 ):
     """Register a browser-approved device login and authenticated loader API."""
 
     bp = Blueprint("loader_api", __name__)
+
+    def _limit(value: str, *, override_defaults: bool = True):
+        if limiter is None:
+            return lambda fn: fn
+        return limiter.limit(value, override_defaults=override_defaults)
     data_dir = Path(app.root_path) / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     devices_file = data_dir / "loader_devices.json"
@@ -662,6 +668,7 @@ def register_loader_api(
         return jsonify({"ok": True, "keys": items, "count": len(items)})
 
     @bp.get("/api/loader/support/tickets")
+    @_limit("120 per minute; 5000 per hour")
     @_api_auth
     def support_tickets():
         if load_support_tickets_for_user is None:
@@ -671,6 +678,7 @@ def register_loader_api(
         return jsonify({"ok": True, "tickets": [_public_ticket(t, False) for t in tickets]})
 
     @bp.get("/api/loader/support/tickets/<ticket_id>")
+    @_limit("120 per minute; 5000 per hour")
     @_api_auth
     def support_ticket(ticket_id: str):
         if find_support_ticket is None:
@@ -682,6 +690,7 @@ def register_loader_api(
         return jsonify({"ok": True, "ticket": _public_ticket(ticket, True)})
 
     @bp.post("/api/loader/support/tickets")
+    @_limit("10 per minute; 60 per hour")
     @_api_auth
     def create_support_ticket():
         if save_support_ticket is None or ticket_public_id is None:
@@ -715,6 +724,7 @@ def register_loader_api(
         return jsonify({"ok": True, "ticket": _public_ticket(ticket, True)}), 201
 
     @bp.post("/api/loader/support/tickets/<ticket_id>/reply")
+    @_limit("20 per minute; 240 per hour")
     @_api_auth
     def reply_support_ticket(ticket_id: str):
         if find_support_ticket is None or append_ticket_message is None:

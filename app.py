@@ -388,7 +388,7 @@ ensure_owner_account()
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # Reverse proxy support (Render / Nginx / Cloudflare / etc.)
-if os.getenv("BEHIND_PROXY", "false").lower() == "true":
+if os.getenv("BEHIND_PROXY", "true" if os.getenv("RENDER") else "false").lower() == "true":
     app.wsgi_app = ProxyFix(
         app.wsgi_app,
         x_for=1,
@@ -440,8 +440,26 @@ Compress(app)
 # -----------------------------------------------------------------------------
 # Rate Limiting
 # -----------------------------------------------------------------------------
+def _rate_limit_key() -> str:
+    """Keep loader clients isolated even when Render exposes the same proxy IP.
+
+    Authenticated loader requests are keyed by a one-way hash of their bearer
+    token. Browser and unauthenticated traffic continues to use the resolved
+    client IP from ProxyFix/get_remote_address.
+    """
+    if request.path.startswith("/api/loader/"):
+        auth = (request.headers.get("Authorization") or "").strip()
+        if auth.lower().startswith("bearer ") and len(auth) > 20:
+            token = auth[7:].strip()
+            return "loader:" + hashlib.sha256(token.encode("utf-8")).hexdigest()[:32]
+        device_id = (request.headers.get("X-Loader-Device") or "").strip()
+        if device_id:
+            return "loader-device:" + hashlib.sha256(device_id.encode("utf-8")).hexdigest()[:32]
+    return "ip:" + get_remote_address()
+
+
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=_rate_limit_key,
     app=app,
     default_limits=["3000 per day", "500 per hour", "60 per minute"],
     storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
@@ -3199,6 +3217,18 @@ def forbidden(error):
 
 @app.errorhandler(429)
 def ratelimit_handler(error):
+    retry_after = str(getattr(error, "retry_after", None) or request.environ.get("flask-limiter.retry_after") or "60")
+    if request.path.startswith("/api/"):
+        response = jsonify({
+            "ok": False,
+            "error": "rate_limited",
+            "message": "Too many requests. Wait before trying again.",
+            "retry_after": retry_after,
+        })
+        response.status_code = 429
+        response.headers["Retry-After"] = retry_after
+        response.headers["Cache-Control"] = "no-store"
+        return response
     return render_template("403.html", error="Too many requests. Please slow down.", active_page=None), 429
 
 
@@ -4372,7 +4402,11 @@ def admin_loader_release():
 
 
 @app.route("/api/loader/version")
-@limiter.limit("120 per minute")
+@app.route("/api/loader/version/")
+@app.route("/api/loader/update")
+@app.route("/api/loader/update/")
+@app.route("/loader/version")
+@limiter.limit("120 per minute; 5000 per hour", override_defaults=True)
 def api_loader_version():
     release = dict(load_site_settings().get("loader_release") or {})
     version = str(release.get("version") or "1.0.0").strip()
@@ -5797,6 +5831,7 @@ register_loader_api(
     ticket_public_id=ticket_public_id,
     send_security_email=send_security_email,
     require_email_codes=REQUIRE_EMAIL_CODES,
+    limiter=limiter,
 )
 
 
