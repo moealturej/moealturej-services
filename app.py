@@ -3949,10 +3949,42 @@ def account_preferences():
     return redirect(url_for("account") + "#settings")
 
 
+@app.route("/account/notifications/live")
+@login_required
+def account_notifications_live():
+    """Return the signed-in user's latest notifications for live UI updates."""
+    email = (current_user() or {}).get("email")
+    items = load_notifications(email, 30)
+    payload = []
+    for item in items:
+        payload.append({
+            "id": str(item.get("id") or ""),
+            "title": str(item.get("title") or "Update"),
+            "message": str(item.get("message") or ""),
+            "kind": str(item.get("kind") or "info"),
+            "url": str(item.get("url") or "/account#notifications"),
+            "read": bool(item.get("read")),
+            "created_at": str(item.get("created_at") or ""),
+        })
+    response = jsonify({
+        "ok": True,
+        "unread_count": sum(1 for item in payload if not item["read"]),
+        "notifications": payload,
+        "server_time": utc_now().isoformat(),
+    })
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    return response
+
+
 @app.route("/account/notifications/read", methods=["POST"])
 @login_required
 def account_notifications_read():
-    mark_notifications_read((current_user() or {}).get("email"), (request.form.get("notification_id") or "").strip() or None)
+    notification_id = (request.form.get("notification_id") or "").strip() or None
+    mark_notifications_read((current_user() or {}).get("email"), notification_id)
+    if request.accept_mimetypes.best == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        items = load_notifications((current_user() or {}).get("email"), 100)
+        return jsonify({"ok": True, "unread_count": sum(1 for item in items if not item.get("read"))})
     return redirect(url_for("account") + "#notifications")
 
 

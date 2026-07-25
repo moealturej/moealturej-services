@@ -320,7 +320,7 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
           </div>
         </div>
       </nav>
-      <div class="header-actions">{% if current_user %}<a href="/account#notifications" class="cart-icon-btn" aria-label="Notifications"><i class="fas fa-bell"></i>{% if notification_unread_count %}<span class="cart-count-badge">{{ notification_unread_count }}</span>{% endif %}</a>{% endif %}<a href="/products#wishlist" class="wishlist-icon-btn" id="navWishlistBtn" aria-label="View saved products"><i class="fas fa-heart"></i><span id="navWishlistCount" class="wishlist-count" hidden>0</span></a><a href="/cart" class="cart-icon-btn {% if request.path == '/cart' %}active{% endif %}" aria-label="Open cart"><i class="fas fa-bag-shopping"></i><span id="navCartCount" class="cart-count-badge" hidden>0</span></a>{% if current_user %}<a href="{{ '/admin' if (current_user.is_owner or current_user.role == 'admin') else '/account' }}" class="header-cta"><i class="fas {{ 'fa-crown' if (current_user.is_owner or current_user.role == 'admin') else 'fa-user' }}"></i> <span>{{ 'Admin' if (current_user.is_owner or current_user.role == 'admin') else 'Account' }}</span></a>{% else %}<a href="/login" class="header-cta"><i class="fas fa-right-to-bracket"></i> <span>Login</span></a>{% endif %}</div>
+      <div class="header-actions">{% if current_user %}<a href="/account#notifications" class="cart-icon-btn" id="navNotificationBtn" aria-label="Notifications"><i class="fas fa-bell"></i><span class="cart-count-badge" id="navNotificationCount" {% if not notification_unread_count %}hidden{% endif %}>{{ notification_unread_count if notification_unread_count else 0 }}</span></a>{% endif %}<a href="/products#wishlist" class="wishlist-icon-btn" id="navWishlistBtn" aria-label="View saved products"><i class="fas fa-heart"></i><span id="navWishlistCount" class="wishlist-count" hidden>0</span></a><a href="/cart" class="cart-icon-btn {% if request.path == '/cart' %}active{% endif %}" aria-label="Open cart"><i class="fas fa-bag-shopping"></i><span id="navCartCount" class="cart-count-badge" hidden>0</span></a>{% if current_user %}<a href="{{ '/admin' if (current_user.is_owner or current_user.role == 'admin') else '/account' }}" class="header-cta"><i class="fas {{ 'fa-crown' if (current_user.is_owner or current_user.role == 'admin') else 'fa-user' }}"></i> <span>{{ 'Admin' if (current_user.is_owner or current_user.role == 'admin') else 'Account' }}</span></a>{% else %}<a href="/login" class="header-cta"><i class="fas fa-right-to-bracket"></i> <span>Login</span></a>{% endif %}</div>
     </header></div></div>
     <main id="main-content">{% if site_settings.announcement_enabled and site_settings.announcement_text %}<div class="site-announcement {{ site_settings.announcement_type|default('info') }}"><i class="fas fa-bullhorn"></i><span>{{ site_settings.announcement_text }}</span></div>{% endif %}{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash {{ category }}"><span>{{ message }}</span><button class="flash-close" type="button" aria-label="Dismiss notification">×</button></div>{% endfor %}</div>{% endif %}{% endwith %}{% block content %}{% endblock %}</main>
     <footer class="site-footer footer-smart">
@@ -416,6 +416,33 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
     })();
 
     function updateNavCartCount(){try{const raw=JSON.parse(localStorage.getItem('moeCart')||'[]');const count=raw.reduce((n,item)=>n+(Number(item.quantity)||1),0);const badge=document.getElementById('navCartCount');if(!badge)return;badge.textContent=count>99?'99+':String(count);badge.hidden=count<=0;}catch(e){const badge=document.getElementById('navCartCount');if(badge)badge.hidden=true;}}updateNavCartCount();window.addEventListener('storage',updateNavCartCount);window.addEventListener('moeCartUpdated',updateNavCartCount);document.querySelectorAll('img:not([loading])').forEach(img=>{img.loading='lazy';img.decoding='async'});
+
+    (function liveNotifications(){
+      const badge=document.getElementById('navNotificationCount');
+      if(!badge)return;
+      let timer=null,inFlight=false,initialized=false,knownIds=new Set(),failures=0;
+      const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+      const formatTime=value=>{if(!value)return'';const d=new Date(value);return Number.isNaN(d.getTime())?String(value).replace('T',' ').slice(0,16):d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})};
+      function setCount(count){count=Math.max(0,Number(count)||0);badge.textContent=count>99?'99+':String(count);badge.hidden=count<1;document.getElementById('navNotificationBtn')?.classList.toggle('active',count>0);document.querySelectorAll('[data-live-notification-count]').forEach(el=>{el.textContent=String(count);el.hidden=false});}
+      function renderAccount(items){
+        const list=document.getElementById('liveNotificationList');if(!list)return;
+        const empty=document.getElementById('liveNotificationEmpty');
+        if(!items.length){list.innerHTML='';if(empty)empty.hidden=false;return}if(empty)empty.hidden=true;
+        list.innerHTML=items.map(n=>`<article class="notification-item ${n.read?'':'unread'}" data-notification-id="${escapeHtml(n.id)}"><div class="notification-row"><div><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}</p>${n.url?`<a class="mini-action" href="${escapeHtml(n.url)}" style="margin-top:9px">Open</a>`:''}</div><span class="muted-time">${escapeHtml(formatTime(n.created_at))}</span></div></article>`).join('');
+      }
+      async function sync(){
+        if(inFlight||document.hidden)return;inFlight=true;
+        try{
+          const r=await fetch('/account/notifications/live',{headers:{Accept:'application/json'},cache:'no-store',credentials:'same-origin'});
+          if(r.status===401||r.status===403)return;if(!r.ok)throw new Error('notification sync failed');
+          const d=await r.json(),items=Array.isArray(d.notifications)?d.notifications:[];
+          if(initialized){const fresh=items.filter(n=>n.id&&!knownIds.has(n.id));if(fresh.length&&window.showSiteToast)window.showSiteToast(fresh[0].title||'New notification','success');}
+          knownIds=new Set(items.map(n=>n.id).filter(Boolean));initialized=true;setCount(d.unread_count);renderAccount(items);failures=0;
+          window.dispatchEvent(new CustomEvent('moeNotificationsUpdated',{detail:d}));
+        }catch(e){failures++;}finally{inFlight=false;clearTimeout(timer);timer=setTimeout(sync,failures?5000:1800)}
+      }
+      window.addEventListener('focus',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});sync();
+    })();
     const loadingOverlay=document.getElementById('globalLoadingOverlay');const loadingTitle=document.getElementById('loadingTitle');const loadingText=document.getElementById('loadingText');
     document.querySelectorAll('form.auth-card, form[data-loading-form="true"]').forEach(form=>{form.addEventListener('submit',()=>{const btn=form.querySelector('button[type="submit"]');form.classList.add('is-loading');if(btn){btn.disabled=true;if(!btn.querySelector('.btn-spinner')){const s=document.createElement('span');s.className='btn-spinner';btn.prepend(s)}const t=btn.dataset.loadingText||'Sending code...';const label=btn.querySelector('.btn-label');if(label)label.textContent=t;else btn.append(document.createTextNode(' '+t));}if(loadingOverlay){loadingTitle.textContent=form.dataset.loadingTitle||'Sending security code';loadingText.textContent=form.dataset.loadingText||'Checking your account and sending the email code. This can take a moment.';loadingOverlay.classList.add('active');loadingOverlay.setAttribute('aria-hidden','false');}})});
 
