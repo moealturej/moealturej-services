@@ -29,29 +29,35 @@
 {% block content %}
 <section class="page-section downloads-page">
   <div class="container">
-    <div class="onboard-shell" id="downloadOnboarding">
+    <div class="onboard-shell" id="downloadOnboarding" data-authenticated="{{ 'true' if current_user else 'false' }}">
       <header class="onboard-head">
         <div class="onboard-title"><i class="fas fa-shield-halved"></i><span>Getting Started</span></div>
         <p>Follow the steps below to prepare and download the loader.</p>
       </header>
 
       <nav class="steps" aria-label="Download setup steps">
-        <button class="step-tab is-active" type="button" data-step="1"><span class="step-index">1</span><span>Profile Setup</span></button><i class="fas fa-chevron-right step-arrow"></i>
-        <button class="step-tab" type="button" data-step="2"><span class="step-index">2</span><span>Requirements</span></button><i class="fas fa-chevron-right step-arrow"></i>
+        <button class="step-tab{% if not current_user %} is-active{% else %} is-done{% endif %}" type="button" data-step="1"><span class="step-index">{% if current_user %}✓{% else %}1{% endif %}</span><span>Profile Setup</span></button><i class="fas fa-chevron-right step-arrow"></i>
+        <button class="step-tab{% if current_user %} is-active{% endif %}" type="button" data-step="2"><span class="step-index">2</span><span>Requirements</span></button><i class="fas fa-chevron-right step-arrow"></i>
         <button class="step-tab" type="button" data-step="3"><span class="step-index">3</span><span>Download</span></button>
       </nav>
 
-      <section class="step-panel is-active" data-panel="1">
+      <section class="step-panel{% if not current_user %} is-active{% endif %}" data-panel="1">
         <div class="profile-card">
           <div class="profile-icon"><i class="fas fa-user-check"></i></div>
+          {% if current_user %}
+          <h2>Account connected</h2>
+          <p>You are signed in{% if current_user.name %} as {{ current_user.name }}{% elif current_user.email %} as {{ current_user.email }}{% endif %}. Your profile setup is complete.</p>
+          <button class="panel-btn primary" type="button" data-next="2"><i class="fas fa-circle-check"></i> Continue to requirements</button>
+          {% else %}
           <h2>Set up your account first</h2>
           <p>Your downloads stay connected to your account, purchases, delivered keys, and support history.</p>
           <a class="panel-btn primary" href="/account"><i class="fas fa-user"></i> Open account</a>
+          {% endif %}
         </div>
         <div class="panel-actions"><span></span><button class="panel-btn primary" type="button" data-next="2">Continue <i class="fas fa-arrow-right"></i></button></div>
       </section>
 
-      <section class="step-panel" data-panel="2">
+      <section class="step-panel{% if current_user %} is-active{% endif %}" data-panel="2">
         <p class="panel-copy">Before downloading, confirm the basic Windows requirements below.</p>
         <div class="requirement-list">
           <label class="requirement-card"><input class="requirement-check" type="checkbox"><span><strong><i class="fas fa-hard-drive"></i> Microsoft Visual C++ Redistributable</strong><p>Required by many Windows applications. Install the current Microsoft-supported package when needed.</p><a href="https://www.techpowerup.com/download/visual-c-redistributable-runtime-package-all-in-one/" target="_blank" rel="noopener">Open Microsoft download <i class="fas fa-up-right-from-square"></i></a></span></label>
@@ -101,7 +107,9 @@
 (() => {
   const tabs=[...document.querySelectorAll('.step-tab')];
   const panels=[...document.querySelectorAll('.step-panel')];
-  let current=1;
+  const shell=document.getElementById('downloadOnboarding');
+  const isAuthenticated=shell?.dataset.authenticated==='true';
+  let current=isAuthenticated?2:1;
   function showStep(step){
     current=Number(step);
     panels.forEach(panel=>panel.classList.toggle('is-active',Number(panel.dataset.panel)===current));

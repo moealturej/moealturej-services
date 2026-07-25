@@ -4690,23 +4690,138 @@ def admin_product_new():
 
 @app.route("/admin/product/<slug>", methods=["POST"])
 @owner_required
+@limiter.limit("20 per minute")
 def admin_product_update(slug):
-    raw = request.form.get("product_json", "").strip()
-    try:
-        product = normalize_product(json.loads(raw))
-    except Exception as exc:
-        flash(f"Invalid JSON: {exc}", "danger")
-        return redirect(url_for("admin_dashboard"))
+    products = load_products()
     old_slug = slug.strip().lower()
+    product = next((p for p in products if str(p.get("slug", "")).lower() == old_slug), None)
+    if not product:
+        abort(404)
+
+    name = (request.form.get("name") or "").strip()[:100]
+    new_slug = clean_slug(request.form.get("slug") or name)
+    if not name:
+        flash("Product name is required.", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+    if new_slug != old_slug and any(str(p.get("slug", "")).lower() == new_slug for p in products):
+        flash("Another product already uses that slug.", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    names = request.form.getlist("option_name")
+    prices = request.form.getlist("option_price")
+    ids = request.form.getlist("option_id")
+    auto_urls = request.form.getlist("option_auto_base_url")
+    auto_enabled = set(request.form.getlist("option_auto_enabled"))
+    options = []
+    try:
+        for index, raw_name in enumerate(names):
+            option_name = str(raw_name or "").strip()[:80]
+            if not option_name:
+                continue
+            price = round(max(0.50, float(prices[index] if index < len(prices) else 1)), 2)
+            raw_id = ids[index].strip() if index < len(ids) else ""
+            try:
+                option_id = int(raw_id)
+            except (TypeError, ValueError):
+                option_id = int(utc_now().timestamp() * 1000) + index
+            option = {"id": option_id, "name": option_name, "price": price}
+            base_url = auto_urls[index].strip() if index < len(auto_urls) else ""
+            if base_url:
+                option["autoDelivery"] = auto_delivery_dict_from_base_url(base_url, str(index) in auto_enabled)
+            options.append(option)
+        if bool(request.form.get("store_enabled")) and not options:
+            raise ValueError("Store products need at least one pricing option.")
+    except (TypeError, ValueError) as exc:
+        flash(str(exc) or "Check the pricing and auto-delivery fields.", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    features = [line.strip().lstrip("•- ").strip()[:180] for line in request.form.get("features_text", "").splitlines()]
+    features = [x for x in features if x][:50]
+    try:
+        display_order = max(0, int(request.form.get("display_order") or product.get("displayOrder", 0)))
+        discount_value = max(0, float(request.form.get("product_discount_value") or 0))
+        discount_min_quantity = max(1, int(request.form.get("product_discount_min_quantity") or 1))
+        discount_min_subtotal = max(0, float(request.form.get("product_discount_min_subtotal") or 0))
+    except (TypeError, ValueError):
+        flash("One of the numeric product fields is invalid.", "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    stock_status = request.form.get("stock_status", "In Stock")
+    if stock_status not in {"In Stock", "Low Stock", "Out of Stock", "Coming Soon", "Unavailable"}:
+        stock_status = "In Stock"
+    status_state = request.form.get("status_state", "Operational")
+    if status_state not in {"Operational", "Degraded", "Offline", "Updating"}:
+        status_state = "Operational"
+    product_type = request.form.get("product_type", "product").lower()
+    if product_type not in {"product", "service", "download"}:
+        product_type = "product"
+
+    store = {
+        "enabled": bool(request.form.get("store_enabled")),
+        "stockStatus": stock_status,
+        "options": options,
+        "autoDiscount": {
+            "enabled": bool(request.form.get("product_discount_enabled")),
+            "label": (request.form.get("product_discount_label") or "Product discount").strip()[:80],
+            "type": "fixed" if request.form.get("product_discount_type") == "fixed" else "percent",
+            "value": discount_value,
+            "min_quantity": discount_min_quantity,
+            "min_subtotal": discount_min_subtotal,
+        },
+    }
+    fallback_url = (request.form.get("product_auto_base_url") or "").strip()
+    try:
+        if fallback_url:
+            store["autoDelivery"] = auto_delivery_dict_from_base_url(fallback_url, bool(request.form.get("product_auto_enabled")))
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("admin_dashboard") + "#products")
+
+    downloads = {
+        "enabled": bool(request.form.get("downloads_enabled")),
+        "version": (request.form.get("download_version") or "Latest").strip()[:40],
+        "downloadUrl": (request.form.get("download_url") or "").strip(),
+        "fileSize": (request.form.get("file_size") or "").strip()[:40],
+    }
+    upload = request.files.get("download_file")
+    if upload and upload.filename:
+        if not allowed_upload(upload.filename, "file"):
+            flash("That download file type is not allowed.", "danger")
+            return redirect(url_for("admin_dashboard") + "#products")
+        original = secure_filename(upload.filename)
+        ext = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
+        filename = f"{utc_now_naive().strftime('%Y%m%d')}-{uuid.uuid4().hex[:12]}.{ext}"
+        FILES_DIR.mkdir(parents=True, exist_ok=True)
+        local_path = FILES_DIR / filename
+        upload.save(local_path)
+        file_url = url_for("download_file", filename=filename)
+        mime_type = mimetypes.guess_type(original)[0] or "application/octet-stream"
+        gridfs_id = save_upload_to_mongo_storage(local_path, filename, original, "file", mime_type)
+        downloads["downloadUrl"] = file_url
+        downloads["fileSize"] = downloads["fileSize"] or human_file_size(local_path.stat().st_size)
+        save_media_record({"filename": filename, "original_name": original, "kind": "file", "url": file_url, "mime_type": mime_type, "size_bytes": local_path.stat().st_size, "storage": "mongodb_gridfs" if gridfs_id else "local_disk", "gridfs_id": gridfs_id, "created_at": utc_now().isoformat(), "created_by": (current_user() or {}).get("email")})
+
+    updated = normalize_product({
+        "id": product.get("id"), "slug": new_slug, "name": name,
+        "description": (request.form.get("description") or "").strip()[:500],
+        "detailedDescription": (request.form.get("detailed_description") or "").strip(),
+        "image": (request.form.get("image") or "/static/logo.png").strip(),
+        "category": (request.form.get("category") or "general").strip()[:60],
+        "type": product_type, "displayOrder": display_order,
+        "featured": bool(request.form.get("featured")), "features": features,
+        "store": store, "downloads": downloads,
+        "status": {"enabled": bool(request.form.get("status_enabled")), "state": status_state, "label": (request.form.get("status_label") or status_state).strip()[:50], "lastUpdated": (request.form.get("status_last_updated") or today_utc_date()).strip()},
+    })
+
     if using_mongo():
         products_col.delete_one({"slug": old_slug})
-        products_col.update_one({"slug": product["slug"]}, {"$set": product}, upsert=True)
+        products_col.update_one({"slug": new_slug}, {"$set": updated}, upsert=True)
     else:
-        products = [p for p in load_products() if str(p.get("slug", "")).lower() != old_slug]
-        products.append(product)
-        save_products_file(products)
-    flash("Product updated.", "success")
-    return redirect(url_for("admin_dashboard"))
+        saved = [updated if str(p.get("slug", "")).lower() == old_slug else p for p in products]
+        save_products_file(sorted(saved, key=lambda p: (int(p.get("displayOrder", 9999)), str(p.get("name", "")).lower())))
+    record_audit("product.updated", new_slug, {"old_slug": old_slug, "options": len(options)})
+    flash(f"{name} was fully updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#products")
 
 
 @app.route("/admin/product/<slug>/download", methods=["POST"])

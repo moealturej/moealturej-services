@@ -741,68 +741,86 @@ updatePricingButtons();
           <span class="order-number">{{ loop.index }}</span>
           <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div class="admin-product-summary"><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Order: {{ product.displayOrder if product.displayOrder is defined else loop.index0 }}</span><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div><div class="product-order-control"><span class="drag-handle"><i class="fas fa-grip-vertical"></i> Drag</span><button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button><button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button><button class="product-edit-toggle" type="button" aria-expanded="false"><i class="fas fa-sliders"></i><span>Edit</span></button></div></div>
           <div class="product-editor-body" hidden>
-          <form class="status-mini" action="/admin/status/{{ product.slug }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label><input type="checkbox" name="enabled" {% if product.status.enabled %}checked{% endif %}> Track</label>
-            <select name="state"><option {% if product.status.state == 'Operational' %}selected{% endif %}>Operational</option><option {% if product.status.state == 'Degraded' %}selected{% endif %}>Degraded</option><option {% if product.status.state == 'Offline' %}selected{% endif %}>Offline</option><option {% if product.status.state == 'Updating' %}selected{% endif %}>Updating</option></select>
-            <input name="label" value="{{ product.status.label or 'Online' }}"><button type="submit">Update</button>
-          </form>
-          <details class="download-editor"><summary>Update download file</summary>
-            <form class="download-update-grid" action="/admin/product/{{ product.slug }}/download" method="post" enctype="multipart/form-data">
+            <form class="full-product-editor" action="{{ url_for('admin_product_update', slug=product.slug) }}" method="post" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <label><span>New file</span><input type="file" name="download_file"></label>
-              <label><span>Version</span><input name="download_version" value="{{ product.downloads.version if product.downloads else 'Latest' }}" placeholder="v1.0.0"></label>
-              <label><span>File size</span><input name="file_size" value="{{ product.downloads.fileSize if product.downloads else '' }}" placeholder="Auto if uploading"></label>
-              <label class="wide"><span>Download URL</span><input name="download_url" value="{{ product.downloads.downloadUrl if product.downloads else '' }}" placeholder="/download/file.zip"></label>
-              <label class="inline-check"><input type="checkbox" name="downloads_enabled" {% if product.downloads.enabled %}checked{% endif %}> Show in downloads</label>
-              <button class="small-btn" type="submit"><i class="fas fa-cloud-arrow-up"></i> Save download</button>
-            </form>
-          </details>
-          <details class="auto-delivery-editor">
-            <summary><i class="fas fa-robot"></i> Auto-delivery API settings</summary>
-            <form class="auto-delivery-grid" action="{{ url_for('admin_product_auto_delivery_update', slug=product.slug) }}" method="post">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              {% set product_auto = (product.store.autoDelivery if product.store and product.store.autoDelivery is defined else {}) %}
-              <div class="auto-delivery-note wide">
-                Paste the base URL only. Example: <code>https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day</code>. The secret API key is appended on the backend from <code>RESELLING_PRO_API_KEY</code>.
-              </div>
-              <label class="wide"><span>Product fallback base URL</span><input name="product_auto_base_url" value="{{ product_auto.base_url if product_auto else '' }}" placeholder="Used when an option has no URL"></label>
-              <label class="inline-check wide"><input type="checkbox" name="product_auto_enabled" {% if product_auto and product_auto.enabled %}checked{% endif %}> Enable product fallback auto-delivery</label>
-              <div class="option-api-list wide">
-                {% for opt in product.store.options if product.store and product.store.options %}
-                  {% set option_key = (opt.id or opt.uniqid or opt.name)|string %}
-                  {% set option_auto = (opt.autoDelivery if opt.autoDelivery is defined else {}) %}
-                  <div class="option-api-row">
-                    <div>
-                      <strong>{{ opt.name }}</strong>
-                      <small>${{ '%.2f'|format(opt.price|float) }} · {{ option_key }}</small>
+
+              <details open class="product-edit-section"><summary><i class="fas fa-id-card"></i> Product information</summary>
+                <div class="admin-form-grid product-edit-grid">
+                  <label>Product name<input name="name" value="{{ product.name }}" required maxlength="100"></label>
+                  <label>URL slug<input name="slug" value="{{ product.slug }}" required maxlength="100"><small class="helper-text">Changing this updates the product URL.</small></label>
+                  <label>Category<input name="category" value="{{ product.category }}" maxlength="60"></label>
+                  <label>Product type<select name="product_type"><option value="product" {% if product.type == 'product' %}selected{% endif %}>Digital product</option><option value="service" {% if product.type == 'service' %}selected{% endif %}>Service</option><option value="download" {% if product.type == 'download' %}selected{% endif %}>Free download</option></select></label>
+                  <label>Display order<input name="display_order" type="number" min="0" step="1" value="{{ product.displayOrder or 0 }}"></label>
+                  <label class="inline-check product-featured"><input type="checkbox" name="featured" {% if product.featured %}checked{% endif %}> Featured product</label>
+                  <label class="wide">Product image URL<input name="image" value="{{ product.image }}" placeholder="/media/product-image.png"></label>
+                  <label class="wide">Short description<textarea name="description" rows="3" maxlength="500">{{ product.description or '' }}</textarea></label>
+                  <label class="wide">Features<textarea name="features_text" rows="6" placeholder="One feature per line">{{ (product.features or [])|join('\n') }}</textarea></label>
+                  <label class="wide">Detailed description<textarea name="detailed_description" rows="12" placeholder="Full product details">{{ product.detailedDescription or '' }}</textarea><small class="helper-text">You can edit the saved formatted description directly—no JSON required.</small></label>
+                </div>
+              </details>
+
+              <details open class="product-edit-section"><summary><i class="fas fa-cart-shopping"></i> Store & pricing</summary>
+                <div class="admin-form-grid product-edit-grid">
+                  <label class="inline-check"><input type="checkbox" name="store_enabled" {% if product.store.enabled %}checked{% endif %}> Show in Store</label>
+                  <label>Stock status<select name="stock_status">{% for value in ['In Stock','Low Stock','Out of Stock','Coming Soon','Unavailable'] %}<option {% if product.store.stockStatus == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+                  <div class="wide pricing-builder existing-pricing-builder">
+                    <div class="product-step-head"><div><strong>Pricing options</strong><small>Edit, remove, or add purchase durations and packages.</small></div><button class="small-btn add-edit-option" type="button"><i class="fas fa-plus"></i> Add option</button></div>
+                    <div class="edit-pricing-options">
+                      {% for opt in product.store.options %}
+                      {% set oa = opt.autoDelivery if opt.autoDelivery is defined else {} %}
+                      <div class="pricing-row edit-pricing-row">
+                        <input type="hidden" name="option_id" value="{{ opt.id or opt.uniqid or '' }}">
+                        <label>Option name<input name="option_name" value="{{ opt.name }}" required></label>
+                        <label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="{{ '%.2f'|format(opt.price|float) }}" required></label>
+                        <label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" value="{{ oa.base_url if oa else '' }}" placeholder="https://api.reselling.pro/rft/api/seller/keys/..."></label>
+                        <label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="{{ loop.index0 }}" {% if oa and oa.enabled %}checked{% endif %}> Auto deliver</label>
+                        <button class="danger-btn remove-edit-option" type="button" aria-label="Remove pricing option"><i class="fas fa-trash"></i></button>
+                      </div>
+                      {% else %}
+                      <div class="pricing-row edit-pricing-row"><input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button"><i class="fas fa-trash"></i></button></div>
+                      {% endfor %}
                     </div>
-                    <label>Base URL<input name="option_auto_base_url_{{ option_key }}" value="{{ option_auto.base_url if option_auto else '' }}" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/duration"></label>
-                    <label class="inline-check"><input type="checkbox" name="option_auto_enabled" value="{{ option_key }}" {% if option_auto and option_auto.enabled %}checked{% endif %}> Auto</label>
                   </div>
-                {% else %}
-                  <p class="muted">No pricing options yet. Add options in JSON or create a new product with options.</p>
-                {% endfor %}
-              </div>
-              <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save auto-delivery</button>
+                  {% set product_auto = product.store.autoDelivery if product.store.autoDelivery is defined else {} %}
+                  <label class="wide">Product fallback auto-delivery URL<input name="product_auto_base_url" value="{{ product_auto.base_url if product_auto else '' }}" placeholder="Used when an option has no URL"></label>
+                  <label class="inline-check wide"><input type="checkbox" name="product_auto_enabled" {% if product_auto and product_auto.enabled %}checked{% endif %}> Enable fallback auto-delivery</label>
+                </div>
+              </details>
+
+              <details class="product-edit-section"><summary><i class="fas fa-download"></i> Download settings</summary>
+                <div class="admin-form-grid product-edit-grid">
+                  <label class="inline-check wide"><input type="checkbox" name="downloads_enabled" {% if product.downloads.enabled %}checked{% endif %}> Show in Downloads / Loader</label>
+                  <label>Upload replacement file<input type="file" name="download_file"></label>
+                  <label>Version<input name="download_version" value="{{ product.downloads.version or 'Latest' }}"></label>
+                  <label>Displayed file size<input name="file_size" value="{{ product.downloads.fileSize or '' }}" placeholder="Auto when uploading"></label>
+                  <label class="wide">Download URL<input name="download_url" value="{{ product.downloads.downloadUrl or '' }}"></label>
+                </div>
+              </details>
+
+              <details class="product-edit-section"><summary><i class="fas fa-signal"></i> Status & availability</summary>
+                <div class="admin-form-grid product-edit-grid">
+                  <label class="inline-check"><input type="checkbox" name="status_enabled" {% if product.status.enabled %}checked{% endif %}> Show on Status page</label>
+                  <label>Status state<select name="status_state">{% for value in ['Operational','Degraded','Offline','Updating'] %}<option {% if product.status.state == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+                  <label>Status label<input name="status_label" value="{{ product.status.label or 'Online' }}"></label>
+                  <label>Last updated<input name="status_last_updated" type="date" value="{{ product.status.lastUpdated or '' }}"></label>
+                </div>
+              </details>
+
+              {% set pd = product.store.autoDiscount if product.store.autoDiscount is defined else {} %}
+              <details class="product-edit-section"><summary><i class="fas fa-tags"></i> Product discount</summary>
+                <div class="admin-form-grid product-edit-grid">
+                  <label class="inline-check wide"><input type="checkbox" name="product_discount_enabled" {% if pd.enabled %}checked{% endif %}> Enable automatic product discount</label>
+                  <label>Label<input name="product_discount_label" value="{{ pd.label or 'Product discount' }}"></label>
+                  <label>Type<select name="product_discount_type"><option value="percent" {% if pd.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if pd.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
+                  <label>Value<input name="product_discount_value" type="number" min="0" step="0.01" value="{{ pd.value or 0 }}"></label>
+                  <label>Minimum quantity<input name="product_discount_min_quantity" type="number" min="1" step="1" value="{{ pd.min_quantity or 1 }}"></label>
+                  <label>Minimum subtotal<input name="product_discount_min_subtotal" type="number" min="0" step="0.01" value="{{ pd.min_subtotal or 0 }}"></label>
+                </div>
+              </details>
+
+              <div class="full-product-savebar"><span><i class="fas fa-circle-check"></i> All product fields are editable here.</span><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save all product changes</button></div>
             </form>
-          </details>
-          <details class="auto-delivery-editor">
-            <summary><i class="fas fa-tags"></i> Product auto-discount</summary>
-            {% set pd = product.store.autoDiscount if product.store and product.store.autoDiscount is defined else {} %}
-            <form class="auto-delivery-grid" action="{{ url_for('admin_product_discount_update', slug=product.slug) }}" method="post">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <label class="inline-check wide"><input type="checkbox" name="product_discount_enabled" {% if pd.enabled %}checked{% endif %}> Enable auto discount for this product</label>
-              <label>Label<input name="product_discount_label" value="{{ pd.label or 'Product discount' }}"></label>
-              <label>Type<select name="product_discount_type"><option value="percent" {% if pd.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if pd.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
-              <label>Value<input name="product_discount_value" type="number" min="0" step="0.01" value="{{ pd.value or 0 }}"></label>
-              <label>Minimum quantity<input name="product_discount_min_quantity" type="number" min="1" step="1" value="{{ pd.min_quantity or 1 }}"></label>
-              <label class="wide">Minimum product line subtotal<input name="product_discount_min_subtotal" type="number" min="0" step="0.01" value="{{ pd.min_subtotal or 0 }}"></label>
-              <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save product discount</button>
-            </form>
-          </details>
-          <details class="json-editor"><summary>Edit full product JSON</summary><form action="/admin/product/{{ product.slug }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="product_json" rows="18">{{ product|tojson(indent=2) }}</textarea><div class="admin-actions"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save JSON</button></div></form></details>
-          <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete item</button></form>
+            <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete product</button></form>
           </div>
         </article>
         {% else %}<p class="muted">No products yet. Add your first item above.</p>{% endfor %}
@@ -1070,6 +1088,22 @@ document.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>newProductPanel.querySelector('input[name=name]')?.focus(),350);
   });
 
+  function reindexEditPricing(wrap){
+    const rows=[...wrap.querySelectorAll('.edit-pricing-row')];
+    rows.forEach((row,index)=>{const cb=row.querySelector('input[name="option_auto_enabled"]');if(cb)cb.value=String(index);const del=row.querySelector('.remove-edit-option');if(del)del.disabled=rows.length<=1;});
+  }
+  document.querySelectorAll('.existing-pricing-builder').forEach(builder=>{
+    const wrap=builder.querySelector('.edit-pricing-options');
+    reindexEditPricing(wrap);
+    builder.querySelector('.add-edit-option')?.addEventListener('click',()=>{
+      const index=wrap.querySelectorAll('.edit-pricing-row').length;
+      const row=document.createElement('div');row.className='pricing-row edit-pricing-row';
+      row.innerHTML=`<input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="NEW OPTION" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/..."></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="${index}"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button" aria-label="Remove pricing option"><i class="fas fa-trash"></i></button>`;
+      wrap.appendChild(row);reindexEditPricing(wrap);row.querySelector('input[name="option_name"]')?.focus();
+    });
+    wrap.addEventListener('click',event=>{const btn=event.target.closest('.remove-edit-option');if(!btn)return;const rows=wrap.querySelectorAll('.edit-pricing-row');if(rows.length>1){btn.closest('.edit-pricing-row')?.remove();reindexEditPricing(wrap);}});
+  });
+
   document.querySelectorAll('.product-edit-toggle').forEach(btn=>btn.addEventListener('click',event=>{
     event.stopPropagation(); const card=btn.closest('.admin-product'); const body=card?.querySelector('.product-editor-body'); if(!body)return;
     const opening=body.hidden; body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening)); btn.querySelector('span').textContent=opening?'Close':'Edit';
@@ -1231,6 +1265,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 .admin-page label.has-required>span:first-child::after{content:" *";color:#ff7e95}
 .admin-page input.is-invalid-smart{border-color:rgba(255,112,136,.7)!important;box-shadow:0 0 0 3px rgba(255,112,136,.08)!important}
 .admin-page .smart-duplicate{color:#ff8ca0!important}
+
+.full-product-editor{display:grid;gap:14px}.product-edit-section{border:1px solid rgba(196,139,255,.14);border-radius:18px;background:rgba(9,5,17,.48);overflow:hidden}.product-edit-section>summary{display:flex;align-items:center;gap:10px;padding:15px 17px;font-weight:900;cursor:pointer;background:rgba(168,85,247,.055)}.product-edit-section>summary i{color:#c889ff}.product-edit-section[open]>summary{border-bottom:1px solid rgba(255,255,255,.07)}.product-edit-grid{padding:17px}.product-featured{align-self:end;min-height:46px}.existing-pricing-builder{margin-top:4px}.edit-pricing-options{display:grid;gap:10px;margin-top:12px}.full-product-savebar{position:sticky;bottom:12px;z-index:12;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 15px;border:1px solid rgba(196,139,255,.28);border-radius:17px;background:rgba(14,7,25,.96);box-shadow:0 14px 38px rgba(0,0,0,.42);backdrop-filter:blur(16px)}.full-product-savebar span{font-weight:800;color:#d9c9e8}.full-product-savebar span i{color:#70e6ae;margin-right:7px}.remove-edit-option:disabled{opacity:.35;cursor:not-allowed}@media(max-width:760px){.full-product-savebar{align-items:stretch;flex-direction:column}.full-product-savebar .primary-cta{justify-content:center;width:100%}.product-edit-grid{padding:13px}.edit-pricing-row{grid-template-columns:1fr!important}}
 </style>
 <script>
 (function(){
