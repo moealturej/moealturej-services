@@ -1,83 +1,70 @@
 {% extends "base.html" %}
-{% block title %}{{ ticket.ticket_id }} | Support{% endblock %}
+{% block title %}{{ ticket.ticket_id }} | Live Support{% endblock %}
 {% block extra_head %}
 <style>
 .ticket-page{padding:24px 0 72px}.ticket-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
-.chat-card,.ticket-side{border:1px solid rgba(216,180,254,.14);background:#11111a;box-shadow:0 24px 70px rgba(0,0,0,.34)}
-.chat-card{border-radius:22px;overflow:hidden}.chat-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:15px 18px;background:#242432;border-bottom:1px solid rgba(255,255,255,.06)}
-.chat-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#09090e;border:1px solid rgba(255,255,255,.1)}
-.chat-person h1{font-size:15px;margin:0;color:#fff;letter-spacing:0}.chat-person p{font-size:12px;margin:3px 0 0;color:#aaa6b8}
-.chat-status{padding:7px 10px;border-radius:999px;font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
-.chat-status.waiting{color:#ffd27d}.chat-status.answered{color:#67e0a2}.chat-status.closed{color:#9b96a7}
-.chat-scroll{height:min(62vh,650px);min-height:430px;overflow:auto;padding:18px;background:#161620;scrollbar-color:#666271 transparent}
-.message-row{display:flex;gap:9px;margin:0 0 13px;align-items:flex-end}.message-row.mine{justify-content:flex-end}.message-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#0b0b10;flex:0 0 auto}
-.message-stack{max-width:min(76%,720px)}.message-meta{display:flex;gap:8px;align-items:center;margin:0 8px 5px;color:#8f8a9c;font-size:10px}.mine .message-meta{justify-content:flex-end}
-.message-bubble{padding:11px 13px;border-radius:6px 15px 15px 15px;background:#31313f;color:#fff;line-height:1.5;font-size:14px;white-space:pre-wrap;word-break:break-word;border:1px solid rgba(255,255,255,.035)}
-.mine .message-bubble{background:linear-gradient(135deg,#4777ff,#5b83ff);border-radius:15px 6px 15px 15px}
-.message-receipt{display:flex;justify-content:flex-end;gap:4px;margin:4px 4px 0;color:#8f8a9c;font-size:9px}.message-receipt.read{color:#9fc0ff}
-.attach-list{display:grid;gap:6px;margin-top:8px}.attach-list a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08);color:#fff;text-decoration:none;font-size:11px}.attach-list img{max-width:320px;max-height:220px;border-radius:10px;object-fit:cover}
-.chat-compose{padding:12px;background:#1b1b26;border-top:1px solid rgba(255,255,255,.06)}.compose-box{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:end;background:#2b2b3b;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 9px}
-.compose-box textarea{resize:none;max-height:150px;min-height:30px;border:0!important;background:transparent!important;box-shadow:none!important;padding:6px!important;color:#fff;font:inherit;outline:none}.compose-icon,.send-btn{width:36px;height:36px;border:0;border-radius:9px;display:grid;place-items:center;cursor:pointer}.compose-icon{background:transparent;color:#bcb8c8}.send-btn{background:#567eff;color:#fff}
-.file-input{display:none}.file-strip{display:none;margin:8px 2px 0;color:#aaa6b8;font-size:11px}.file-strip.show{display:block}
-.ticket-side{position:sticky;top:92px;border-radius:22px;padding:18px;background:#11111a}.ticket-side h2{font-size:13px;margin:0 0 12px;color:#fff;text-transform:uppercase;letter-spacing:.08em}.detail-grid{display:grid;gap:10px}.detail-item{padding:10px 11px;border-radius:12px;background:#1b1b25;border:1px solid rgba(255,255,255,.05)}.detail-item span{display:block;color:#817c8c;font-size:9px;text-transform:uppercase;font-weight:900;letter-spacing:.08em}.detail-item strong{display:block;color:#eeeaf5;font-size:12px;margin-top:4px;word-break:break-word}.side-actions{display:grid;gap:8px;margin-top:15px}.side-actions form{display:grid;gap:8px}.side-actions select{width:100%;border-radius:10px;background:#1b1b25;color:#fff;border:1px solid rgba(255,255,255,.08);padding:10px}
-@media(max-width:900px){.ticket-layout{grid-template-columns:1fr}.ticket-side{position:static}.chat-scroll{height:58vh}.message-stack{max-width:88%}}
+.chat-card,.ticket-side{border:1px solid rgba(216,180,254,.14);background:#101018;box-shadow:0 24px 70px rgba(0,0,0,.34)}
+.chat-card{border-radius:24px;overflow:hidden}.chat-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:15px 18px;background:#1c1c29;border-bottom:1px solid rgba(255,255,255,.06)}
+.chat-avatar{width:44px;height:44px;border-radius:14px;object-fit:cover;background:#09090e;border:1px solid rgba(255,255,255,.1)}
+.chat-person h1{font-size:15px;margin:0;color:#fff}.chat-person p{font-size:11px;margin:4px 0 0;color:#aaa6b8}.presence{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:10px;color:#888395}.presence-dot{width:7px;height:7px;border-radius:50%;background:#6d6879}.presence.online{color:#75e6a8}.presence.online .presence-dot{background:#45d98b;box-shadow:0 0 0 4px rgba(69,217,139,.1)}
+.chat-status{padding:7px 10px;border-radius:999px;font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}.chat-status.waiting{color:#ffd27d}.chat-status.answered{color:#67e0a2}.chat-status.closed{color:#9b96a7}
+.connection-bar{display:none;padding:7px 14px;text-align:center;font-size:11px;background:#38220f;color:#ffd7a1;border-bottom:1px solid rgba(255,255,255,.06)}.connection-bar.show{display:block}
+.chat-scroll{height:min(64vh,680px);min-height:440px;overflow:auto;padding:20px 18px;background:radial-gradient(circle at 50% 0%,rgba(102,62,180,.07),transparent 34%),#14141e;scrollbar-color:#666271 transparent}
+.day-label{text-align:center;margin:12px 0;color:#777181;font-size:10px}.message-row{display:flex;gap:9px;margin:0 0 14px;align-items:flex-end}.message-row.mine{justify-content:flex-end}.message-avatar{width:32px;height:32px;border-radius:11px;object-fit:cover;background:#0b0b10;flex:0 0 auto}.message-stack{max-width:min(76%,720px)}.message-meta{display:flex;gap:8px;align-items:center;margin:0 7px 5px;color:#8f8a9c;font-size:10px}.mine .message-meta{justify-content:flex-end}.message-bubble{padding:11px 13px;border-radius:7px 16px 16px 16px;background:#2a2a38;color:#fff;line-height:1.5;font-size:14px;white-space:pre-wrap;word-break:break-word;border:1px solid rgba(255,255,255,.04)}.mine .message-bubble{background:linear-gradient(135deg,#6f3fe5,#8758ef);border-radius:16px 7px 16px 16px}.message-row.pending{opacity:.7}.message-row.failed .message-bubble{outline:1px solid #ff6f79}.message-receipt{display:flex;justify-content:flex-end;gap:4px;margin:4px 4px 0;color:#8f8a9c;font-size:9px}.message-receipt.read{color:#b9a4ff}
+.attach-list{display:grid;gap:6px;margin-top:8px}.attach-list a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08);color:#fff;text-decoration:none;font-size:11px}.attach-preview{max-width:320px;max-height:220px;border-radius:10px;object-fit:cover;display:block;margin-top:7px}
+.typing-row{display:none;align-items:center;gap:8px;color:#aaa6b8;font-size:11px;margin:4px 0 12px 42px}.typing-row.show{display:flex}.typing-dots{display:flex;gap:3px;padding:8px 10px;border-radius:12px;background:#292936}.typing-dots i{width:5px;height:5px;border-radius:50%;background:#b7b2c3;animation:type 1.2s infinite}.typing-dots i:nth-child(2){animation-delay:.15s}.typing-dots i:nth-child(3){animation-delay:.3s}@keyframes type{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-3px);opacity:1}}
+.chat-compose{padding:12px;background:#1a1a25;border-top:1px solid rgba(255,255,255,.06)}.compose-box{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:end;background:#272737;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:7px 8px}.compose-box:focus-within{border-color:rgba(168,85,247,.45);box-shadow:0 0 0 3px rgba(168,85,247,.08)}.compose-box textarea{resize:none;max-height:150px;min-height:34px;border:0!important;background:transparent!important;box-shadow:none!important;padding:7px!important;color:#fff;font:inherit;outline:none}.compose-icon,.send-btn{width:38px;height:38px;border:0;border-radius:11px;display:grid;place-items:center;cursor:pointer}.compose-icon{background:transparent;color:#bcb8c8}.send-btn{background:linear-gradient(135deg,#7548e8,#9668f1);color:#fff}.send-btn:disabled{opacity:.45;cursor:not-allowed}.file-input{display:none}.file-strip{display:none;gap:7px;flex-wrap:wrap;margin:9px 2px 0}.file-strip.show{display:flex}.file-chip{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:9px;background:#292938;color:#d7d2df;font-size:10px;border:1px solid rgba(255,255,255,.06)}.compose-note{display:flex;justify-content:space-between;gap:10px;margin:7px 3px 0;color:#777181;font-size:9px}
+.ticket-side{position:sticky;top:92px;border-radius:22px;padding:18px}.ticket-side h2{font-size:13px;margin:0 0 12px;color:#fff;text-transform:uppercase;letter-spacing:.08em}.detail-grid{display:grid;gap:10px}.detail-item{padding:10px 11px;border-radius:12px;background:#1b1b25;border:1px solid rgba(255,255,255,.05)}.detail-item span{display:block;color:#817c8c;font-size:9px;text-transform:uppercase;font-weight:900;letter-spacing:.08em}.detail-item strong{display:block;color:#eeeaf5;font-size:12px;margin-top:4px;word-break:break-word}.side-actions{display:grid;gap:8px;margin-top:15px}.side-actions form{display:grid;gap:8px}.side-actions select{width:100%;border-radius:10px;background:#1b1b25;color:#fff;border:1px solid rgba(255,255,255,.08);padding:10px}
+.toast-live{position:fixed;right:20px;bottom:20px;z-index:9999;display:none;padding:11px 14px;border-radius:12px;background:#211c2c;border:1px solid rgba(168,85,247,.3);color:#fff;box-shadow:0 20px 50px rgba(0,0,0,.4);font-size:12px}.toast-live.show{display:block}
+@media(max-width:900px){.ticket-layout{grid-template-columns:1fr}.ticket-side{position:static}.chat-scroll{height:58vh;min-height:390px}.message-stack{max-width:88%}.chat-head{grid-template-columns:auto minmax(0,1fr)}.chat-status{grid-column:2;width:max-content}.compose-note{display:none}}
 </style>
 {% endblock %}
 {% block content %}
 <section class="ticket-page"><div class="container"><div class="ticket-layout">
-<main class="chat-card">
+<main class="chat-card" data-ticket-id="{{ ticket.ticket_id }}" data-staff-view="{{ '1' if staff_view else '0' }}">
   <header class="chat-head">
     <img class="chat-avatar" src="{{ ticket.product_image or '/static/logo.png' }}" alt="">
-    <div class="chat-person"><h1>{{ ticket.subject }}</h1><p>{{ ticket.product_name }} · {{ ticket.option_name }} · {{ ticket.ticket_id }}</p></div>
-    <span class="chat-status {{ ticket.status }}">{{ ticket.status }}</span>
+    <div class="chat-person"><h1>{{ ticket.subject }}</h1><p>{{ ticket.product_name }} · {{ ticket.option_name }} · {{ ticket.ticket_id }}</p><div class="presence" id="presence"><span class="presence-dot"></span><span id="presenceText">Connecting…</span></div></div>
+    <span class="chat-status {{ ticket.status }}" id="chatStatus">{{ ticket.status }}</span>
   </header>
+  <div class="connection-bar" id="connectionBar">Connection interrupted. Reconnecting automatically…</div>
+  <div class="chat-scroll" id="chatScroll"><div id="messageList"></div><div class="typing-row" id="typingRow"><div class="typing-dots"><i></i><i></i><i></i></div><span>{{ 'Customer' if staff_view else 'Support' }} is typing…</span></div></div>
 
-  <div class="chat-scroll" id="chatScroll">
-    {% for msg in ticket.messages %}
-      {% set mine = (staff_view and msg.actor_kind == 'staff') or ((not staff_view) and msg.actor_kind != 'staff') %}
-      <div class="message-row {{ 'mine' if mine else 'theirs' }}">
-        {% if not mine %}<img class="message-avatar" src="{{ ticket.product_image or '/static/logo.png' }}" alt="">{% endif %}
-        <div class="message-stack">
-          <div class="message-meta"><strong>{{ 'You' if mine else ('Support' if msg.actor_kind == 'staff' else (msg.actor.username or msg.actor.email or 'Customer')) }}</strong><span>{{ msg.created_at }}</span></div>
-          <div class="message-bubble">{{ msg.body }}{% if msg.attachments %}<div class="attach-list">{% for file in msg.attachments %}<a href="{{ file.url }}" target="_blank"><i class="fas fa-paperclip"></i><span>{{ file.original_name }}</span></a>{% endfor %}</div>{% endif %}</div>
-          {% if mine %}
-            {% set was_read = msg.read_by_customer if msg.actor_kind == 'staff' else msg.read_by_staff %}
-            <div class="message-receipt {{ 'read' if was_read else '' }}"><i class="fas fa-check{{ '-double' if was_read else '' }}"></i> {{ 'Read' if was_read else 'Sent' }}</div>
-          {% endif %}
-        </div>
-        {% if mine %}<img class="message-avatar" src="{{ session.get('user', {}).get('avatar_url') or '/static/logo.png' }}" alt="">{% endif %}
-      </div>
-    {% else %}<p class="muted">No messages yet.</p>{% endfor %}
-  </div>
-
-  {% if ticket.status != 'closed' or staff_view %}
-  <form class="chat-compose" action="{{ url_for('support_ticket_reply', ticket_id=ticket.ticket_id) }}" method="post" enctype="multipart/form-data">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <form class="chat-compose" id="chatForm" action="{{ url_for('support_ticket_reply', ticket_id=ticket.ticket_id) }}" method="post" enctype="multipart/form-data" {% if ticket.status == 'closed' and not staff_view %}hidden{% endif %}>
+    <input type="hidden" name="csrf_token" id="csrfToken" value="{{ csrf_token() }}">
     <div class="compose-box">
       <label class="compose-icon" title="Attach files"><i class="fas fa-paperclip"></i><input class="file-input" id="ticketFiles" type="file" name="attachments" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.txt,.pdf,.zip,.rar,.7z,.json"></label>
-      <textarea id="ticketMessage" name="message" rows="1" maxlength="3000" required placeholder="Say something..."></textarea>
-      <button class="send-btn" type="submit" title="Send reply"><i class="fas fa-paper-plane"></i></button>
+      <textarea id="ticketMessage" name="message" rows="1" maxlength="3000" placeholder="Type a message…" autocomplete="off"></textarea>
+      <button class="send-btn" id="sendButton" type="submit" title="Send message"><i class="fas fa-paper-plane"></i></button>
     </div>
-    <div class="file-strip" id="fileStrip"></div>
+    <div class="file-strip" id="fileStrip"></div><div class="compose-note"><span>Enter to send · Shift + Enter for a new line</span><span id="charCount">0 / 3000</span></div>
   </form>
-  {% else %}<div class="chat-compose"><p class="muted">This ticket is closed. Open a new ticket from the purchase if you still need help.</p></div>{% endif %}
+  <div class="chat-compose" id="closedNotice" {% if ticket.status != 'closed' or staff_view %}hidden{% endif %}><p class="muted">This conversation is closed. Open a new ticket from the purchase if you still need help.</p></div>
 </main>
-
-<aside class="ticket-side">
-  <h2>Conversation details</h2>
-  <div class="detail-grid">
-    <div class="detail-item"><span>Product</span><strong>{{ ticket.product_name }}</strong></div>
-    <div class="detail-item"><span>Order</span><strong>{{ ticket.order_id }}</strong></div>
-    <div class="detail-item"><span>Customer</span><strong>{{ ticket.user_email }}</strong></div>
-    <div class="detail-item"><span>Updated</span><strong>{{ ticket.updated_at or ticket.created_at }}</strong></div>
-  </div>
-  {% if staff_view %}<div class="side-actions">
-    <form action="{{ url_for('support_ticket_status', ticket_id=ticket.ticket_id) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status"><option value="open" {{ 'selected' if ticket.status == 'open' }}>Open</option><option value="waiting" {{ 'selected' if ticket.status == 'waiting' }}>Waiting</option><option value="answered" {{ 'selected' if ticket.status == 'answered' }}>Answered</option><option value="closed" {{ 'selected' if ticket.status == 'closed' }}>Closed</option></select><button class="secondary-cta" type="submit">Update status</button></form>
-    <form action="{{ url_for('support_ticket_delete', ticket_id=ticket.ticket_id) }}" method="post" onsubmit="return confirm('Delete this ticket and all uploaded files?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete ticket</button></form>
-  </div>{% endif %}
-</aside>
-</div></div></section>
+<aside class="ticket-side"><h2>Conversation details</h2><div class="detail-grid"><div class="detail-item"><span>Product</span><strong>{{ ticket.product_name }}</strong></div><div class="detail-item"><span>Order</span><strong>{{ ticket.order_id }}</strong></div><div class="detail-item"><span>Customer</span><strong>{{ ticket.user_email }}</strong></div><div class="detail-item"><span>Updated</span><strong id="updatedAt">{{ ticket.updated_at or ticket.created_at }}</strong></div></div>
+{% if staff_view %}<div class="side-actions"><form action="{{ url_for('support_ticket_status', ticket_id=ticket.ticket_id) }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status"><option value="open" {{ 'selected' if ticket.status == 'open' }}>Open</option><option value="waiting" {{ 'selected' if ticket.status == 'waiting' }}>Waiting</option><option value="answered" {{ 'selected' if ticket.status == 'answered' }}>Answered</option><option value="closed" {{ 'selected' if ticket.status == 'closed' }}>Closed</option></select><button class="secondary-cta" type="submit">Update status</button></form><form action="{{ url_for('support_ticket_delete', ticket_id=ticket.ticket_id) }}" method="post" onsubmit="return confirm('Delete this ticket and all uploaded files?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete ticket</button></form></div>{% endif %}
+</aside></div></div></section><div class="toast-live" id="liveToast"></div>
 <script>
-(()=>{const sc=document.getElementById('chatScroll');if(sc)sc.scrollTop=sc.scrollHeight;const ta=document.getElementById('ticketMessage');if(ta)ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(150,ta.scrollHeight)+'px'});const f=document.getElementById('ticketFiles'),s=document.getElementById('fileStrip');if(f&&s)f.addEventListener('change',()=>{const names=[...f.files].map(x=>x.name);s.textContent=names.length?`${names.length} file${names.length===1?'':'s'} selected: ${names.join(', ')}`:'';s.classList.toggle('show',!!names.length)})})();
+(()=>{
+const root=document.querySelector('.chat-card'),ticketId=root.dataset.ticketId,staffView=root.dataset.staffView==='1';
+const list=document.getElementById('messageList'),scroll=document.getElementById('chatScroll'),form=document.getElementById('chatForm'),ta=document.getElementById('ticketMessage'),files=document.getElementById('ticketFiles'),fileStrip=document.getElementById('fileStrip'),send=document.getElementById('sendButton'),statusEl=document.getElementById('chatStatus'),presence=document.getElementById('presence'),presenceText=document.getElementById('presenceText'),typingRow=document.getElementById('typingRow'),bar=document.getElementById('connectionBar'),closedNotice=document.getElementById('closedNotice'),updatedAt=document.getElementById('updatedAt'),charCount=document.getElementById('charCount'),csrf=document.getElementById('csrfToken').value;
+let known=new Map(),firstLoad=true,pollTimer=null,typingTimer=null,lastTyping=false,inFlight=false,failures=0;
+const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const isImage=f=>String(f.content_type||'').startsWith('image/')||/\.(png|jpe?g|gif|webp)$/i.test(f.original_name||'');
+const time=s=>{try{return new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',month:'short',day:'numeric'}).format(new Date(s))}catch{return s||''}};
+function nearBottom(){return scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight<120}
+function attachments(items){if(!items?.length)return'';return `<div class="attach-list">${items.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener"><i class="fas fa-paperclip"></i><span>${esc(f.original_name)}</span></a>${isImage(f)?`<a href="${esc(f.url)}" target="_blank" rel="noopener"><img class="attach-preview" src="${esc(f.url)}" alt="${esc(f.original_name)}"></a>`:''}`).join('')}</div>`}
+function row(m){const avatar=m.mine?'{{ session.get("user", {}).get("avatar_url") or "/static/logo.png" }}':(m.avatar_url||'{{ ticket.product_image or "/static/logo.png" }}');return `<div class="message-row ${m.mine?'mine':'theirs'}" data-id="${esc(m.id)}">${!m.mine?`<img class="message-avatar" src="${esc(avatar)}" alt="">`:''}<div class="message-stack"><div class="message-meta"><strong>${esc(m.sender)}</strong><span>${esc(time(m.created_at))}</span></div><div class="message-bubble">${esc(m.body)}${attachments(m.attachments)}</div>${m.mine?`<div class="message-receipt ${m.read?'read':''}"><i class="fas fa-check${m.read?'-double':''}"></i> ${m.read?'Read':'Sent'}</div>`:''}</div>${m.mine?`<img class="message-avatar" src="${esc(avatar)}" alt="">`:''}</div>`}
+function render(messages){const stick=firstLoad||nearBottom();const incoming=[];for(const m of messages){if(!known.has(m.id)){known.set(m.id,m);list.insertAdjacentHTML('beforeend',row(m));if(!firstLoad&&!m.mine)incoming.push(m)}else{const old=known.get(m.id);if(old.read!==m.read){known.set(m.id,m);const el=list.querySelector(`[data-id="${CSS.escape(m.id)}"] .message-receipt`);if(el){el.classList.toggle('read',m.read);el.innerHTML=`<i class="fas fa-check${m.read?'-double':''}"></i> ${m.read?'Read':'Sent'}`}}}}
+if(stick)scroll.scrollTop=scroll.scrollHeight;if(incoming.length&&document.hidden){document.title=`(${incoming.length}) New reply · ${ticketId}`;try{new Audio('data:audio/wav;base64,UklGRl9vT19tele').play().catch(()=>{})}catch{}}firstLoad=false}
+async function pulse(typing=false){try{await fetch(`/support/tickets/${encodeURIComponent(ticketId)}/presence`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify({typing}),credentials:'same-origin'})}catch{}}
+async function poll(){if(inFlight)return;inFlight=true;try{const r=await fetch(`/support/tickets/${encodeURIComponent(ticketId)}/live`,{headers:{Accept:'application/json'},cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error('sync failed');const d=await r.json();render(d.messages||[]);statusEl.textContent=d.status;statusEl.className=`chat-status ${d.status}`;updatedAt.textContent=d.updated_at||updatedAt.textContent;presence.classList.toggle('online',!!d.other_online);presenceText.textContent=d.other_online?'Online now':'Offline';typingRow.classList.toggle('show',!!d.other_typing);if(d.closed&&!staffView){form.hidden=true;closedNotice.hidden=false}else if(!d.closed||staffView){form.hidden=false;closedNotice.hidden=true}failures=0;bar.classList.remove('show')}catch(e){failures++;if(failures>1)bar.classList.add('show')}finally{inFlight=false;clearTimeout(pollTimer);pollTimer=setTimeout(poll,failures?3000:1200)}}
+form?.addEventListener('submit',async e=>{e.preventDefault();const body=ta.value.trim();if(body.length<2||send.disabled)return;send.disabled=true;const data=new FormData(form);try{const r=await fetch(form.action,{method:'POST',body:data,headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Message could not be sent.');ta.value='';ta.style.height='auto';files.value='';fileStrip.innerHTML='';fileStrip.classList.remove('show');charCount.textContent='0 / 3000';await pulse(false);await poll()}catch(err){const toast=document.getElementById('liveToast');toast.textContent=err.message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3200)}finally{send.disabled=false;ta.focus()}});
+ta?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit()}});
+ta?.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(150,ta.scrollHeight)+'px';charCount.textContent=`${ta.value.length} / 3000`;const typing=ta.value.trim().length>0;if(typing!==lastTyping){lastTyping=typing;pulse(typing)}clearTimeout(typingTimer);typingTimer=setTimeout(()=>{lastTyping=false;pulse(false)},2500)});
+files?.addEventListener('change',()=>{const arr=[...files.files];fileStrip.innerHTML=arr.map(f=>`<span class="file-chip"><i class="fas fa-file"></i>${esc(f.name)}</span>`).join('');fileStrip.classList.toggle('show',arr.length>0)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){document.title=`${ticketId} | Live Support`;poll();pulse(false)}});window.addEventListener('beforeunload',()=>{navigator.sendBeacon?.(`/support/tickets/${encodeURIComponent(ticketId)}/presence`,new Blob([JSON.stringify({typing:false})],{type:'application/json'}))});
+scroll.scrollTop=scroll.scrollHeight;pulse(false);poll();setInterval(()=>pulse(lastTyping),7000);
+})();
 </script>
 {% endblock %}

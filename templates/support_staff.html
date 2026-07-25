@@ -16,4 +16,14 @@
 <div class="ticket-side-meta"><span class="pill {{ ticket.status }}">{{ ticket.status }}</span><span class="ticket-time">{{ ticket.updated_at }}</span></div>
 </a>{% else %}<div style="padding:28px"><p class="muted">No support tickets match this filter.</p></div>{% endfor %}</div>
 </section></div></section>
+<script>
+(()=>{
+const list=document.querySelector('.ticket-list');if(!list)return;
+const params=new URLSearchParams(location.search),status=params.get('status')||'';
+let known='';
+const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const render=tickets=>{const signature=JSON.stringify(tickets.map(t=>[t.ticket_id,t.status,t.updated_at,t.unread]));if(signature===known)return;known=signature;list.innerHTML=tickets.length?tickets.map(t=>`<a class="ticket-row" href="${esc(t.url)}"><img src="${esc(t.product_image)}" alt=""><div class="ticket-copy"><div class="ticket-topline"><h3>${esc(t.subject)}</h3>${t.unread?`<span style="min-width:19px;height:19px;padding:0 6px;border-radius:999px;display:grid;place-items:center;background:#8b5cf6;color:#fff;font-size:9px;font-weight:900">${t.unread}</span>`:''}</div><p>${esc(t.user_email)} · ${esc(t.product_name)} · ${esc(t.last_message)}</p></div><div class="ticket-side-meta"><span class="pill ${esc(t.status)}">${esc(t.status)}</span><span class="ticket-time">${esc(t.updated_at)}</span></div></a>`).join(''):'<div style="padding:28px"><p class="muted">No support tickets match this filter.</p></div>'};
+async function sync(){try{const r=await fetch(`/support/staff/live?status=${encodeURIComponent(status)}`,{headers:{Accept:'application/json'},cache:'no-store'});if(r.ok){const d=await r.json();render(d.tickets||[])}}catch{}finally{setTimeout(sync,1800)}}sync();
+})();
+</script>
 {% endblock %}

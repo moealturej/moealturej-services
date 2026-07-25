@@ -2155,6 +2155,23 @@ def save_support_ticket(ticket: dict) -> None:
     SUPPORT_TICKETS_FILE.write_text(json.dumps(tickets[:1000], indent=2), encoding="utf-8")
 
 
+def save_support_live_state(ticket_id: str, live_state: dict) -> None:
+    """Persist ephemeral presence without changing conversation sort/update time."""
+    if using_mongo() and support_tickets_col is not None:
+        support_tickets_col.update_one({"ticket_id": ticket_id}, {"$set": {"live_state": live_state}})
+        return
+    DATA_DIR.mkdir(exist_ok=True)
+    try:
+        tickets = json.loads(SUPPORT_TICKETS_FILE.read_text(encoding="utf-8")) if SUPPORT_TICKETS_FILE.exists() else []
+    except Exception:
+        tickets = []
+    for item in tickets:
+        if str(item.get("ticket_id")) == str(ticket_id):
+            item["live_state"] = live_state
+            break
+    SUPPORT_TICKETS_FILE.write_text(json.dumps(tickets[:1000], indent=2), encoding="utf-8")
+
+
 def delete_support_ticket(ticket_id: str) -> bool:
     ticket = find_support_ticket(ticket_id)
     if not ticket:
@@ -3298,6 +3315,28 @@ def support_ticket_detail(ticket_id):
         abort(404)
 
     staff_view = has_support_access(user)
+    mark_ticket_read(ticket, staff_view)
+    return render_template("ticket_detail.html", active_page="support", ticket=ticket, staff_view=staff_view)
+
+
+def ticket_message_payload(msg: dict, staff_view: bool) -> dict:
+    actor_kind = str(msg.get("actor_kind") or "customer")
+    mine = (staff_view and actor_kind == "staff") or ((not staff_view) and actor_kind != "staff")
+    actor = msg.get("actor") or {}
+    return {
+        "id": str(msg.get("id") or ""),
+        "body": str(msg.get("body") or ""),
+        "actor_kind": actor_kind,
+        "mine": mine,
+        "sender": "You" if mine else ("Support" if actor_kind == "staff" else (actor.get("username") or actor.get("email") or "Customer")),
+        "avatar_url": actor.get("avatar_url") or "/static/logo.png",
+        "created_at": str(msg.get("created_at") or ""),
+        "attachments": msg.get("attachments") or [],
+        "read": bool(msg.get("read_by_customer") if actor_kind == "staff" else msg.get("read_by_staff")),
+    }
+
+
+def mark_ticket_read(ticket: dict, staff_view: bool) -> bool:
     changed = False
     seen_at = utc_now().isoformat()
     for msg in ticket.get("messages") or []:
@@ -3311,33 +3350,107 @@ def support_ticket_detail(ticket_id):
             changed = True
     if changed:
         save_support_ticket(ticket)
+    return changed
 
-    return render_template("ticket_detail.html", active_page="support", ticket=ticket, staff_view=staff_view)
+
+@app.route("/support/tickets/<ticket_id>/live")
+@login_required
+@limiter.limit("240 per minute")
+def support_ticket_live(ticket_id):
+    ticket = find_support_ticket(ticket_id)
+    user = current_user() or {}
+    if not user_can_view_ticket(ticket, user):
+        abort(404)
+    staff_view = has_support_access(user)
+    mark_ticket_read(ticket, staff_view)
+    ticket = find_support_ticket(ticket_id) or ticket
+    live_state = ticket.get("live_state") or {}
+    other_key = "customer" if staff_view else "staff"
+    other = live_state.get(other_key) or {}
+    try:
+        other_seen = datetime.fromisoformat(str(other.get("seen_at") or "").replace("Z", "+00:00"))
+        if other_seen.tzinfo is None:
+            other_seen = other_seen.replace(tzinfo=timezone.utc)
+        online = (utc_now() - other_seen).total_seconds() < 12
+    except Exception:
+        online = False
+    try:
+        typed_at = datetime.fromisoformat(str(other.get("typing_at") or "").replace("Z", "+00:00"))
+        if typed_at.tzinfo is None:
+            typed_at = typed_at.replace(tzinfo=timezone.utc)
+        typing = bool(other.get("typing")) and (utc_now() - typed_at).total_seconds() < 5
+    except Exception:
+        typing = False
+    return jsonify({
+        "ok": True,
+        "ticket_id": ticket_id,
+        "status": normalize_ticket_status(ticket.get("status")),
+        "updated_at": ticket.get("updated_at"),
+        "messages": [ticket_message_payload(m, staff_view) for m in (ticket.get("messages") or [])],
+        "other_online": online,
+        "other_typing": typing,
+        "closed": normalize_ticket_status(ticket.get("status")) == "closed",
+    })
+
+
+@app.route("/support/tickets/<ticket_id>/presence", methods=["POST"])
+@login_required
+@limiter.limit("180 per minute")
+def support_ticket_presence(ticket_id):
+    ticket = find_support_ticket(ticket_id)
+    user = current_user() or {}
+    if not user_can_view_ticket(ticket, user):
+        abort(404)
+    payload = request.get_json(silent=True) or {}
+    side = "staff" if has_support_access(user) else "customer"
+    now_iso = utc_now().isoformat()
+    live_state = ticket.get("live_state") or {}
+    state = live_state.get(side) or {}
+    state.update({
+        "seen_at": now_iso,
+        "typing": bool(payload.get("typing")),
+        "typing_at": now_iso,
+        "user_email": user.get("email"),
+    })
+    live_state[side] = state
+    ticket["live_state"] = live_state
+    save_support_live_state(ticket_id, live_state)
+    return jsonify({"ok": True})
 
 
 @app.route("/support/tickets/<ticket_id>/reply", methods=["POST"])
 @login_required
-@limiter.limit("20 per hour")
+@limiter.limit("60 per hour")
 def support_ticket_reply(ticket_id):
+    wants_json = request.headers.get("X-Requested-With") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", "")
     ticket = find_support_ticket(ticket_id)
     user = current_user() or {}
     if not user_can_view_ticket(ticket, user):
         abort(404)
     if normalize_ticket_status(ticket.get("status")) == "closed" and not has_support_access(user):
-        flash("This ticket is closed. Open a new purchase ticket if you still need help.", "warning")
+        message = "This ticket is closed. Open a new purchase ticket if you still need help."
+        if wants_json:
+            return jsonify({"ok": False, "error": message}), 409
+        flash(message, "warning")
         return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
     body = request.form.get("message", "").strip()[:3000]
     if len(body) < 2:
+        if wants_json:
+            return jsonify({"ok": False, "error": "Type a message before sending."}), 400
         flash("Type a message before sending.", "warning")
         return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
     attachments, upload_error = save_support_attachments(ticket_id, request.files.getlist("attachments"))
     if upload_error:
+        if wants_json:
+            return jsonify({"ok": False, "error": upload_error}), 400
         flash(upload_error, "danger")
         return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
     if normalize_ticket_status(ticket.get("status")) == "closed" and has_support_access(user):
         ticket["status"] = "open"
-    append_ticket_message(ticket, user, body, attachments)
+    msg = append_ticket_message(ticket, user, body, attachments)
     record_audit("support.ticket_reply", ticket_id, {"actor": user.get("email")})
+    if wants_json:
+        return jsonify({"ok": True, "message": ticket_message_payload(msg, has_support_access(user)), "status": ticket.get("status")})
     flash("Reply sent.", "success")
     return redirect(url_for("support_ticket_detail", ticket_id=ticket_id))
 
@@ -3374,6 +3487,32 @@ def support_staff():
     status = request.args.get("status") or ""
     tickets = load_support_tickets(status if status else None)
     return render_template("support_staff.html", active_page="support", tickets=tickets, status=status)
+
+
+@app.route("/support/staff/live")
+@support_required
+@limiter.limit("120 per minute")
+def support_staff_live():
+    status = request.args.get("status") or ""
+    tickets = load_support_tickets(status if status else None)
+    payload = []
+    for ticket in tickets:
+        messages = ticket.get("messages") or []
+        last = messages[-1] if messages else {}
+        unread = sum(1 for message in messages if message.get("actor_kind") != "staff" and not message.get("read_by_staff"))
+        payload.append({
+            "ticket_id": ticket.get("ticket_id"),
+            "subject": ticket.get("subject") or "Support ticket",
+            "user_email": ticket.get("user_email") or "",
+            "product_name": ticket.get("product_name") or "Product",
+            "product_image": ticket.get("product_image") or "/static/logo.png",
+            "status": normalize_ticket_status(ticket.get("status")),
+            "updated_at": ticket.get("updated_at") or ticket.get("created_at") or "",
+            "last_message": str(last.get("body") or "No messages yet")[:140],
+            "unread": unread,
+            "url": url_for("support_ticket_detail", ticket_id=ticket.get("ticket_id")),
+        })
+    return jsonify({"ok": True, "tickets": payload})
 
 
 @app.route("/support/attachments/<ticket_id>/<filename>")
