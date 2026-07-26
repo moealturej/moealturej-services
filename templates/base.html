@@ -158,6 +158,7 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
   <link rel="stylesheet" href="{{ url_for('static', filename='css/command-center-v2.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/premium-v3.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/order-status-polish.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/platform-v2.css') }}">
   {% block extra_head %}{% endblock %}
   <style>
     /* final override layer: keeps uploaded page logic but fixes formatting after per-page CSS */
@@ -463,5 +464,6 @@ h1{font-family:Inter,system-ui,sans-serif!important;letter-spacing:-.06em!import
   </script>
   <script src="{{ url_for('static', filename='js/premium-v3.js') }}" defer></script>
   {% block extra_scripts %}{% endblock %}
+<div class="command-palette" id="globalCommandPalette"><div class="command-box"><input id="globalCommandInput" placeholder="Search products, pages, and actions…" autocomplete="off"><div class="command-results" id="globalCommandResults"></div></div></div><script>(()=>{const p=document.getElementById('globalCommandPalette'),i=document.getElementById('globalCommandInput'),r=document.getElementById('globalCommandResults');const base=[['Store','/store'],['My products','/account#products'],['Support','/support'],['Downloads','/downloads'],['System status','/status'],['Notifications','/account#notifications']];function draw(q=''){const rows=base.filter(x=>x[0].toLowerCase().includes(q.toLowerCase()));r.innerHTML=rows.map(x=>`<a class="command-item" href="${x[1]}"><span>${x[0]}</span><i class="fas fa-arrow-right"></i></a>`).join('')||'<div class="muted-copy" style="padding:16px">No matching action.</div>'}document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();p.classList.add('show');i.focus();draw(i.value)}if(e.key==='Escape')p.classList.remove('show')});p?.addEventListener('click',e=>{if(e.target===p)p.classList.remove('show')});i?.addEventListener('input',()=>draw(i.value));})();</script>
 </body>
 </html>

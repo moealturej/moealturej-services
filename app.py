@@ -3301,7 +3301,12 @@ def product_detail(slug):
     if not product:
         abort(404)
 
-    return render_template("product_detail.html", product=product, active_page="products")
+    enh = app.extensions.get("moe_enhancements", {})
+    email = (current_user() or {}).get("email")
+    return render_template("product_detail.html", product=product, active_page="products",
+                           reviews=(enh.get("reviews") or (lambda *_: []))(slug),
+                           related_products=(enh.get("related") or (lambda *_: []))(product),
+                           owns_product=(enh.get("owns") or (lambda *_: False))(slug, email))
 
 @app.route("/downloads")
 def downloads():
@@ -3397,6 +3402,13 @@ def support_ticket_create():
         "product_image": item.get("image", "/static/logo.png"),
         "created_at": utc_now().isoformat(),
         "messages": [],
+        "diagnostics": {
+            "issue_type": (request.form.get("issue_type") or "general")[:40],
+            "windows_version": (request.form.get("windows_version") or "")[:80],
+            "loader_version": (request.form.get("loader_version") or "")[:80],
+            "error_code": (request.form.get("error_code") or "")[:160],
+            "steps_tried": (request.form.get("steps_tried") or "")[:800],
+        },
     }
     save_support_ticket(ticket)
     append_ticket_message(ticket, user, body, attachments)
@@ -4275,7 +4287,11 @@ def admin_dashboard():
         "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
         "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
-    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot())
+    enh = app.extensions.get("moe_enhancements", {})
+    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot(),
+                           commerce_analytics=(enh.get("analytics") or (lambda: {}))(),
+                           all_reviews=(enh.get("all_reviews") or (lambda: []))(),
+                           incidents=(enh.get("all_incidents") or (lambda: []))())
 
 
 
@@ -5798,6 +5814,17 @@ def register_dynamic_routes():
 
 
 register_dynamic_routes()
+
+# Connected commercial platform enhancements (analytics, reviews, incidents, recommendations)
+from enhancements import register_enhancements
+register_enhancements(
+    app, db=db, using_mongo=using_mongo, data_dir=DATA_DIR, current_user=current_user,
+    login_required=login_required, owner_required=owner_required, verify_csrf=verify_csrf,
+    load_products=load_products, find_store_product=find_store_product, load_orders_for_user=load_orders_for_user,
+    save_site_settings=save_site_settings, load_site_settings=load_site_settings, record_audit=record_audit,
+    create_notification=create_notification, send_html_email=send_html_email, money_to_cents=money_to_cents,
+    parse_order_datetime=parse_order_datetime, load_support_tickets=load_support_tickets,
+)
 
 # Secure desktop loader API
 def authenticate_loader_password(email: str, password: str):

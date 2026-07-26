@@ -22,6 +22,10 @@
         </select></label>
         <input type="hidden" name="order_id" id="orderIdInput"><input type="hidden" name="item_index" id="itemIndexInput" value="0">
         <label>Subject<input name="subject" maxlength="120" placeholder="Example: Key not working / loader issue"></label>
+        <label>Issue type<select name="issue_type"><option value="launch">Product will not launch</option><option value="key">Key or activation issue</option><option value="download">Download or loader issue</option><option value="compatibility">Compatibility question</option><option value="billing">Order or billing</option><option value="general">Other</option></select></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Windows version<input name="windows_version" maxlength="80" placeholder="Windows 11 25H2"></label><label>Loader version<input name="loader_version" maxlength="80" placeholder="Example: 2.4.1"></label></div>
+        <label>Error code / exact message<input name="error_code" maxlength="160" placeholder="Paste the exact error shown"></label>
+        <label>What you already tried<textarea name="steps_tried" rows="3" maxlength="800" placeholder="Restarted, disabled antivirus, re-downloaded…"></textarea></label>
         <label>Message<textarea name="message" rows="6" maxlength="3000" required placeholder="Explain the issue, what you tried, and any error shown."></textarea></label>
         <label>Helpful files / screenshots<input type="file" name="attachments" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.txt,.pdf,.zip,.rar,.7z,.json"></label>
         <div class="ticket-note"><i class="fas fa-shield-halved"></i> Max {{ config.MAX_SUPPORT_ATTACHMENT_MB if config.MAX_SUPPORT_ATTACHMENT_MB is defined else 8 }}MB per file and only safe support file types are allowed.</div>

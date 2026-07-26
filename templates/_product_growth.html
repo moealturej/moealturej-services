@@ -1,0 +1,29 @@
+{% set downloads = product.get('downloads', {}) if product is mapping else {} %}
+{% set status = product.get('status', {}) if product is mapping else {} %}
+{% set compatibility = product.get('compatibility', {}) if product is mapping else {} %}
+{% set changes = product.get('changelog', []) if product is mapping else [] %}
+{% if downloads is not mapping %}{% set downloads = {} %}{% endif %}
+{% if status is not mapping %}{% set status = {} %}{% endif %}
+{% if compatibility is not mapping %}{% set compatibility = {} %}{% endif %}
+{% if changes is not iterable or changes is string or changes is mapping %}{% set changes = [] %}{% endif %}
+<section class="growth-grid">
+  <article class="growth-card">
+    <div class="growth-heading"><div><span class="eyebrow">release center</span><h2>Version & compatibility</h2></div><span class="chip is-green">{{ downloads.get('version') or 'Latest' }}</span></div>
+    <div class="release-list">
+      <div><span>Last updated</span><strong>{{ status.get('lastUpdated') or status.get('last_updated') or 'Recently' }}</strong></div>
+      <div><span>Windows</span><strong>{{ compatibility.get('windows') or 'Windows 10 / 11' }}</strong></div>
+      <div><span>Delivery</span><strong>Available in your account</strong></div>
+    </div>
+    <div class="changelog">
+      <h3>Latest changes</h3>
+      {% if changes %}{% for change in changes[:5] %}<p><i class="fas fa-check"></i>{{ change.text if change is mapping else change }}</p>{% endfor %}
+      {% else %}<p><i class="fas fa-sparkles"></i>Release notes will appear here after the next update.</p>{% endif %}
+    </div>
+  </article>
+  <article class="growth-card" id="reviews">
+    <div class="growth-heading"><div><span class="eyebrow">verified buyers</span><h2>Customer reviews</h2></div><strong class="rating-score">{{ '%.1f'|format((reviews|sum(attribute='rating') / reviews|length) if reviews else 0) }}</strong></div>
+    {% if reviews %}<div class="review-list">{% for review in reviews[:6] %}<article class="review"><div class="review-top"><strong>{{ review.display_name }}</strong><span>{% for _ in range(review.rating) %}★{% endfor %}</span></div><p>{{ review.body }}</p><small><i class="fas fa-badge-check"></i> Verified purchase · {{ review.helpful or 0 }} helpful</small><form method="post" action="{{ url_for('review_helpful', review_id=review.id) }}"><button class="text-action">Helpful</button></form></article>{% endfor %}</div>{% else %}<p class="muted-copy">No published reviews yet.</p>{% endif %}
+    {% if owns_product %}<form class="review-form" method="post" action="{{ url_for('create_review', slug=product.get('slug', '')) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Rating<select name="rating" required><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Okay</option><option value="2">2 — Poor</option><option value="1">1 — Bad</option></select></label><label>Your review<textarea name="body" minlength="10" maxlength="1200" required placeholder="What worked well? What should improve?"></textarea></label><button class="primary-cta" type="submit">Submit verified review</button></form>{% endif %}
+  </article>
+</section>
+{% if related_products %}<section class="growth-card related-section"><div class="growth-heading"><div><span class="eyebrow">continue browsing</span><h2>Related products</h2></div></div><div class="related-grid">{% for item in related_products %}<a href="{{ url_for('product_detail',slug=item.get('slug', '')) }}" class="related-item"><img src="{{ item.get('image') or url_for('static', filename='logo.png') }}" alt=""><div><strong>{{ item.get('name', 'Product') }}</strong><span>{{ item.get('category', 'Product')|title }}</span></div><i class="fas fa-arrow-right"></i></a>{% endfor %}</div></section>{% endif %}
