@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Age Check | moealturej Casino{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/casino.css') }}">
+{% endblock %}
+{% block content %}
+<section class="casino-age-page">
+  <div class="casino-age-glow"></div>
+  <div class="casino-age-card">
+    <div class="casino-age-icon"><i class="fas fa-id-card"></i></div>
+    <div class="casino-kicker">Virtual-credit casino</div>
+    <h1>Are you 18 or older?</h1>
+    <p>This area contains casino-style games. No real money is accepted, credits cannot be purchased or withdrawn, and nothing has cash value.</p>
+    <div class="casino-warning-card">
+      <i class="fas fa-triangle-exclamation"></i>
+      <div><strong>Real gambling can cause serious harm.</strong><span>Never chase losses, borrow money to gamble, or treat gambling as income. This website is entertainment only.</span></div>
+    </div>
+    <form method="post" class="casino-age-actions">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="casino-primary" type="submit" name="answer" value="yes"><i class="fas fa-check"></i> Yes, I am 18+</button>
+      <button class="casino-secondary" type="submit" name="answer" value="no"><i class="fas fa-arrow-left"></i> No, take me back</button>
+    </form>
+    <p class="casino-age-note"><i class="fas fa-shield-halved"></i> Your answer is saved to your account so you are not asked again.</p>
+  </div>
+</section>
+{% endblock %}

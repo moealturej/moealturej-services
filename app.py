@@ -322,6 +322,10 @@ def sanitize_user_for_session(user: dict | None) -> dict | None:
         "discord_avatar": str(user.get("discord_avatar") or "") or None,
         "google_id": str(user.get("google_id") or "") or None,
         "status": str(user.get("status") or "active"),
+        "avatar_url": str(user.get("avatar_url") or user.get("google_avatar") or user.get("discord_avatar") or "/static/logo.png"),
+        "bio": str(user.get("bio") or "")[:240],
+        "age_18_confirmed": bool(user.get("age_18_confirmed")),
+        "casino_credits": int(user.get("casino_credits", 5000) or 0),
     }
 
 
@@ -362,7 +366,7 @@ def login_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
         if not current_user():
-            flash("Please sign in before checkout.", "warning")
+            flash("Please sign in to continue.", "warning")
             return redirect(url_for("login", next=request.path))
         return view(*args, **kwargs)
     return wrapper
@@ -903,7 +907,7 @@ def google_redirect_uri() -> str:
 def upsert_google_user(profile: dict) -> dict | None:
     google_id = str(profile.get("sub") or "").strip()
     email = str(profile.get("email") or "").strip().lower()
-    username = str(profile.get("name") or (email.split("@")[0] if email else "google_user")).strip()
+    provider_username = str(profile.get("name") or (email.split("@")[0] if email else "google_user")).strip()
     avatar = str(profile.get("picture") or "").strip()
     if not google_id or not email or not using_mongo():
         if email and email == OWNER_EMAIL:
@@ -911,6 +915,7 @@ def upsert_google_user(profile: dict) -> dict | None:
         return None
     existing = users_col.find_one({"$or": [{"google_id": google_id}, {"email": email}]})
     role = "owner" if email == OWNER_EMAIL else ((existing or {}).get("role") or "user")
+    username = str((existing or {}).get("username") if (existing or {}).get("profile_customized") else provider_username).strip() or provider_username
     payload = {
         "google_id": google_id,
         "google_avatar": avatar,
@@ -1450,7 +1455,7 @@ def discord_avatar_url(discord_id: str | None, avatar_hash: str | None) -> str |
 def upsert_discord_user(profile: dict) -> dict | None:
     discord_id = str(profile.get("id") or "").strip()
     email = str(profile.get("email") or "").strip().lower()
-    username = str(profile.get("global_name") or profile.get("username") or "discord_user").strip()
+    provider_username = str(profile.get("global_name") or profile.get("username") or "discord_user").strip()
     avatar = discord_avatar_url(discord_id, profile.get("avatar"))
     if not discord_id:
         return None
@@ -1460,6 +1465,7 @@ def upsert_discord_user(profile: dict) -> dict | None:
         return None
     existing = users_col.find_one({"$or": [{"discord_id": discord_id}, {"email": email}]}) if email else users_col.find_one({"discord_id": discord_id})
     role = "owner" if email == OWNER_EMAIL else ((existing or {}).get("role") or "user")
+    username = str((existing or {}).get("username") if (existing or {}).get("profile_customized") else provider_username).strip() or provider_username
     payload = {
         "discord_id": discord_id,
         "discord_username": profile.get("username"),
@@ -5824,6 +5830,26 @@ register_enhancements(
     save_site_settings=save_site_settings, load_site_settings=load_site_settings, record_audit=record_audit,
     create_notification=create_notification, send_html_email=send_html_email, money_to_cents=money_to_cents,
     parse_order_datetime=parse_order_datetime, load_support_tickets=load_support_tickets,
+)
+
+
+# Virtual-credit casino, profiles, and casino chat
+from casino import register_casino
+register_casino(
+    app,
+    db=db,
+    users_col=users_col,
+    using_mongo=using_mongo,
+    current_user=current_user,
+    login_required=login_required,
+    limiter=limiter,
+    csrf_token=csrf_token,
+    verify_csrf=verify_csrf,
+    sanitize_user_for_session=sanitize_user_for_session,
+    uploads_dir=UPLOADS_DIR,
+    save_upload_to_mongo_storage=save_upload_to_mongo_storage,
+    save_media_record=save_media_record,
+    record_audit=record_audit,
 )
 
 # Secure desktop loader API

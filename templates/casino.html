@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Virtual Casino | moealturej{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/casino.css') }}">
+{% endblock %}
+{% block content %}
+<div class="casino-page" id="casinoApp" data-csrf="{{ csrf_token() }}" data-min-wager="{{ casino_min_wager }}" data-max-wager="{{ casino_max_wager }}">
+  <section class="casino-top-shell">
+    <div class="container casino-topbar">
+      <div class="casino-brand-block">
+        <div class="casino-kicker"><i class="fas fa-dice"></i> Virtual credits only</div>
+        <h1>moealturej Casino</h1>
+        <p>Realistic casino-style games with server-side outcomes, fair published payouts, and no real-money deposits or withdrawals.</p>
+      </div>
+      <div class="casino-wallet-card">
+        <div class="casino-avatar-wrap"><img src="{{ casino_avatar }}" alt="{{ casino_user.username }}"></div>
+        <div class="casino-wallet-copy"><span>{{ casino_user.username }}</span><strong><i class="fas fa-coins"></i> <b id="casinoBalance">{{ casino_user.casino_credits|default(5000) }}</b></strong></div>
+        <button class="casino-daily-button" id="dailyClaimButton" type="button"><i class="fas fa-gift"></i><span>Daily +500</span></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="container casino-layout">
+    <main class="casino-main-column">
+      <section class="casino-responsibility-banner">
+        <div class="responsibility-icon"><i class="fas fa-shield-heart"></i></div>
+        <div><strong>Play for entertainment, never for money.</strong><p>These credits are free, have no cash value, cannot be bought, transferred, or withdrawn. Real gambling can be addictive and financially destructive.</p></div>
+        <button type="button" id="openFairnessButton"><i class="fas fa-scale-balanced"></i> Fairness & payouts</button>
+      </section>
+
+      <nav class="casino-game-tabs" aria-label="Casino games">
+        <button class="casino-game-tab active" data-game-tab="slots" type="button"><i class="fas fa-dice"></i><span>Slots</span><small>3-reel cabinet</small></button>
+        <button class="casino-game-tab" data-game-tab="roulette" type="button"><i class="fas fa-circle-dot"></i><span>Roulette</span><small>European wheel</small></button>
+        <button class="casino-game-tab" data-game-tab="blackjack" type="button"><i class="fas fa-club"></i><span>Blackjack</span><small>Dealer stands 17</small></button>
+        <button class="casino-game-tab" data-game-tab="mines" type="button"><i class="fas fa-bomb"></i><span>Mines</span><small>Cash out anytime</small></button>
+        <button class="casino-game-tab" data-game-tab="plinko" type="button"><i class="fas fa-circle-nodes"></i><span>Plinko</span><small>12-row board</small></button>
+        <button class="casino-game-tab" data-game-tab="higher-lower" type="button"><i class="fas fa-arrow-up-arrow-down"></i><span>Higher / Lower</span><small>Dynamic odds</small></button>
+      </nav>
+
+      <section class="casino-game-stage">
+        <div class="casino-toast" id="casinoToast" aria-live="polite"></div>
+
+        <article class="casino-game-panel active" data-game-panel="slots">
+          <div class="game-panel-heading"><div><div class="casino-kicker">Classic floor machine</div><h2>Midnight 7s</h2><p>Matching symbols pay automatically. Two of a kind returns 1.05×; triples pay up to 80×.</p></div><div class="game-edge-pill">Approx. 93.8% RTP</div></div>
+          <div class="slots-room">
+            <div class="slot-machine" id="slotMachine">
+              <div class="slot-top-light-row"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="slot-marquee"><span>★</span><div><small>MOEALTUREJ</small><strong>MIDNIGHT 7s</strong></div><span>★</span></div>
+              <div class="slot-window-frame">
+                <div class="slot-payline"></div>
+                <div class="slot-reel" data-slot-reel><span>🍒</span></div>
+                <div class="slot-reel" data-slot-reel><span>🔔</span></div>
+                <div class="slot-reel" data-slot-reel><span>7</span></div>
+              </div>
+              <div class="slot-status-screen"><span id="slotStatus">Insert virtual credits</span><strong id="slotWinDisplay">READY</strong></div>
+              <div class="slot-control-deck">
+                <label class="casino-wager-field"><span>Wager</span><input id="slotsWager" type="number" min="{{ casino_min_wager }}" max="{{ casino_max_wager }}" step="10" value="100"></label>
+                <div class="wager-chip-row" data-wager-target="slotsWager"><button type="button" data-chip="50">50</button><button type="button" data-chip="100">100</button><button type="button" data-chip="500">500</button><button type="button" data-chip="1000">1K</button></div>
+                <button class="slot-spin-button" id="slotSpinButton" type="button"><span>SPIN</span></button>
+              </div>
+              <div class="slot-coin-tray">Virtual credits • no cash value</div>
+              <button class="slot-lever" id="slotLever" type="button" aria-label="Pull slot lever"><span></span><i></i></button>
+            </div>
+            <div class="slot-paytable">
+              <h3>Payout table</h3>
+              <div><span>🍒 🍒 🍒</span><strong>6×</strong></div><div><span>🍋 🍋 🍋</span><strong>8×</strong></div><div><span>🍇 🍇 🍇</span><strong>12×</strong></div><div><span>🔔 🔔 🔔</span><strong>20×</strong></div><div><span>⭐ ⭐ ⭐</span><strong>35×</strong></div><div><span class="seven-text">7 7 7</span><strong>80×</strong></div><div class="paytable-note"><span>Any pair</span><strong>1.05×</strong></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="casino-game-panel" data-game-panel="roulette">
+          <div class="game-panel-heading"><div><div class="casino-kicker">Single-zero European rules</div><h2>Roulette</h2><p>Pick an outside bet, a dozen, or one exact number. The house edge is 2.70% on every listed bet.</p></div><div class="game-edge-pill">97.30% RTP</div></div>
+          <div class="roulette-room">
+            <div class="roulette-wheel-shell">
+              <div class="roulette-pointer"></div>
+              <div class="roulette-wheel" id="rouletteWheel"><div class="roulette-wheel-inner"><span id="rouletteBall"></span><div class="roulette-hub"><small>MOE</small><strong id="rouletteResultNumber">—</strong></div></div></div>
+              <div class="roulette-result" id="rouletteResult">Place a bet to spin</div>
+            </div>
+            <div class="roulette-table">
+              <div class="roulette-bet-grid" id="rouletteBets">
+                <button data-bet-type="color" data-bet-value="red" class="bet-red">RED <small>2×</small></button>
+                <button data-bet-type="color" data-bet-value="black" class="bet-black">BLACK <small>2×</small></button>
+                <button data-bet-type="parity" data-bet-value="even">EVEN <small>2×</small></button>
+                <button data-bet-type="parity" data-bet-value="odd">ODD <small>2×</small></button>
+                <button data-bet-type="range" data-bet-value="low">1–18 <small>2×</small></button>
+                <button data-bet-type="range" data-bet-value="high">19–36 <small>2×</small></button>
+                <button data-bet-type="dozen" data-bet-value="1">1ST 12 <small>3×</small></button>
+                <button data-bet-type="dozen" data-bet-value="2">2ND 12 <small>3×</small></button>
+                <button data-bet-type="dozen" data-bet-value="3">3RD 12 <small>3×</small></button>
+                <button data-bet-type="straight" data-bet-value="number" class="straight-bet"><span>STRAIGHT</span><input id="rouletteNumber" type="number" min="0" max="36" value="7"><small>36×</small></button>
+              </div>
+              <div class="game-control-row"><label class="casino-wager-field"><span>Wager</span><input id="rouletteWager" type="number" min="{{ casino_min_wager }}" max="{{ casino_max_wager }}" step="10" value="100"></label><button class="casino-action-button" id="rouletteSpinButton" type="button"><i class="fas fa-rotate"></i> Spin wheel</button></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="casino-game-panel" data-game-panel="blackjack">
+          <div class="game-panel-heading"><div><div class="casino-kicker">Six-deck house rules</div><h2>Blackjack</h2><p>Blackjack pays 3:2. Dealer stands on all 17s. Double down is available on your first two cards.</p></div><div class="game-edge-pill">Standard table rules</div></div>
+          <div class="blackjack-table">
+            <div class="blackjack-felt-ring"></div>
+            <div class="blackjack-logo"><span>BLACKJACK</span><small>PAYS 3 TO 2 • DEALER STANDS ON 17</small></div>
+            <div class="blackjack-hand dealer-hand"><div class="hand-label">Dealer <span id="dealerValue">0</span></div><div class="playing-card-row" id="dealerCards"><div class="playing-card card-back"></div><div class="playing-card card-back"></div></div></div>
+            <div class="blackjack-center-message" id="blackjackMessage">Place your wager and deal</div>
+            <div class="blackjack-hand player-hand"><div class="hand-label">Your hand <span id="playerValue">0</span></div><div class="playing-card-row" id="playerCards"><div class="playing-card card-placeholder"></div><div class="playing-card card-placeholder"></div></div></div>
+            <div class="blackjack-controls"><label class="casino-wager-field"><span>Wager</span><input id="blackjackWager" type="number" min="{{ casino_min_wager }}" max="{{ casino_max_wager }}" step="10" value="100"></label><button id="blackjackDeal" class="casino-action-button" type="button"><i class="fas fa-layer-group"></i> Deal</button><button id="blackjackHit" class="casino-secondary-action" type="button" disabled>Hit</button><button id="blackjackStand" class="casino-secondary-action" type="button" disabled>Stand</button><button id="blackjackDouble" class="casino-secondary-action" type="button" disabled>Double</button></div>
+          </div>
+        </article>
+
+        <article class="casino-game-panel" data-game-panel="mines">
+          <div class="game-panel-heading"><div><div class="casino-kicker">Risk ladder</div><h2>Mines</h2><p>Open safe tiles to raise your multiplier, then cash out before finding a mine. Mine locations remain hidden on the server.</p></div><div class="game-edge-pill">97% mathematical return</div></div>
+          <div class="mines-layout">
+            <div class="mines-board" id="minesBoard">{% for i in range(25) %}<button class="mine-tile" type="button" data-mine-tile="{{ i }}"><span><i class="fas fa-gem"></i></span></button>{% endfor %}</div>
+            <div class="mines-control-card">
+              <div class="mines-stat-row"><div><span>Multiplier</span><strong id="minesMultiplier">1.00×</strong></div><div><span>Potential</span><strong id="minesPotential">0</strong></div></div>
+              <label class="casino-wager-field"><span>Wager</span><input id="minesWager" type="number" min="{{ casino_min_wager }}" max="{{ casino_max_wager }}" step="10" value="100"></label>
+              <label class="casino-select-field"><span>Mine count</span><select id="minesCount"><option value="3">3 mines</option><option value="5" selected>5 mines</option><option value="7">7 mines</option><option value="10">10 mines</option></select></label>
+              <button class="casino-action-button" id="minesStart" type="button"><i class="fas fa-play"></i> Start round</button>
+              <button class="casino-cashout-button" id="minesCashout" type="button" disabled><i class="fas fa-coins"></i> Cash out</button>
+              <p class="game-small-note">Your wager is deducted when the round begins. Leaving an active round forfeits it.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="casino-game-panel" data-game-panel="plinko">
+          <div class="game-panel-heading"><div><div class="casino-kicker">12-row physics board</div><h2>Plinko</h2><p>The server generates a secure left/right path, then the board animates the exact result.</p></div><div class="game-edge-pill">Approx. 94.9% RTP</div></div>
+          <div class="plinko-layout">
+            <div class="plinko-board-shell"><canvas id="plinkoCanvas" width="760" height="620"></canvas><div class="plinko-multipliers">{% for multiplier in plinko_multipliers %}<span class="{% if multiplier >= 6 %}plinko-hot{% elif multiplier < 1 %}plinko-low{% endif %}">{{ multiplier }}×</span>{% endfor %}</div></div>
+            <div class="plinko-controls"><div class="plinko-result-orb"><span>Last drop</span><strong id="plinkoResult">—</strong></div><label class="casino-wager-field"><span>Wager</span><input id="plinkoWager" type="number" min="{{ casino_min_wager }}" max="{{ casino_max_wager }}" step="10" value="100"></label><div class="wager-chip-row" data-wager-target="plinkoWager"><button type="button" data-chip="50">50</button><button type="button" data-chip="100">100</button><button type="button" data-chip="500">500</button><button type="button" data-chip="1000">1K</button></div><button class="casino-action-button" id="plinkoDrop" type="button"><i class="fas fa-circle-down"></i> Drop ball</button></div>
+          </div>
+        </article>
+
+        <article class="casino-game-panel" data-game-panel="higher-lower">
+          <div class="game-panel-heading"><div><div class="casino-kicker">Dynamic probability game</div><h2>Higher or Lower</h2><p>Guess whether the next card is higher or lower. Ties lose, and the payout changes with the true probability.</p></div><div class="game-edge-pill">96% target return</div></div>
+          <div class="higher-lower-room">
+            <div class="hl-card-stack"><div class="playing-card giant-card card-back" id="hlCurrentCard"></div><div class="hl-vs">NEXT?</div><div class="playing-card giant-card mystery-card" id="hlNextCard"><i class="fas fa-question"></i></div></div>
+            <div class="hl-controls"><div class="hl-status" id="hlStatus">Deal a card to begin</div><label class="casino-wager-field"><span>Wager</span><input id="hlWager" type="number" min="{{ casino_min_wager }}" max="{{ casino_max_wager }}" step="10" value="100"></label><button class="casino-action-button" id="hlDeal" type="button"><i class="fas fa-layer-group"></i> Deal card</button><div class="hl-choice-row"><button id="hlHigher" class="hl-choice higher" type="button" disabled><i class="fas fa-arrow-up"></i><span>Higher</span><strong id="hlHigherMultiplier">—</strong></button><button id="hlLower" class="hl-choice lower" type="button" disabled><i class="fas fa-arrow-down"></i><span>Lower</span><strong id="hlLowerMultiplier">—</strong></button></div></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="casino-history-card">
+        <div class="history-card-head"><div><div class="casino-kicker">Private account history</div><h2>Your recent rounds</h2></div><button id="refreshHistory" type="button"><i class="fas fa-rotate"></i></button></div>
+        <div class="casino-history-list" id="casinoHistory"><div class="casino-history-empty">Play a game and your results will appear here.</div></div>
+      </section>
+    </main>
+
+    <aside class="casino-chat-column">
+      <section class="casino-chat-card">
+        <header class="casino-chat-head"><div><span class="live-dot"></span><div><strong>Casino lounge</strong><small><b id="casinoOnlineCount">1</b> online</small></div></div><a href="/account#profile" title="Edit profile"><i class="fas fa-user-pen"></i></a></header>
+        <div class="casino-chat-rules"><i class="fas fa-shield-halved"></i><span>Be respectful. No links, scams, harassment, or real-money gambling offers.</span></div>
+        <div class="casino-chat-messages" id="casinoChatMessages"><div class="chat-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading lounge…</div></div>
+        <form class="casino-chat-form" id="casinoChatForm"><img src="{{ casino_avatar }}" alt=""><div><textarea id="casinoChatInput" maxlength="300" rows="2" placeholder="Message the lounge…"></textarea><div><span id="chatCharacterCount">0/300</span><button type="submit"><i class="fas fa-paper-plane"></i> Send</button></div></div></form>
+      </section>
+      <section class="casino-profile-mini"><img src="{{ casino_avatar }}" alt=""><div><span>Playing as</span><strong>{{ casino_user.username }}</strong><p>{{ casino_user.bio or 'Add a short bio and profile image from your account.' }}</p></div><a href="/account#profile"><i class="fas fa-pen"></i></a></section>
+      <section class="casino-safety-mini"><i class="fas fa-ban"></i><div><strong>No real-money gambling</strong><p>Casino credits cannot be purchased, sold, gifted, exchanged, or withdrawn.</p></div></section>
+    </aside>
+  </div>
+
+  <div class="casino-modal" id="fairnessModal" aria-hidden="true">
+    <div class="casino-modal-backdrop" data-close-modal></div>
+    <div class="casino-modal-card" role="dialog" aria-modal="true" aria-labelledby="fairnessTitle">
+      <button class="casino-modal-close" type="button" data-close-modal><i class="fas fa-xmark"></i></button>
+      <div class="casino-kicker">Transparent virtual play</div><h2 id="fairnessTitle">Fairness and payout rules</h2>
+      <p>Every result is produced on the server using cryptographically secure randomness. The browser only animates the outcome returned by the server, so changing HTML or JavaScript cannot select a win.</p>
+      <div class="fairness-grid"><div><strong>Slots</strong><span>Weighted symbols; ~93.8% theoretical RTP.</span></div><div><strong>Roulette</strong><span>European 0–36 wheel; 2.70% house edge.</span></div><div><strong>Plinko</strong><span>12 secure binary steps; ~94.9% theoretical RTP.</span></div><div><strong>Higher / Lower</strong><span>Dynamic probability payout; 96% target return.</span></div><div><strong>Mines</strong><span>Combinatorial multiplier with 3% edge.</span></div><div><strong>Blackjack</strong><span>Standard dealer rules; outcome depends on player choices.</span></div></div>
+      <div class="casino-warning-card"><i class="fas fa-triangle-exclamation"></i><div><strong>Do not treat gambling as income.</strong><span>Real gambling can lead to debt, addiction, damaged relationships, and mental-health harm. Stop when it is no longer fun.</span></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/casino.js') }}" defer></script>
+{% endblock %}
