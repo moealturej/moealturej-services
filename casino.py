@@ -22,17 +22,118 @@ INITIAL_CREDITS = 5_000
 DAILY_CREDITS = 500
 MIN_WAGER = 10
 MAX_WAGER = 25_000
+WAGER_PRESETS = (10, 50, 100, 250, 500, 1_000, 5_000, 25_000)
 PROFILE_IMAGE_MAX_BYTES = 4 * 1024 * 1024
 ALLOWED_PROFILE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
-SLOT_SYMBOLS = [
-    {"key": "cherry", "symbol": "🍒", "weight": 30, "triple": 6.0},
-    {"key": "lemon", "symbol": "🍋", "weight": 25, "triple": 8.0},
-    {"key": "grape", "symbol": "🍇", "weight": 18, "triple": 12.0},
-    {"key": "bell", "symbol": "🔔", "weight": 12, "triple": 20.0},
-    {"key": "star", "symbol": "⭐", "weight": 9, "triple": 35.0},
-    {"key": "seven", "symbol": "7", "weight": 6, "triple": 80.0},
-]
+SLOT_MACHINES = {
+    "classic": {
+        "label": "Midnight 7s",
+        "subtitle": "Classic 3-reel • 5 paylines",
+        "theme": "classic",
+        "rows": 3,
+        "columns": 3,
+        "paylines": [
+            [1, 1, 1], [0, 0, 0], [2, 2, 2], [0, 1, 2], [2, 1, 0],
+        ],
+        "symbols": [
+            {"key": "cherry", "name": "Cherry", "symbol": "🍒", "weight": 10, "payouts": {2: 1.9, 3: 7.5}},
+            {"key": "lemon", "name": "Lemon", "symbol": "🍋", "weight": 24, "payouts": {3: 9.4}},
+            {"key": "orange", "name": "Orange", "symbol": "🍊", "weight": 22, "payouts": {3: 13.1}},
+            {"key": "bell", "name": "Bell", "symbol": "🔔", "weight": 15, "payouts": {3: 22.4}},
+            {"key": "bar", "name": "BAR", "symbol": "BAR", "weight": 12, "payouts": {3: 42.0}},
+            {"key": "seven", "name": "Red 7", "symbol": "7", "weight": 7, "payouts": {3: 112.0}},
+            {"key": "wild", "name": "Wild", "symbol": "WILD", "weight": 2, "payouts": {3: 168.0}},
+        ],
+        "wild": "wild",
+        "fruit_mix": 1.7,
+        "rtp": 95.2,
+    },
+    "neon": {
+        "label": "Neon Fruits",
+        "subtitle": "5 reels • 10 paylines • wild + scatter",
+        "theme": "neon",
+        "rows": 3,
+        "columns": 5,
+        "paylines": [
+            [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2],
+            [0, 1, 2, 1, 0], [2, 1, 0, 1, 2], [0, 0, 1, 2, 2],
+            [2, 2, 1, 0, 0], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1],
+            [0, 1, 1, 1, 0],
+        ],
+        "symbols": [
+            {"key": "cherry", "name": "Cherry", "symbol": "🍒", "weight": 23, "payouts": {3: 11.6, 4: 23.1, 5: 52.1}},
+            {"key": "lemon", "name": "Lemon", "symbol": "🍋", "weight": 20, "payouts": {3: 14.5, 4: 28.9, 5: 69.4}},
+            {"key": "grape", "name": "Grape", "symbol": "🍇", "weight": 17, "payouts": {3: 17.4, 4: 40.5, 5: 92.6}},
+            {"key": "melon", "name": "Melon", "symbol": "🍉", "weight": 14, "payouts": {3: 23.1, 4: 57.9, 5: 138.8}},
+            {"key": "bell", "name": "Bell", "symbol": "🔔", "weight": 10, "payouts": {3: 34.7, 4: 92.6, 5: 231.4}},
+            {"key": "star", "name": "Star", "symbol": "⭐", "weight": 7, "payouts": {3: 52.1, 4: 159.1, 5: 433.9}},
+            {"key": "seven", "name": "Neon 7", "symbol": "7", "weight": 4, "payouts": {3: 86.8, 4: 289.2, 5: 867.7}},
+            {"key": "wild", "name": "Wild", "symbol": "W", "weight": 2, "payouts": {3: 115.7, 4: 404.9, 5: 1446.2}},
+            {"key": "scatter", "name": "Scatter", "symbol": "✦", "weight": 3, "payouts": {}},
+        ],
+        "wild": "wild",
+        "scatter": "scatter",
+        "scatter_payouts": {3: 4.3, 4: 17.4, 5: 72.3, 6: 144.6},
+        "rtp": 94.9,
+    },
+    "vault": {
+        "label": "Purple Vault",
+        "subtitle": "5 reels • 15 paylines • premium symbols",
+        "theme": "vault",
+        "rows": 3,
+        "columns": 5,
+        "paylines": [
+            [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2],
+            [0, 1, 2, 1, 0], [2, 1, 0, 1, 2], [0, 0, 1, 2, 2],
+            [2, 2, 1, 0, 0], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1],
+            [0, 1, 1, 1, 0], [2, 1, 1, 1, 2], [1, 0, 1, 2, 1],
+            [1, 2, 1, 0, 1], [0, 1, 0, 1, 0], [2, 1, 2, 1, 2],
+        ],
+        "symbols": [
+            {"key": "card", "name": "Ace", "symbol": "A", "weight": 24, "payouts": {3: 6.9, 4: 13.8, 5: 32.2}},
+            {"key": "gem", "name": "Amethyst", "symbol": "🔮", "weight": 20, "payouts": {3: 9.2, 4: 20.7, 5: 50.6}},
+            {"key": "crown", "name": "Crown", "symbol": "👑", "weight": 16, "payouts": {3: 13.8, 4: 34.5, 5: 87.5}},
+            {"key": "coin", "name": "Coin", "symbol": "🪙", "weight": 13, "payouts": {3: 18.4, 4: 50.6, 5: 149.6}},
+            {"key": "diamond", "name": "Diamond", "symbol": "💎", "weight": 9, "payouts": {3: 27.6, 4: 87.5, 5: 276.2}},
+            {"key": "safe", "name": "Vault", "symbol": "🔒", "weight": 6, "payouts": {3: 46.0, 4: 172.6, 5: 598.5}},
+            {"key": "wild", "name": "Wild", "symbol": "W", "weight": 3, "payouts": {3: 80.6, 4: 299.2, 5: 1150.9}},
+            {"key": "scatter", "name": "Scatter", "symbol": "✦", "weight": 3, "payouts": {}},
+        ],
+        "wild": "wild",
+        "scatter": "scatter",
+        "scatter_payouts": {3: 4.6, 4: 18.4, 5: 80.6, 6: 161.1},
+        "rtp": 94.8,
+    },
+}
+
+
+def _slot_public_catalog() -> dict[str, dict]:
+    catalog: dict[str, dict] = {}
+    for key, machine in SLOT_MACHINES.items():
+        catalog[key] = {
+            "key": key,
+            "label": machine["label"],
+            "subtitle": machine["subtitle"],
+            "theme": machine["theme"],
+            "rows": machine["rows"],
+            "columns": machine["columns"],
+            "paylines": len(machine["paylines"]),
+            "rtp": machine["rtp"],
+            "symbols": [
+                {
+                    "key": symbol["key"],
+                    "name": symbol["name"],
+                    "symbol": symbol["symbol"],
+                    "payouts": {str(count): value for count, value in symbol.get("payouts", {}).items()},
+                }
+                for symbol in machine["symbols"]
+            ],
+            "scatter_payouts": {str(count): value for count, value in machine.get("scatter_payouts", {}).items()},
+            "fruit_mix": machine.get("fruit_mix"),
+        }
+    return catalog
+
 PLINKO_MULTIPLIERS = [14.0, 6.0, 2.4, 1.55, 1.08, 0.72, 0.55, 0.72, 1.08, 1.55, 2.4, 6.0, 14.0]
 ROULETTE_RED = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 ROULETTE_WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
@@ -64,6 +165,115 @@ def _weighted_choice(items: list[dict]) -> dict:
         if point < 0:
             return item
     return items[-1]
+
+
+def _spin_slot_machine(machine_key: str, wager: int) -> dict:
+    machine = SLOT_MACHINES.get(machine_key)
+    if not machine:
+        raise ValueError("Choose a valid slot machine.")
+
+    rows = int(machine["rows"])
+    columns = int(machine["columns"])
+    symbols = list(machine["symbols"])
+    by_key = {symbol["key"]: symbol for symbol in symbols}
+    grid = [[_weighted_choice(symbols) for _ in range(columns)] for _ in range(rows)]
+    line_count = len(machine["paylines"])
+    line_bet = float(wager) / float(line_count)
+    payout_value = 0.0
+    wins: list[dict] = []
+    winning_cells: set[tuple[int, int]] = set()
+    wild_key = str(machine.get("wild") or "")
+    scatter_key = str(machine.get("scatter") or "")
+
+    for line_index, row_positions in enumerate(machine["paylines"]):
+        line_symbols = [grid[int(row_positions[column])][column] for column in range(columns)]
+        target = next(
+            (symbol["key"] for symbol in line_symbols if symbol["key"] not in {wild_key, scatter_key}),
+            wild_key or None,
+        )
+        match_count = 0
+        payout_multiplier = 0.0
+        label = ""
+
+        if target:
+            for symbol in line_symbols:
+                if symbol["key"] == target or (wild_key and symbol["key"] == wild_key):
+                    match_count += 1
+                else:
+                    break
+            payout_table = by_key.get(target, {}).get("payouts", {})
+            eligible = [int(count) for count in payout_table if int(count) <= match_count]
+            if eligible:
+                paid_count = max(eligible)
+                payout_multiplier = float(payout_table[paid_count])
+                label = f"{paid_count}× {by_key[target]['name']}"
+                match_count = paid_count
+
+        if not payout_multiplier and machine.get("fruit_mix") and columns == 3:
+            fruit_keys = {"cherry", "lemon", "orange"}
+            keys = [symbol["key"] for symbol in line_symbols]
+            if len(set(keys)) == 3 and all(key in fruit_keys for key in keys):
+                payout_multiplier = float(machine["fruit_mix"])
+                match_count = 3
+                label = "Mixed fruit"
+
+        if payout_multiplier > 0:
+            line_payout = line_bet * payout_multiplier
+            payout_value += line_payout
+            cells = [[int(row_positions[column]), column] for column in range(match_count)]
+            winning_cells.update((row, column) for row, column in cells)
+            wins.append({
+                "type": "payline",
+                "line": line_index + 1,
+                "label": label,
+                "count": match_count,
+                "multiplier": round(payout_multiplier, 2),
+                "payout": int(math.floor(line_payout)),
+                "cells": cells,
+            })
+
+    if scatter_key:
+        scatter_cells = [
+            [row, column]
+            for row in range(rows)
+            for column in range(columns)
+            if grid[row][column]["key"] == scatter_key
+        ]
+        scatter_count = len(scatter_cells)
+        scatter_table = machine.get("scatter_payouts", {})
+        eligible = [int(count) for count in scatter_table if int(count) <= scatter_count]
+        if eligible:
+            paid_count = max(eligible)
+            scatter_multiplier = float(scatter_table[paid_count])
+            scatter_payout = float(wager) * scatter_multiplier
+            payout_value += scatter_payout
+            winning_cells.update((row, column) for row, column in scatter_cells)
+            wins.append({
+                "type": "scatter",
+                "label": f"{scatter_count} scatters",
+                "count": scatter_count,
+                "multiplier": round(scatter_multiplier, 2),
+                "payout": int(math.floor(scatter_payout)),
+                "cells": scatter_cells,
+            })
+
+    payout = max(0, int(math.floor(payout_value)))
+    return {
+        "machine": machine_key,
+        "machine_label": machine["label"],
+        "grid": [
+            [
+                {"key": symbol["key"], "name": symbol["name"], "symbol": symbol["symbol"]}
+                for symbol in row
+            ]
+            for row in grid
+        ],
+        "wins": wins,
+        "winning_cells": [[row, column] for row, column in sorted(winning_cells)],
+        "payout": payout,
+        "multiplier": round(payout / wager, 2) if wager else 0.0,
+        "label": wins[0]["label"] if len(wins) == 1 else (f"{len(wins)} winning combinations" if wins else "No win"),
+    }
 
 
 def _secure_shuffle(values: list[Any]) -> list[Any]:
@@ -131,6 +341,72 @@ def register_casino(
             or "/static/logo.png"
         )[:500]
 
+    def _detect_profile_image(upload) -> tuple[str, str]:
+        """Validate the real file signature instead of trusting the browser MIME type."""
+        stream = upload.stream
+        position = stream.tell()
+        header = stream.read(32)
+        stream.seek(position)
+        if header.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "png", "image/png"
+        if header.startswith(b"\xff\xd8\xff"):
+            return "jpg", "image/jpeg"
+        if header.startswith((b"GIF87a", b"GIF89a")):
+            return "gif", "image/gif"
+        if len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+            return "webp", "image/webp"
+        raise ValueError("Choose a real PNG, JPG, GIF, or WEBP image.")
+
+    def _save_profile_avatar(user: dict, upload) -> str:
+        if not upload or not upload.filename:
+            raise ValueError("Choose a profile image first.")
+        if request.content_length and request.content_length > PROFILE_IMAGE_MAX_BYTES + (768 * 1024):
+            raise ValueError("Profile images must be 4 MB or smaller.")
+
+        detected_ext, mime_type = _detect_profile_image(upload)
+        original_name = secure_filename(str(upload.filename or "")) or f"profile.{detected_ext}"
+        supplied_ext = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
+        if supplied_ext and supplied_ext not in ALLOWED_PROFILE_EXTENSIONS:
+            raise ValueError("Profile images must be PNG, JPG, GIF, or WEBP.")
+
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        filename = f"profile-{uuid.uuid4().hex}.{detected_ext}"
+        local_path = uploads_dir / filename
+        upload.stream.seek(0)
+        upload.save(local_path)
+        size_bytes = local_path.stat().st_size if local_path.exists() else 0
+        if size_bytes <= 0:
+            local_path.unlink(missing_ok=True)
+            raise ValueError("The selected image was empty. Choose another file.")
+        if size_bytes > PROFILE_IMAGE_MAX_BYTES:
+            local_path.unlink(missing_ok=True)
+            raise ValueError("Profile images must be 4 MB or smaller.")
+
+        gridfs_id = save_upload_to_mongo_storage(
+            local_path, filename, original_name, "profile_image", mime_type
+        )
+        avatar_url = url_for("media_file", filename=filename)
+        save_media_record({
+            "filename": filename,
+            "original_name": original_name,
+            "kind": "profile_image",
+            "url": avatar_url,
+            "mime_type": mime_type,
+            "size_bytes": size_bytes,
+            "storage": "mongodb_gridfs" if gridfs_id else "local_disk",
+            "gridfs_id": gridfs_id,
+            "created_at": _utcnow().isoformat(),
+            "created_by": user["email"],
+        })
+        return avatar_url
+
+    def _valid_profile_name(username: str) -> bool:
+        if not 3 <= len(username) <= 24:
+            return False
+        if any(ord(char) < 32 for char in username):
+            return False
+        return not any(char in username for char in "<>/\\@")
+
     def _ensure_wallet(email: str) -> dict:
         users_col.update_one(
             {"email": email, "casino_credits": {"$exists": False}},
@@ -151,11 +427,19 @@ def register_casino(
         return _ensure_wallet(str(user["email"]).lower())
 
     def _parse_wager(value: Any) -> int:
-        wager = _safe_int(value)
+        if isinstance(value, bool):
+            raise ValueError("Enter a whole-number wager.")
+        raw = str(value if value is not None else "").strip().replace(",", "").replace(" ", "")
+        if not raw or not re.fullmatch(r"[0-9]+", raw):
+            raise ValueError("Enter a whole-number wager using credits.")
+        wager = int(raw)
         if wager < MIN_WAGER:
             raise ValueError(f"Minimum wager is {MIN_WAGER:,} credits.")
         if wager > MAX_WAGER:
             raise ValueError(f"Maximum wager is {MAX_WAGER:,} credits.")
+        if wager not in WAGER_PRESETS:
+            choices = ", ".join(f"{amount:,}" for amount in WAGER_PRESETS)
+            raise ValueError(f"Choose one of the preset wager amounts: {choices} credits.")
         return wager
 
     def _log_game(user: dict, game: str, wager: int, payout: int, details: dict | None = None) -> None:
@@ -295,12 +579,54 @@ def register_casino(
             casino_avatar=_avatar_for(user),
             casino_min_wager=MIN_WAGER,
             casino_max_wager=MAX_WAGER,
+            casino_wager_presets=WAGER_PRESETS,
+            slot_catalog=_slot_public_catalog(),
             plinko_multipliers=PLINKO_MULTIPLIERS,
         )
 
+    @app.route("/account/profile/avatar", methods=["POST"])
+    @login_required
+    @limiter.limit("20 per hour")
+    def account_profile_avatar_update():
+        user = _fresh_user()
+        wants_json = request.headers.get("Accept", "").lower().find("application/json") >= 0
+        if not user:
+            if wants_json:
+                return jsonify({"ok": False, "error": "Profile updates require MongoDB."}), 503
+            flash("Profile updates require MongoDB.", "danger")
+            return redirect(url_for("account") + "#profile")
+        try:
+            avatar_url = _save_profile_avatar(user, request.files.get("avatar"))
+            users_col.update_one(
+                {"email": user["email"]},
+                {"$set": {
+                    "avatar_url": avatar_url,
+                    "profile_customized": True,
+                    "updated_at": _naive_now(),
+                }},
+            )
+            fresh = _fresh_user()
+            session["user"] = sanitize_user_for_session(fresh)
+            record_audit("account_avatar_update", str(user.get("email") or ""), {"avatar_url": avatar_url})
+            if wants_json:
+                return jsonify({"ok": True, "avatar_url": avatar_url, "message": "Profile image updated."})
+            flash("Profile image updated.", "success")
+            return redirect(url_for("account") + "#profile")
+        except ValueError as exc:
+            if wants_json:
+                return jsonify({"ok": False, "error": str(exc)}), 400
+            flash(str(exc), "danger")
+            return redirect(url_for("account") + "#profile")
+        except Exception:
+            app.logger.exception("Profile image upload failed for %s", user.get("email"))
+            if wants_json:
+                return jsonify({"ok": False, "error": "The image could not be saved. Try another file."}), 500
+            flash("The image could not be saved. Try another file.", "danger")
+            return redirect(url_for("account") + "#profile")
+
     @app.route("/account/profile", methods=["POST"])
     @login_required
-    @limiter.limit("12 per hour")
+    @limiter.limit("20 per hour")
     def account_profile_update():
         user = _fresh_user()
         if not user:
@@ -308,8 +634,8 @@ def register_casino(
             return redirect(url_for("account") + "#profile")
         username = re.sub(r"\s+", " ", str(request.form.get("username") or "").strip())
         bio = str(request.form.get("bio") or "").strip()
-        if not re.fullmatch(r"[A-Za-z0-9 _.-]{3,24}", username):
-            flash("Display names must be 3–24 characters using letters, numbers, spaces, dots, dashes, or underscores.", "danger")
+        if not _valid_profile_name(username):
+            flash("Display names must be 3–24 characters and cannot contain <, >, /, \\, or @.", "danger")
             return redirect(url_for("account") + "#profile")
         existing = users_col.find_one({
             "email": {"$ne": user["email"]},
@@ -338,37 +664,15 @@ def register_casino(
 
         upload = request.files.get("avatar")
         if upload and upload.filename:
-            if request.content_length and request.content_length > PROFILE_IMAGE_MAX_BYTES + (512 * 1024):
-                flash("Profile images must be 4 MB or smaller.", "danger")
+            try:
+                update["avatar_url"] = _save_profile_avatar(user, upload)
+            except ValueError as exc:
+                flash(str(exc), "danger")
                 return redirect(url_for("account") + "#profile")
-            original = secure_filename(upload.filename)
-            ext = original.rsplit(".", 1)[-1].lower() if "." in original else ""
-            mime_type = str(upload.mimetype or mimetypes.guess_type(original)[0] or "")
-            if ext not in ALLOWED_PROFILE_EXTENSIONS or not mime_type.startswith("image/"):
-                flash("Profile images must be PNG, JPG, GIF, or WEBP.", "danger")
+            except Exception:
+                app.logger.exception("Profile image upload failed for %s", user.get("email"))
+                flash("The image could not be saved. Try another file.", "danger")
                 return redirect(url_for("account") + "#profile")
-            uploads_dir.mkdir(parents=True, exist_ok=True)
-            filename = f"profile-{uuid.uuid4().hex[:18]}.{ext}"
-            local_path = uploads_dir / filename
-            upload.save(local_path)
-            if local_path.stat().st_size > PROFILE_IMAGE_MAX_BYTES:
-                local_path.unlink(missing_ok=True)
-                flash("Profile images must be 4 MB or smaller.", "danger")
-                return redirect(url_for("account") + "#profile")
-            gridfs_id = save_upload_to_mongo_storage(local_path, filename, original, "image", mime_type)
-            save_media_record({
-                "filename": filename,
-                "original_name": original,
-                "kind": "profile_image",
-                "url": url_for("media_file", filename=filename),
-                "mime_type": mime_type,
-                "size_bytes": local_path.stat().st_size,
-                "storage": "mongodb_gridfs" if gridfs_id else "local_disk",
-                "gridfs_id": gridfs_id,
-                "created_at": _utcnow().isoformat(),
-                "created_by": user["email"],
-            })
-            update["avatar_url"] = url_for("media_file", filename=filename)
 
         users_col.update_one({"email": user["email"]}, {"$set": update})
         fresh = _fresh_user()
@@ -393,12 +697,46 @@ def register_casino(
             online = users_col.count_documents({"casino_last_seen": {"$gte": _naive_now() - timedelta(seconds=35)}})
         except Exception:
             pass
+        active_rounds: dict[str, Any] = {}
+        if rounds_col is not None:
+            mines_game = rounds_col.find_one(
+                {"email": user["email"], "game": "mines", "status": "active"},
+                {"_id": 0, "mines": 0},
+            )
+            if mines_game:
+                revealed = list(mines_game.get("revealed", []))
+                multiplier = _mines_multiplier(int(mines_game["mine_count"]), len(revealed))
+                active_rounds["mines"] = {
+                    "game_id": mines_game["game_id"],
+                    "wager": int(mines_game["wager"]),
+                    "mine_count": int(mines_game["mine_count"]),
+                    "revealed": revealed,
+                    "multiplier": multiplier,
+                    "potential_payout": int(math.floor(int(mines_game["wager"]) * multiplier)),
+                }
+            blackjack_game = rounds_col.find_one(
+                {"email": user["email"], "game": "blackjack", "status": "active"}
+            )
+            if blackjack_game:
+                active_rounds["blackjack"] = _blackjack_payload(blackjack_game)
+
+        hl_round = session.get("casino_hl") or {}
+        if _safe_int(hl_round.get("expires")) >= int(_utcnow().timestamp()):
+            value = _safe_int(hl_round.get("value"))
+            if 2 <= value <= 14 and hl_round.get("token"):
+                active_rounds["higher_lower"] = {
+                    "token": hl_round["token"],
+                    "card": hl_round.get("card") or _hl_card_payload(value),
+                    "multipliers": _hl_multipliers(value),
+                }
+
         return jsonify({
             "ok": True,
             "balance": int(user.get("casino_credits", INITIAL_CREDITS)),
             "daily_available": str(user.get("casino_daily_claim") or "") != _utcnow().strftime("%Y-%m-%d"),
             "history": history,
             "online": online,
+            "active_rounds": active_rounds,
             "profile": {
                 "username": user.get("username") or "Player",
                 "avatar_url": _avatar_for(user),
@@ -428,21 +766,24 @@ def register_casino(
     @limiter.limit("45 per minute")
     def casino_slots():
         try:
+            payload = request.get_json(silent=True) or {}
             user = _wallet_user()
-            wager = _parse_wager((request.get_json(silent=True) or {}).get("wager"))
-            reels = [_weighted_choice(SLOT_SYMBOLS) for _ in range(3)]
-            if reels[0]["key"] == reels[1]["key"] == reels[2]["key"]:
-                multiplier = float(reels[0]["triple"])
-                label = f"Triple {reels[0]['key']}"
-            elif len({reel["key"] for reel in reels}) == 2:
-                multiplier = 1.05
-                label = "Two of a kind"
-            else:
-                multiplier = 0.0
-                label = "No match"
-            payout = int(math.floor(wager * multiplier))
-            balance = _settle_single(user, "slots", wager, payout, {"symbols": [r["key"] for r in reels], "multiplier": multiplier})
-            return jsonify({"ok": True, "reels": [r["symbol"] for r in reels], "multiplier": multiplier, "payout": payout, "balance": balance, "label": label})
+            wager = _parse_wager(payload.get("wager"))
+            machine_key = str(payload.get("machine") or "classic").strip().lower()
+            result = _spin_slot_machine(machine_key, wager)
+            balance = _settle_single(
+                user,
+                f"slots_{machine_key}",
+                wager,
+                int(result["payout"]),
+                {
+                    "machine": machine_key,
+                    "grid": [[cell["key"] for cell in row] for row in result["grid"]],
+                    "wins": result["wins"],
+                    "multiplier": result["multiplier"],
+                },
+            )
+            return jsonify({"ok": True, **result, "balance": balance})
         except Exception as exc:
             return _json_error(exc)
 
@@ -517,8 +858,14 @@ def register_casino(
     def casino_hl_start():
         value = secrets.randbelow(13) + 2
         token = secrets.token_urlsafe(18)
-        session["casino_hl"] = {"token": token, "value": value, "expires": int(_utcnow().timestamp()) + 300}
-        return jsonify({"ok": True, "token": token, "card": _hl_card_payload(value), "multipliers": _hl_multipliers(value)})
+        card = _hl_card_payload(value)
+        session["casino_hl"] = {
+            "token": token,
+            "value": value,
+            "card": card,
+            "expires": int(_utcnow().timestamp()) + 300,
+        }
+        return jsonify({"ok": True, "token": token, "card": card, "multipliers": _hl_multipliers(value)})
 
     @app.route("/api/casino/higher-lower/guess", methods=["POST"])
     @api_guard(csrf=True)
@@ -537,12 +884,14 @@ def register_casino(
             if direction not in {"higher", "lower"} or not multipliers.get(direction):
                 raise ValueError("That guess is not available for this card.")
             next_value = secrets.randbelow(13) + 2
+            current_card = round_data.get("card") or _hl_card_payload(current)
+            next_card = _hl_card_payload(next_value)
             won = next_value > current if direction == "higher" else next_value < current
             multiplier = float(multipliers[direction]) if won else 0.0
             payout = int(math.floor(wager * multiplier)) if won else 0
             session.pop("casino_hl", None)
             balance = _settle_single(user, "higher_lower", wager, payout, {"current": current, "next": next_value, "direction": direction, "multiplier": multiplier})
-            return jsonify({"ok": True, "won": won, "current": _hl_card_payload(current), "next": _hl_card_payload(next_value), "multiplier": multiplier, "payout": payout, "balance": balance})
+            return jsonify({"ok": True, "won": won, "current": current_card, "next": next_card, "multiplier": multiplier, "payout": payout, "balance": balance})
         except Exception as exc:
             return _json_error(exc)
 
@@ -550,7 +899,8 @@ def register_casino(
         if revealed_count <= 0:
             return 1.0
         probability = math.comb(25 - mine_count, revealed_count) / math.comb(25, revealed_count)
-        return round(0.97 / probability, 2)
+        # Keep settlement math precise; the browser rounds only the displayed multiplier.
+        return round(0.97 / probability, 8)
 
     @app.route("/api/casino/mines/start", methods=["POST"])
     @api_guard(csrf=True)
@@ -563,11 +913,13 @@ def register_casino(
             mine_count = _safe_int(payload.get("mines"), 5)
             if not 3 <= mine_count <= 10:
                 raise ValueError("Choose between 3 and 10 mines.")
+            existing = rounds_col.find_one({"email": user["email"], "game": "mines", "status": "active"}, {"_id": 1})
+            if existing:
+                raise ValueError("You already have an active Mines round. Finish or cash it out first.")
             balance = _debit(user, "mines", wager)
             positions = _secure_shuffle(list(range(25)))[:mine_count]
             game_id = uuid.uuid4().hex
             try:
-                rounds_col.update_many({"email": user["email"], "game": "mines", "status": "active"}, {"$set": {"status": "abandoned"}})
                 rounds_col.insert_one({
                     "game_id": game_id,
                     "game": "mines",
@@ -620,7 +972,35 @@ def register_casino(
             revealed = list(fresh_game.get("revealed", []))
             multiplier = _mines_multiplier(int(fresh_game["mine_count"]), len(revealed))
             potential = int(math.floor(int(fresh_game["wager"]) * multiplier))
-            return jsonify({"ok": True, "hit_mine": False, "tile": tile, "revealed_count": len(revealed), "multiplier": multiplier, "potential_payout": potential})
+            safe_tiles = 25 - int(fresh_game["mine_count"])
+            if len(revealed) >= safe_tiles:
+                from pymongo import ReturnDocument
+                completed_game = rounds_col.find_one_and_update(
+                    {"_id": fresh_game["_id"], "status": "active"},
+                    {"$set": {"status": "won", "finished_at": _naive_now()}},
+                    return_document=ReturnDocument.BEFORE,
+                )
+                if completed_game:
+                    payout = potential
+                    balance = _credit(user, payout)
+                    _log_game(user, "mines", int(fresh_game["wager"]), payout, {
+                        "multiplier": multiplier,
+                        "revealed": revealed,
+                        "completed_board": True,
+                    })
+                    return jsonify({
+                        "ok": True,
+                        "hit_mine": False,
+                        "completed": True,
+                        "tile": tile,
+                        "revealed_count": len(revealed),
+                        "multiplier": multiplier,
+                        "potential_payout": potential,
+                        "payout": payout,
+                        "balance": balance,
+                        "mines": fresh_game.get("mines", []),
+                    })
+            return jsonify({"ok": True, "hit_mine": False, "completed": False, "tile": tile, "revealed_count": len(revealed), "multiplier": multiplier, "potential_payout": potential})
         except Exception as exc:
             return _json_error(exc)
 
@@ -664,12 +1044,11 @@ def register_casino(
 
     def _hand_value(cards: list[dict]) -> tuple[int, bool]:
         total = sum(_card_points(card["rank"]) for card in cards)
-        aces = sum(1 for card in cards if card["rank"] == "A")
-        while total > 21 and aces:
+        aces_counted_as_eleven = sum(1 for card in cards if card["rank"] == "A")
+        while total > 21 and aces_counted_as_eleven:
             total -= 10
-            aces -= 1
-        soft = any(card["rank"] == "A" for card in cards) and total <= 21 and sum(_card_points(card["rank"]) for card in cards) == total
-        return total, soft
+            aces_counted_as_eleven -= 1
+        return total, aces_counted_as_eleven > 0
 
     def _card_public(card: dict) -> dict:
         return {"rank": card["rank"], "suit": card["suit"], "red": card["suit"] in {"♥", "♦"}}
@@ -700,12 +1079,28 @@ def register_casino(
         }
 
     def _finish_blackjack(user: dict, game: dict, result: str, payout: int) -> tuple[dict, int]:
-        rounds_col.update_one(
-            {"_id": game["_id"]},
-            {"$set": {"status": "done", "result": result, "payout": int(payout), "finished_at": _naive_now()}, "$unset": {"action_lock": ""}},
+        finished_at = _naive_now()
+        stored = rounds_col.update_one(
+            {"_id": game["_id"], "status": "active"},
+            {
+                "$set": {
+                    "status": "done",
+                    "result": result,
+                    "payout": int(payout),
+                    "player": list(game.get("player", [])),
+                    "dealer": list(game.get("dealer", [])),
+                    "shoe": list(game.get("shoe", [])),
+                    "wager": int(game.get("wager", 0)),
+                    "doubled": bool(game.get("doubled")),
+                    "finished_at": finished_at,
+                },
+                "$unset": {"action_lock": ""},
+            },
         )
+        if stored.modified_count != 1:
+            raise ValueError("That blackjack hand was already settled.")
         balance = _credit(user, payout) if payout else int(_wallet_user().get("casino_credits", 0))
-        game.update({"status": "done", "result": result, "payout": int(payout)})
+        game.update({"status": "done", "result": result, "payout": int(payout), "finished_at": finished_at})
         _log_game(user, "blackjack", int(game["wager"]), int(payout), {"result": result, "player": game.get("player", []), "dealer": game.get("dealer", [])})
         return game, balance
 
@@ -716,6 +1111,9 @@ def register_casino(
         try:
             user = _wallet_user()
             wager = _parse_wager((request.get_json(silent=True) or {}).get("wager"))
+            existing = rounds_col.find_one({"email": user["email"], "game": "blackjack", "status": "active"}, {"_id": 1})
+            if existing:
+                raise ValueError("You already have an active Blackjack hand. Finish it first.")
             balance = _debit(user, "blackjack", wager)
             shoe = _new_shoe()
             player = [shoe.pop(), shoe.pop()]
@@ -733,7 +1131,6 @@ def register_casino(
                 "expires_at": _naive_now() + timedelta(hours=2),
             }
             try:
-                rounds_col.update_many({"email": user["email"], "game": "blackjack", "status": "active"}, {"$set": {"status": "abandoned"}})
                 insert = rounds_col.insert_one(game)
                 game["_id"] = insert.inserted_id
             except Exception:
@@ -762,9 +1159,19 @@ def register_casino(
             payload = request.get_json(silent=True) or {}
             user = _wallet_user()
             action = str(payload.get("action") or "").lower()
+            lock_now = _naive_now()
             game = rounds_col.find_one_and_update(
-                {"game_id": str(payload.get("game_id") or ""), "email": user["email"], "game": "blackjack", "status": "active", "action_lock": {"$ne": True}},
-                {"$set": {"action_lock": True, "updated_at": _naive_now()}},
+                {
+                    "game_id": str(payload.get("game_id") or ""),
+                    "email": user["email"],
+                    "game": "blackjack",
+                    "status": "active",
+                    "$or": [
+                        {"action_lock": {"$ne": True}},
+                        {"updated_at": {"$lt": lock_now - timedelta(seconds=30)}},
+                    ],
+                },
+                {"$set": {"action_lock": True, "updated_at": lock_now}},
                 return_document=ReturnDocument.AFTER,
             )
             if not game:

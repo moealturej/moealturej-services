@@ -41,13 +41,37 @@
     }, 3200);
   }
 
+  function wagerNumber(value) {
+    const raw = String(value ?? '').replace(/[^0-9]/g, '');
+    return raw ? Number(raw) : 0;
+  }
+
+  function writeWager(input, value) {
+    if (!input) return;
+    const safe = Math.max(minWager, Math.min(maxWager, Math.floor(Number(value) || minWager)));
+    input.value = String(safe);
+    const control = input.closest('[data-wager-control]');
+    control?.querySelectorAll('[data-wager-value]').forEach(button => {
+      const selected = Number(button.dataset.wagerValue) === safe;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+  }
+
   function readWager(id) {
     const input = document.getElementById(id);
-    const wager = Math.floor(Number(input?.value || 0));
+    const wager = Math.floor(wagerNumber(input?.value));
     if (!Number.isFinite(wager) || wager < minWager) throw new Error(`Minimum wager is ${formatCredits(minWager)} credits.`);
     if (wager > maxWager) throw new Error(`Maximum wager is ${formatCredits(maxWager)} credits.`);
     if (wager > balance) throw new Error('You do not have enough credits for that wager.');
+    if (input) input.value = String(wager);
     return wager;
+  }
+
+  function setWagerControlDisabled(id, disabled) {
+    const control = document.querySelector(`[data-wager-control="${id}"]`);
+    control?.querySelectorAll('input, button').forEach(element => { element.disabled = Boolean(disabled); });
+    control?.classList.toggle('disabled', Boolean(disabled));
   }
 
   async function api(url, options = {}) {
@@ -85,13 +109,15 @@
     }
   }
 
-  document.querySelectorAll('[data-wager-target]').forEach(row => {
-    row.querySelectorAll('[data-chip]').forEach(button => {
-      button.addEventListener('click', () => {
-        const input = document.getElementById(row.dataset.wagerTarget);
-        if (input) input.value = button.dataset.chip;
-      });
-    });
+  document.querySelectorAll('[data-wager-control]').forEach(control => {
+    const id = control.dataset.wagerControl;
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    control.querySelectorAll('[data-wager-value]').forEach(button => button.addEventListener('click', () => {
+      writeWager(input, Number(button.dataset.wagerValue || minWager));
+    }));
+    writeWager(input, wagerNumber(input.value) || 100);
   });
 
   // Tabs
@@ -138,48 +164,191 @@
   const slotMachine = document.getElementById('slotMachine');
   const slotButton = document.getElementById('slotSpinButton');
   const slotLever = document.getElementById('slotLever');
-  const slotReels = [...document.querySelectorAll('[data-slot-reel] span')];
+  const slotGrid = document.getElementById('slotGrid');
   const slotStatus = document.getElementById('slotStatus');
   const slotWinDisplay = document.getElementById('slotWinDisplay');
+  const slotMachineButtons = [...document.querySelectorAll('[data-slot-machine]')];
+  let slotCatalog = {};
+  try {
+    slotCatalog = JSON.parse(document.getElementById('slotMachineCatalog')?.textContent || '{}');
+  } catch {
+    slotCatalog = {};
+  }
+  let selectedSlotMachine = slotCatalog.classic ? 'classic' : Object.keys(slotCatalog)[0];
   let slotsBusy = false;
+  let slotTicker = 0;
+
+  function slotSymbolNode(symbol, row, column) {
+    const cell = document.createElement('div');
+    const key = symbol?.key || '';
+    cell.className = `slot-symbol symbol-${key}`;
+    cell.dataset.row = String(row);
+    cell.dataset.column = String(column);
+    cell.dataset.key = key;
+    const face = document.createElement('span');
+    face.textContent = symbol?.symbol || '•';
+    face.title = symbol?.name || key;
+    cell.appendChild(face);
+    return cell;
+  }
+
+  function starterSlotGrid(machine) {
+    const symbols = machine?.symbols || [];
+    const rows = Number(machine?.rows || 3);
+    const columns = Number(machine?.columns || 3);
+    return Array.from({ length: rows }, (_, row) => Array.from({ length: columns }, (_, column) => {
+      return symbols[(row * columns + column) % Math.max(1, symbols.length)] || { key: '', symbol: '•', name: '' };
+    }));
+  }
+
+  function renderSlotGrid(grid, winningCells = []) {
+    if (!slotGrid) return;
+    const machine = slotCatalog[selectedSlotMachine] || {};
+    const rows = Array.isArray(grid) && grid.length ? grid : starterSlotGrid(machine);
+    const columns = Number(machine.columns || rows[0]?.length || 3);
+    const winners = new Set((winningCells || []).map(cell => `${cell[0]}:${cell[1]}`));
+    slotGrid.textContent = '';
+    slotGrid.className = `slot-reel-grid columns-${columns}`;
+    rows.forEach((row, rowIndex) => row.forEach((symbol, columnIndex) => {
+      const cell = slotSymbolNode(symbol, rowIndex, columnIndex);
+      if (winners.has(`${rowIndex}:${columnIndex}`)) cell.classList.add('winning');
+      slotGrid.appendChild(cell);
+    }));
+  }
+
+  function renderSlotPaytable(machine) {
+    const rows = document.getElementById('slotPaytableRows');
+    if (!rows || !machine) return;
+    rows.textContent = '';
+    (machine.symbols || []).forEach(symbol => {
+      const payouts = Object.entries(symbol.payouts || {});
+      if (!payouts.length && symbol.key !== 'scatter') return;
+      const item = document.createElement('div');
+      item.className = 'slot-paytable-row';
+      const icon = document.createElement('span');
+      icon.className = `slot-paytable-symbol symbol-${symbol.key}`;
+      icon.textContent = symbol.symbol;
+      const copy = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = symbol.name;
+      const values = document.createElement('small');
+      if (symbol.key === 'scatter') {
+        values.textContent = Object.entries(machine.scatter_payouts || {}).map(([count, value]) => `${count}+ pays ${value}× total bet`).join(' • ');
+      } else {
+        values.textContent = payouts.map(([count, value]) => `${count} = ${value}× line bet`).join(' • ');
+      }
+      copy.append(name, values);
+      item.append(icon, copy);
+      rows.appendChild(item);
+    });
+    if (machine.fruit_mix) {
+      const item = document.createElement('div');
+      item.className = 'slot-paytable-row';
+      item.innerHTML = `<span class="slot-paytable-symbol">🍒🍋</span><div><strong>Mixed fruit</strong><small>Any 3 fruit pay ${machine.fruit_mix}× line bet</small></div>`;
+      rows.appendChild(item);
+    }
+  }
+
+  function selectSlotMachine(machineKey, grid = null, winningCells = []) {
+    const machine = slotCatalog[machineKey];
+    if (!machine || slotsBusy) return;
+    selectedSlotMachine = machineKey;
+    slotMachineButtons.forEach(button => button.classList.toggle('active', button.dataset.slotMachine === machineKey));
+    if (slotMachine) slotMachine.className = `slot-machine theme-${machine.theme || machineKey}`;
+    const title = document.getElementById('slotPanelTitle');
+    const description = document.getElementById('slotPanelDescription');
+    const badge = document.getElementById('slotRtpBadge');
+    const marquee = document.getElementById('slotMarqueeTitle');
+    const lineCount = document.getElementById('slotLineCount');
+    const paytableTitle = document.getElementById('slotPaytableTitle');
+    const paytableLines = document.getElementById('slotPaytableLines');
+    const ruleNote = document.getElementById('slotRuleNote');
+    if (title) title.textContent = machine.label;
+    if (description) description.textContent = machineKey === 'classic'
+      ? 'Five paylines, wild substitutions, mixed-fruit wins, and two-cherry payouts.'
+      : `${machine.paylines} paylines pay 3, 4, or 5 matching symbols from the left. Wilds substitute and scatters pay anywhere.`;
+    if (badge) badge.textContent = `Approx. ${Number(machine.rtp).toFixed(1)}% RTP`;
+    if (marquee) marquee.textContent = machine.label.toUpperCase();
+    if (lineCount) lineCount.textContent = `${machine.paylines} PAYLINES`;
+    if (paytableTitle) paytableTitle.textContent = `${machine.label} paytable`;
+    if (paytableLines) paytableLines.textContent = `${machine.paylines} lines`;
+    if (ruleNote) ruleNote.textContent = machineKey === 'classic'
+      ? 'Two cherries and mixed fruit can win; all three symbols do not always need to match.'
+      : 'Only the first 3 reels need to match for a line win; reels 4 and 5 increase the payout.';
+    renderSlotPaytable(machine);
+    renderSlotGrid(grid || starterSlotGrid(machine), winningCells);
+    if (slotStatus) slotStatus.textContent = `${machine.subtitle} • type any whole-number bet`;
+    if (slotWinDisplay) slotWinDisplay.textContent = 'READY';
+  }
+
+  function randomizeSlotGrid() {
+    const machine = slotCatalog[selectedSlotMachine];
+    if (!machine) return;
+    const symbols = machine.symbols || [];
+    const grid = Array.from({ length: Number(machine.rows || 3) }, () => Array.from({ length: Number(machine.columns || 3) }, () => {
+      return symbols[Math.floor(Math.random() * Math.max(1, symbols.length))] || { symbol: '•' };
+    }));
+    renderSlotGrid(grid);
+  }
 
   async function spinSlots() {
-    if (slotsBusy) return;
+    if (slotsBusy || !selectedSlotMachine) return;
     try {
       const wager = readWager('slotsWager');
       slotsBusy = true;
       slotMachine?.classList.add('spinning');
       slotLever?.classList.add('pulled');
       if (slotButton) slotButton.disabled = true;
-      if (slotStatus) slotStatus.textContent = 'Reels spinning';
+      slotMachineButtons.forEach(button => { button.disabled = true; });
+      setWagerControlDisabled('slotsWager', true);
+      if (slotStatus) slotStatus.textContent = 'Reels spinning…';
       if (slotWinDisplay) slotWinDisplay.textContent = 'GOOD LUCK';
-      const request = api('/api/casino/play/slots', { method: 'POST', body: { wager } });
-      await sleep(1150);
-      const data = await request;
-      slotMachine?.classList.remove('spinning');
-      for (let index = 0; index < slotReels.length; index += 1) {
-        await sleep(180);
-        slotReels[index].textContent = data.reels[index];
-        slotReels[index].animate?.([{ transform: 'translateY(-30px)', opacity: .2 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
-      }
+      const started = performance.now();
+      slotTicker = window.setInterval(randomizeSlotGrid, 85);
+      const data = await api('/api/casino/play/slots', { method: 'POST', body: { wager, machine: selectedSlotMachine } });
+      await sleep(Math.max(0, 1250 - (performance.now() - started)));
+      window.clearInterval(slotTicker);
+      slotTicker = 0;
+      renderSlotGrid(data.grid, data.winning_cells || []);
+      [...slotGrid?.children || []].forEach(cell => {
+        const delay = Number(cell.dataset.column || 0) * 110;
+        cell.animate?.(
+          [{ transform: 'translateY(-45px)', opacity: .15, filter: 'blur(5px)' }, { transform: 'translateY(0)', opacity: 1, filter: 'blur(0)' }],
+          { duration: 420, delay, easing: 'cubic-bezier(.16,.8,.22,1)', fill: 'both' }
+        );
+      });
+      await sleep(Number((slotCatalog[selectedSlotMachine]?.columns || 3)) * 110 + 250);
       setBalance(data.balance);
       if (slotStatus) slotStatus.textContent = data.label;
-      if (slotWinDisplay) slotWinDisplay.textContent = data.payout ? `WIN ${formatCredits(data.payout)}` : 'NO WIN';
-      showToast(data.payout ? `${data.label}: +${formatCredits(data.payout)} credits` : 'No match this spin.', data.payout ? 'success' : '');
+      if (slotWinDisplay) slotWinDisplay.textContent = data.payout ? `PAID ${formatCredits(data.payout)}` : 'NO WIN';
+      const winSummary = (data.wins || []).slice(0, 2).map(win => win.label).join(' + ');
+      showToast(
+        data.payout ? `${winSummary || data.label} paid ${formatCredits(data.payout)} credits.` : `${data.machine_label}: no winning line.`,
+        data.payout > wager ? 'success' : ''
+      );
       loadState(false);
     } catch (error) {
-      slotMachine?.classList.remove('spinning');
       showToast(error.message, 'error');
     } finally {
+      window.clearInterval(slotTicker);
+      slotTicker = 0;
+      slotMachine?.classList.remove('spinning');
       slotsBusy = false;
       if (slotButton) slotButton.disabled = false;
+      slotMachineButtons.forEach(button => { button.disabled = false; });
+      setWagerControlDisabled('slotsWager', false);
       window.setTimeout(() => slotLever?.classList.remove('pulled'), 250);
     }
   }
+
+  slotMachineButtons.forEach(button => button.addEventListener('click', () => selectSlotMachine(button.dataset.slotMachine)));
   slotButton?.addEventListener('click', spinSlots);
   slotLever?.addEventListener('click', spinSlots);
+  if (selectedSlotMachine) selectSlotMachine(selectedSlotMachine);
 
   // Roulette
+  const rouletteOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+  const rouletteRed = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
   const rouletteBets = [...document.querySelectorAll('#rouletteBets button[data-bet-type]')];
   let rouletteBet = { type: 'color', value: 'red' };
   rouletteBets[0]?.classList.add('active');
@@ -189,7 +358,13 @@
     button.classList.add('active');
     rouletteBet = { type: button.dataset.betType, value: button.dataset.betValue };
   }));
-  document.getElementById('rouletteNumber')?.addEventListener('focus', () => {
+  const rouletteNumberInput = document.getElementById('rouletteNumber');
+  rouletteNumberInput?.addEventListener('input', () => { rouletteNumberInput.value = rouletteNumberInput.value.replace(/[^0-9]/g, '').slice(0, 2); });
+  rouletteNumberInput?.addEventListener('blur', () => {
+    const value = Number(rouletteNumberInput.value);
+    rouletteNumberInput.value = String(Number.isFinite(value) ? Math.max(0, Math.min(36, value)) : 0);
+  });
+  rouletteNumberInput?.addEventListener('focus', () => {
     const straight = rouletteBets.find(button => button.dataset.betType === 'straight');
     rouletteBets.forEach(item => item.classList.toggle('active', item === straight));
     rouletteBet = { type: 'straight', value: 'number' };
@@ -197,32 +372,94 @@
 
   const rouletteButton = document.getElementById('rouletteSpinButton');
   const rouletteWheel = document.getElementById('rouletteWheel');
+  const rouletteBallTrack = document.getElementById('rouletteBallTrack');
+  const rouletteBall = document.getElementById('rouletteBall');
+  const rouletteWheelStage = document.getElementById('rouletteWheelStage');
   const rouletteNumberResult = document.getElementById('rouletteResultNumber');
   const rouletteResult = document.getElementById('rouletteResult');
+  const rouletteNumberRing = document.getElementById('rouletteNumberRing');
   let rouletteRotation = 0;
+  let rouletteBallRotation = 0;
+
+  if (rouletteNumberRing) {
+    rouletteOrder.forEach((number, index) => {
+      const label = document.createElement('span');
+      label.textContent = String(number);
+      label.className = number === 0 ? 'green' : (rouletteRed.has(number) ? 'red' : 'black');
+      const angle = index * (360 / rouletteOrder.length);
+      label.style.transform = `rotate(${angle}deg) translateY(-137px) rotate(${-angle}deg)`;
+      rouletteNumberRing.appendChild(label);
+    });
+  }
+
+  async function animateRouletteTo(wheelIndex) {
+    if (!rouletteWheel || !rouletteBallTrack) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const duration = reduced ? 250 : 4300;
+    const step = 360 / rouletteOrder.length;
+    const currentMod = ((rouletteRotation % 360) + 360) % 360;
+    const targetMod = ((360 - (Number(wheelIndex) * step)) % 360 + 360) % 360;
+    const wheelEnd = rouletteRotation + (reduced ? 0 : 5 * 360) + ((targetMod - currentMod + 360) % 360);
+    const ballEnd = rouletteBallRotation - (reduced ? 0 : 8 * 360);
+    rouletteWheelStage?.classList.add('spinning');
+
+    const wheelAnimation = rouletteWheel.animate?.(
+      [{ transform: `rotate(${rouletteRotation}deg)` }, { transform: `rotate(${wheelEnd}deg)` }],
+      { duration, easing: 'cubic-bezier(.08,.68,.08,1)', fill: 'forwards' }
+    );
+    const ballAnimation = rouletteBallTrack.animate?.([
+      { transform: `rotate(${rouletteBallRotation}deg)`, offset: 0 },
+      { transform: `rotate(${ballEnd + 100}deg)`, offset: .72 },
+      { transform: `rotate(${ballEnd - 18}deg)`, offset: .91 },
+      { transform: `rotate(${ballEnd}deg)`, offset: 1 },
+    ], { duration: duration + (reduced ? 0 : 180), easing: 'cubic-bezier(.12,.55,.16,1)', fill: 'forwards' });
+    const ballBounceAnimation = rouletteBall?.animate?.([
+      { transform: 'translateX(-50%) translateY(-3px) scale(1)', offset: 0 },
+      { transform: 'translateX(-50%) translateY(9px) scale(.96)', offset: .72 },
+      { transform: 'translateX(-50%) translateY(2px) scale(1.04)', offset: .88 },
+      { transform: 'translateX(-50%) translateY(6px) scale(1)', offset: 1 },
+    ], { duration: duration + (reduced ? 0 : 180), easing: 'cubic-bezier(.2,.7,.18,1)', fill: 'forwards' });
+
+    const waits = [];
+    if (wheelAnimation?.finished) waits.push(wheelAnimation.finished.catch(() => {}));
+    if (ballAnimation?.finished) waits.push(ballAnimation.finished.catch(() => {}));
+    if (ballBounceAnimation?.finished) waits.push(ballBounceAnimation.finished.catch(() => {}));
+    if (waits.length) await Promise.all(waits);
+    else await sleep(duration);
+    rouletteRotation = wheelEnd;
+    rouletteBallRotation = ballEnd;
+    rouletteWheel.style.transform = `rotate(${wheelEnd}deg)`;
+    rouletteBallTrack.style.transform = `rotate(${ballEnd}deg)`;
+    rouletteWheelStage?.classList.remove('spinning');
+  }
+
   rouletteButton?.addEventListener('click', async () => {
     try {
       const wager = readWager('rouletteWager');
-      const betValue = rouletteBet.type === 'straight' ? document.getElementById('rouletteNumber')?.value : rouletteBet.value;
+      const betValue = rouletteBet.type === 'straight' ? rouletteNumberInput?.value : rouletteBet.value;
       setBusy(rouletteButton, true, 'Spinning');
-      if (rouletteResult) rouletteResult.textContent = 'No more bets…';
-      const request = api('/api/casino/play/roulette', { method: 'POST', body: { wager, bet_type: rouletteBet.type, bet_value: betValue } });
-      const data = await request;
-      rouletteRotation += 1440 + (data.wheel_index * (360 / 37));
-      if (rouletteWheel) rouletteWheel.style.transform = `rotate(${rouletteRotation}deg)`;
-      await sleep(3150);
+      rouletteBets.forEach(button => { button.disabled = true; });
+      if (rouletteNumberInput) rouletteNumberInput.disabled = true;
+      setWagerControlDisabled('rouletteWager', true);
+      if (rouletteResult) rouletteResult.textContent = 'No more bets — ball in motion…';
+      const data = await api('/api/casino/play/roulette', { method: 'POST', body: { wager, bet_type: rouletteBet.type, bet_value: betValue } });
+      await animateRouletteTo(data.wheel_index);
       if (rouletteNumberResult) {
         rouletteNumberResult.textContent = data.number;
         rouletteNumberResult.style.color = data.color === 'red' ? '#ff7070' : data.color === 'green' ? '#68e5a2' : '#fff';
       }
-      if (rouletteResult) rouletteResult.textContent = `${data.number} ${data.color.toUpperCase()} — ${data.won ? `WIN ${formatCredits(data.payout)}` : 'NO WIN'}`;
+      if (rouletteResult) rouletteResult.textContent = `${data.number} ${data.color.toUpperCase()} — ${data.won ? `PAID ${formatCredits(data.payout)}` : 'NO WIN'}`;
       setBalance(data.balance);
-      showToast(data.won ? `Roulette win: +${formatCredits(data.payout)} credits` : `${data.number} ${data.color}. Better luck next spin.`, data.won ? 'success' : '');
+      showToast(data.won ? `Roulette paid ${formatCredits(data.payout)} credits.` : `${data.number} ${data.color}. Better luck next spin.`, data.won ? 'success' : '');
       loadState(false);
     } catch (error) {
+      rouletteWheelStage?.classList.remove('spinning');
       showToast(error.message, 'error');
     } finally {
       setBusy(rouletteButton, false);
+      rouletteBets.forEach(button => { button.disabled = false; });
+      if (rouletteNumberInput) rouletteNumberInput.disabled = false;
+      setWagerControlDisabled('rouletteWager', false);
     }
   });
 
@@ -249,6 +486,8 @@
 
   // Blackjack
   let blackjackGameId = '';
+  let blackjackBusy = false;
+  let blackjackLastGame = null;
   const blackjackDeal = document.getElementById('blackjackDeal');
   const blackjackHit = document.getElementById('blackjackHit');
   const blackjackStand = document.getElementById('blackjackStand');
@@ -256,6 +495,7 @@
   const blackjackMessage = document.getElementById('blackjackMessage');
 
   function renderBlackjack(game) {
+    blackjackLastGame = game || null;
     const active = game?.status === 'active';
     blackjackGameId = active ? (game?.game_id || '') : '';
     const dealerCards = document.getElementById('dealerCards');
@@ -277,9 +517,12 @@
     if (blackjackStand) blackjackStand.disabled = !active;
     if (blackjackDouble) blackjackDouble.disabled = !active || !game?.can_double;
     if (blackjackDeal) blackjackDeal.disabled = active;
+    setWagerControlDisabled('blackjackWager', active);
   }
 
   blackjackDeal?.addEventListener('click', async () => {
+    if (blackjackBusy) return;
+    blackjackBusy = true;
     try {
       const wager = readWager('blackjackWager');
       setBusy(blackjackDeal, true, 'Dealing');
@@ -291,14 +534,17 @@
     } catch (error) {
       showToast(error.message, 'error');
     } finally {
+      blackjackBusy = false;
       if (blackjackDeal?.dataset.originalHtml) blackjackDeal.innerHTML = blackjackDeal.dataset.originalHtml;
       if (blackjackDeal && !blackjackGameId) blackjackDeal.disabled = false;
     }
   });
 
   async function blackjackAction(action, button) {
-    if (!blackjackGameId) return;
+    if (!blackjackGameId || blackjackBusy) return;
+    blackjackBusy = true;
     try {
+      [blackjackHit, blackjackStand, blackjackDouble].forEach(control => { if (control) control.disabled = true; });
       setBusy(button, true, action === 'double' ? 'Doubling' : 'Playing');
       const data = await api('/api/casino/blackjack/action', { method: 'POST', body: { game_id: blackjackGameId, action } });
       setBalance(data.balance);
@@ -312,8 +558,9 @@
     } catch (error) {
       showToast(error.message, 'error');
     } finally {
+      blackjackBusy = false;
       if (button?.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
-      if (button && blackjackGameId) button.disabled = false;
+      if (blackjackGameId && blackjackLastGame) renderBlackjack(blackjackLastGame);
     }
   }
   blackjackHit?.addEventListener('click', () => blackjackAction('hit', blackjackHit));
@@ -323,6 +570,7 @@
   // Mines
   let minesGameId = '';
   let minesActive = false;
+  let minesRevealBusy = false;
   const minesBoard = document.getElementById('minesBoard');
   const minesTiles = [...document.querySelectorAll('[data-mine-tile]')];
   const minesStart = document.getElementById('minesStart');
@@ -352,7 +600,7 @@
       if (minesMultiplier) minesMultiplier.textContent = '1.00×';
       if (minesPotential) minesPotential.textContent = formatCredits(wager);
       if (minesCashout) minesCashout.disabled = true;
-      document.getElementById('minesWager').disabled = true;
+      setWagerControlDisabled('minesWager', true);
       document.getElementById('minesCount').disabled = true;
       showToast('Mines round started. Pick a tile.', 'success');
     } catch (error) {
@@ -364,8 +612,9 @@
   });
 
   minesTiles.forEach(tile => tile.addEventListener('click', async () => {
-    if (!minesActive || !minesGameId || tile.disabled) return;
-    tile.disabled = true;
+    if (!minesActive || !minesGameId || tile.disabled || minesRevealBusy) return;
+    minesRevealBusy = true;
+    minesTiles.forEach(item => { item.disabled = true; });
     try {
       const data = await api('/api/casino/mines/reveal', { method: 'POST', body: { game_id: minesGameId, tile: Number(tile.dataset.mineTile) } });
       if (data.hit_mine) {
@@ -379,7 +628,6 @@
           const mineIcon = mineTile?.querySelector('i');
           if (mineIcon) mineIcon.className = 'fas fa-bomb';
         });
-        minesTiles.forEach(item => { item.disabled = true; });
         setBalance(data.balance);
         finishMinesControls();
         showToast('Mine hit — round lost.', 'error');
@@ -390,11 +638,30 @@
         if (icon) icon.className = 'fas fa-gem';
         if (minesMultiplier) minesMultiplier.textContent = `${Number(data.multiplier).toFixed(2)}×`;
         if (minesPotential) minesPotential.textContent = formatCredits(data.potential_payout);
-        if (minesCashout) minesCashout.disabled = false;
+        if (data.completed) {
+          (data.mines || []).forEach(index => {
+            const mineTile = minesTiles[index];
+            mineTile?.classList.add('mine');
+            const mineIcon = mineTile?.querySelector('i');
+            if (mineIcon) mineIcon.className = 'fas fa-bomb';
+          });
+          setBalance(data.balance);
+          finishMinesControls();
+          showToast(`Board cleared — paid ${formatCredits(data.payout)} credits at ${Number(data.multiplier).toFixed(2)}×.`, 'success');
+          loadState(false);
+        } else if (minesCashout) {
+          minesCashout.disabled = false;
+        }
       }
     } catch (error) {
-      tile.disabled = false;
       showToast(error.message, 'error');
+    } finally {
+      minesRevealBusy = false;
+      if (minesActive) {
+        minesTiles.forEach(item => { item.disabled = item.classList.contains('safe') || item.classList.contains('mine'); });
+      } else {
+        minesTiles.forEach(item => { item.disabled = true; });
+      }
     }
   }));
 
@@ -403,10 +670,33 @@
     minesActive = false;
     if (minesStart) minesStart.disabled = false;
     if (minesCashout) minesCashout.disabled = true;
+    const countInput = document.getElementById('minesCount');
+    setWagerControlDisabled('minesWager', false);
+    if (countInput) countInput.disabled = false;
+  }
+
+  function restoreMinesRound(game) {
+    if (!game?.game_id) return;
+    minesGameId = game.game_id;
+    minesActive = true;
     const wagerInput = document.getElementById('minesWager');
     const countInput = document.getElementById('minesCount');
-    if (wagerInput) wagerInput.disabled = false;
-    if (countInput) countInput.disabled = false;
+    if (wagerInput) writeWager(wagerInput, game.wager || minWager);
+    if (countInput) countInput.value = String(game.mine_count || 5);
+    resetMinesBoard();
+    (game.revealed || []).forEach(index => {
+      const tile = minesTiles[index];
+      tile?.classList.add('safe');
+      if (tile) tile.disabled = true;
+      const icon = tile?.querySelector('i');
+      if (icon) icon.className = 'fas fa-gem';
+    });
+    if (minesMultiplier) minesMultiplier.textContent = `${Number(game.multiplier || 1).toFixed(2)}×`;
+    if (minesPotential) minesPotential.textContent = formatCredits(game.potential_payout || game.wager || 0);
+    if (minesStart) minesStart.disabled = true;
+    if (minesCashout) minesCashout.disabled = !(game.revealed || []).length;
+    setWagerControlDisabled('minesWager', true);
+    if (countInput) countInput.disabled = true;
   }
 
   minesCashout?.addEventListener('click', async () => {
@@ -582,28 +872,37 @@
     [...node.childNodes].forEach(child => container.appendChild(child));
   }
 
+  function restoreHigherLowerRound(round) {
+    if (!round?.token || !round?.card) return;
+    hlToken = round.token;
+    hlReady = true;
+    renderCardInto(hlCurrentCard, round.card);
+    if (hlNextCard) {
+      hlNextCard.className = 'playing-card giant-card mystery-card';
+      hlNextCard.innerHTML = '<i class="fas fa-question"></i>';
+    }
+    const higher = Number(round.multipliers?.higher || 0);
+    const lower = Number(round.multipliers?.lower || 0);
+    const higherMultiplier = document.getElementById('hlHigherMultiplier');
+    const lowerMultiplier = document.getElementById('hlLowerMultiplier');
+    if (higherMultiplier) higherMultiplier.textContent = higher ? `${higher.toFixed(2)}×` : 'N/A';
+    if (lowerMultiplier) lowerMultiplier.textContent = lower ? `${lower.toFixed(2)}×` : 'N/A';
+    if (hlHigher) hlHigher.disabled = !higher;
+    if (hlLower) hlLower.disabled = !lower;
+    if (hlDeal) hlDeal.disabled = true;
+    if (hlStatus) hlStatus.textContent = 'Will the next card be higher or lower? Ties lose.';
+  }
+
   hlDeal?.addEventListener('click', async () => {
     try {
       setBusy(hlDeal, true, 'Dealing');
       const data = await api('/api/casino/higher-lower/start', { method: 'POST', body: {} });
-      hlToken = data.token;
-      hlReady = true;
-      renderCardInto(hlCurrentCard, data.card);
-      if (hlNextCard) {
-        hlNextCard.className = 'playing-card giant-card mystery-card';
-        hlNextCard.innerHTML = '<i class="fas fa-question"></i>';
-      }
-      const higher = Number(data.multipliers?.higher || 0);
-      const lower = Number(data.multipliers?.lower || 0);
-      if (document.getElementById('hlHigherMultiplier')) document.getElementById('hlHigherMultiplier').textContent = higher ? `${higher.toFixed(2)}×` : 'N/A';
-      if (document.getElementById('hlLowerMultiplier')) document.getElementById('hlLowerMultiplier').textContent = lower ? `${lower.toFixed(2)}×` : 'N/A';
-      if (hlHigher) hlHigher.disabled = !higher;
-      if (hlLower) hlLower.disabled = !lower;
-      if (hlStatus) hlStatus.textContent = 'Will the next card be higher or lower? Ties lose.';
+      restoreHigherLowerRound(data);
     } catch (error) {
       showToast(error.message, 'error');
     } finally {
       setBusy(hlDeal, false);
+      if (hlDeal) hlDeal.disabled = hlReady;
     }
   });
 
@@ -617,9 +916,11 @@
       setBusy(button, true, 'Revealing');
       const data = await api('/api/casino/higher-lower/guess', { method: 'POST', body: { wager, direction, token: hlToken } });
       renderCardInto(hlNextCard, data.next);
+      hlToken = '';
       setBalance(data.balance);
+      if (hlDeal) hlDeal.disabled = false;
       if (hlStatus) hlStatus.textContent = data.won ? `Correct — ${Number(data.multiplier).toFixed(2)}×` : (data.next.value === data.current.value ? 'Tie — ties lose' : 'Wrong guess');
-      showToast(data.won ? `Correct: +${formatCredits(data.payout)} credits` : 'Higher/Lower round lost.', data.won ? 'success' : '');
+      showToast(data.won ? `Correct — paid ${formatCredits(data.payout)} credits.` : 'Higher/Lower round lost.', data.won ? 'success' : '');
       loadState(false);
     } catch (error) {
       hlReady = true;
@@ -633,7 +934,7 @@
 
   // History and state
   const historyEl = document.getElementById('casinoHistory');
-  const gameIcons = { slots: 'fa-dice', roulette: 'fa-circle-dot', blackjack: 'fa-club', blackjack_double: 'fa-club', mines: 'fa-bomb', plinko: 'fa-circle-nodes', higher_lower: 'fa-arrow-up-arrow-down' };
+  const gameIcons = { slots: 'fa-dice', slots_classic: 'fa-dice', slots_neon: 'fa-dice', slots_vault: 'fa-gem', roulette: 'fa-circle-dot', blackjack: 'fa-club', blackjack_double: 'fa-club', mines: 'fa-bomb', plinko: 'fa-circle-nodes', higher_lower: 'fa-arrow-up-arrow-down' };
 
   function renderHistory(entries) {
     if (!historyEl) return;
@@ -666,11 +967,24 @@
     });
   }
 
+  function restoreActiveRounds(rounds = {}) {
+    if (rounds.blackjack?.game_id && rounds.blackjack.game_id !== blackjackGameId) {
+      renderBlackjack(rounds.blackjack);
+    }
+    if (rounds.mines?.game_id && rounds.mines.game_id !== minesGameId) {
+      restoreMinesRound(rounds.mines);
+    }
+    if (rounds.higher_lower?.token && rounds.higher_lower.token !== hlToken) {
+      restoreHigherLowerRound(rounds.higher_lower);
+    }
+  }
+
   async function loadState(showErrors = true) {
     try {
       const data = await api('/api/casino/state');
       setBalance(data.balance);
       renderHistory(data.history || []);
+      restoreActiveRounds(data.active_rounds || {});
       const online = document.getElementById('casinoOnlineCount');
       if (online) online.textContent = formatCredits(data.online || 1);
       if (dailyButton) {
