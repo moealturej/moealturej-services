@@ -3,6 +3,32 @@
 
 {% block extra_scripts %}
 <script>
+(function setupManualGrant(){
+  const select=document.getElementById('manualGrantProduct');
+  const name=document.getElementById('manualGrantName');
+  const slug=document.getElementById('manualGrantSlug');
+  const image=document.getElementById('manualGrantImage');
+  if(!select||!name||!slug||!image)return;
+  function sync(){
+    const option=select.options[select.selectedIndex];
+    const custom=select.value==='__custom__';
+    slug.disabled=!custom; image.disabled=!custom;
+    if(custom){
+      if(!name.value||name.dataset.catalogFill==='1') name.value='';
+      name.dataset.catalogFill='0';
+      slug.value=''; image.value='/static/logo.png';
+      name.focus();
+    }else{
+      name.value=option.dataset.name||option.textContent.trim();
+      name.dataset.catalogFill='1';
+      slug.value=option.dataset.slug||select.value;
+      image.value=option.dataset.image||'/static/logo.png';
+    }
+  }
+  select.addEventListener('change',sync);
+  name.addEventListener('input',()=>{name.dataset.catalogFill='0'});
+  sync();
+})();
 function updatePricingButtons(){
   const rows=[...document.querySelectorAll('#pricingOptions .pricing-row')];
   rows.forEach((row)=>{
@@ -378,6 +404,8 @@ updatePricingButtons();
 
   <nav class="admin-tabs" aria-label="Admin sections">
     <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
+    <a class="admin-tab" href="#order-webhook"><i class="fab fa-discord"></i> Order webhook</a>
+    <a class="admin-tab" href="#manual-grant"><i class="fas fa-gift"></i> Manual grant</a>
     <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
     <a class="admin-tab" href="#emails"><i class="fas fa-envelope-open-text"></i> Email sender</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
@@ -437,6 +465,25 @@ updatePricingButtons();
     </section>
 
 
+    <section class="admin-card admin-section" id="order-webhook">
+      <div class="section-top">
+        <div><div class="eyebrow">Discord order notifications</div><h2>Order webhook</h2><p class="muted">Control the paid-order Discord webhook from Admin. The URL and message template are stored in site settings; you no longer need to redeploy just to change the order destination or wording.</p></div>
+        <form action="{{ url_for('admin_order_webhook_test') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary-cta" type="submit"><i class="fas fa-paper-plane"></i> Send saved test</button></form>
+      </div>
+      <form class="admin-form-grid" action="{{ url_for('admin_order_webhook_settings') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="inline-check wide"><input type="checkbox" name="order_webhook_enabled" {% if order_webhook.enabled %}checked{% endif %}> Enable paid-order Discord notifications</label>
+        <label class="wide">Discord webhook URL<input name="order_webhook_url" type="url" value="{{ order_webhook.url }}" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" spellcheck="false"></label>
+        <label class="wide">Message template<textarea name="order_webhook_message_template" rows="8" maxlength="1900" spellcheck="false">{{ order_webhook.message_template }}</textarea><small class="helper-text">Available placeholders: <code>{order_id}</code> <code>{buyer}</code> <code>{provider}</code> <code>{currency}</code> <code>{total}</code> <code>{delivery_status}</code> <code>{items}</code> <code>{review_status}</code> <code>{no_key}</code>. The rich order embed and NO KEY field are still attached automatically.</small></label>
+        <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save webhook settings</button>
+      </form>
+      <div class="security-grid" style="margin-top:16px">
+        <div class="security-item"><i class="fab fa-discord"></i><span><strong>Status:</strong> {{ 'Enabled' if order_webhook.enabled and order_webhook.url else 'Disabled' }}<br><small>Only paid checkout orders use this notification. Admin manual grants are intentionally excluded.</small></span></div>
+        <div class="security-item"><i class="fas fa-shield-halved"></i><span><strong>Protected:</strong> webhook URLs are accepted only on Discord's HTTPS webhook endpoint.<br><small>The webhook value is never sent to customer pages or client-side JavaScript.</small></span></div>
+      </div>
+    </section>
+
+
     <section class="admin-card admin-section" id="loader-release">
       {% set loader_release = site_settings.loader_release or {} %}
       <div class="section-top">
@@ -451,7 +498,7 @@ updatePricingButtons();
       <div class="security-grid" style="margin-bottom:16px">
         <div class="security-item"><i class="fas fa-tag"></i><span><strong>Current version:</strong> {{ loader_release.version or '1.0.0' }}<br><small>{{ 'Mandatory update' if loader_release.mandatory is not sameas false else 'Optional update' }}</small></span></div>
         <div class="security-item"><i class="fas fa-file-shield"></i><span><strong>Published file:</strong> {{ loader_release.file_name or 'Loader.exe' }}<br><small>{{ ((loader_release.file_size or 0) / 1048576)|round(2) }} MB · {{ loader_release.storage or 'not uploaded yet' }}</small></span></div>
-        <div class="security-item"><i class="fas fa-clock-rotate-left"></i><span><strong>Last published:</strong> {{ loader_release.published_at or 'Never' }}<br><small>{{ loader_release.published_by or 'No release has been published.' }}</small></span></div>
+        <div class="security-item"><i class="fas fa-clock-rotate-left"></i><span><strong>Last published:</strong> {{ (loader_release.published_at|local_time) if loader_release.published_at else 'Never' }}<br><small>{{ loader_release.published_by or 'No release has been published.' }}</small></span></div>
         <div class="security-item"><i class="fas fa-fingerprint"></i><span><strong>SHA-256:</strong><br><small style="word-break:break-all">{{ loader_release.sha256 or 'Calculated automatically when a file is uploaded.' }}</small></span></div>
       </div>
 
@@ -635,7 +682,7 @@ updatePricingButtons();
             {% for sub in (applications_settings["submissions"] or [])[-8:]|reverse %}
             <article class="user-row">
               <div class="user-email">{{ sub.application_title }}</div>
-              <p class="muted">{{ sub.user.email }} · {{ sub.created_at }} · webhook {{ 'sent' if sub.webhook_sent else 'not sent' }}</p>
+              <p class="muted">{{ sub.user.email }} · {{ sub.created_at|local_time }} · webhook {{ 'sent' if sub.webhook_sent else 'not sent' }}</p>
               <details class="json-editor"><summary>View answers</summary><pre class="detail-preview">{% for ans in sub.answers %}{{ ans.label }}: {{ ans.value }}
 {% endfor %}</pre></details>
             </article>
@@ -869,17 +916,39 @@ updatePricingButtons();
     </section>
 
 
+    <section class="admin-card admin-section" id="manual-grant">
+      <div class="section-top"><div><div class="eyebrow">admin-only entitlement</div><h2>Give a manual digital item</h2><p class="muted">Grant an existing catalog product or a completely custom digital item to an account. You enter the key yourself, so this path never calls Reselling.pro or any other auto-delivery provider.</p></div><span class="tiny-pill"><i class="fas fa-shield-halved"></i> Admin only</span></div>
+      <form class="admin-form-grid" action="{{ url_for('admin_manual_grant') }}" method="post" id="manualGrantForm" onsubmit="return confirm('Grant this item and key to ' + this.recipient_email.value + '? Auto-delivery will NOT run.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Recipient account<input name="recipient_email" type="email" list="manualGrantUsers" placeholder="customer@example.com" required autocomplete="off"><datalist id="manualGrantUsers">{% for user in users %}<option value="{{ user.email }}">{{ user.username or user.email }}</option>{% endfor %}</datalist></label>
+        <label>Catalog item<select name="catalog_product" id="manualGrantProduct"><option value="__custom__">Custom item (not in catalog)</option>{% for product in products %}<option value="{{ product.slug }}" data-name="{{ product.name }}" data-image="{{ product.image or '/static/logo.png' }}" data-slug="{{ product.slug }}">{{ product.name }}</option>{% endfor %}</select></label>
+        <label>Item name<input name="item_name" id="manualGrantName" maxlength="160" placeholder="Custom digital item" required></label>
+        <label>License / option name<input name="option_name" value="Manual license" maxlength="120" placeholder="Lifetime key"></label>
+        <label class="wide">Key / license<input name="product_key" minlength="3" required autocomplete="off" spellcheck="false" placeholder="Paste the exact key/license to give this user"></label>
+        <label>Custom slug<input name="custom_slug" id="manualGrantSlug" maxlength="100" placeholder="custom-digital-item"><small class="helper-text">Used only for a custom item. Existing products keep their catalog ID/slug so loader ownership works normally.</small></label>
+        <label>Custom image URL<input name="item_image" id="manualGrantImage" value="/static/logo.png" maxlength="500" placeholder="/media/item.png"><small class="helper-text">Used only for a custom item.</small></label>
+        <label class="wide">Delivery note<textarea name="delivery_note" rows="3" maxlength="1000" placeholder="Optional instructions shown with the key"></textarea></label>
+        <label class="inline-check wide"><input type="checkbox" name="notify_recipient" checked> Notify the recipient by in-app notification and available email / Discord DM delivery channels</label>
+        <button class="primary-cta" type="submit"><i class="fas fa-gift"></i> Grant item without auto-delivery</button>
+      </form>
+      <div class="security-grid" style="margin-top:16px">
+        <div class="security-item"><i class="fas fa-ban"></i><span><strong>Auto-delivery bypassed</strong><br><small>The grant is saved directly as a paid manual entitlement with the supplied key. No provider key request is made.</small></span></div>
+        <div class="security-item"><i class="fas fa-receipt"></i><span><strong>Tracked like an entitlement</strong><br><small>It appears in the user's products/order history and in Admin Orders with a Manual grant badge for auditing.</small></span></div>
+      </div>
+    </section>
+
+
     <section class="admin-card admin-section" id="orders">
       <div class="section-top"><div><div class="eyebrow">payment center</div><h2>Orders & key delivery</h2><p class="muted">Paid Stripe/PayPal orders appear here. Products with Reselling.pro auto-delivery fetch keys server-side from your .env API key; anything not delivered can still be handled manually.</p></div></div>
       <div class="users-grid">
         {% for order in orders[:30] %}
         <article class="user-row">
-          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</p><div class="user-meta"><span class="owner-badge order-status-chip status-{{ order.status|default('pending') }}">{{ order.status|default('pending') }}</span>{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% elif order.delivery_status == 'partial' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Partially delivered</span>{% elif order.delivery_status == 'auto_failed' %}<span class="owner-badge suspended-badge"><i class="fas fa-triangle-exclamation"></i> Auto failed</span>{% endif %}</div></div></div>
+          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|replace('_',' ')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }} · {{ order.created_at|local_time }}</p><div class="user-meta"><span class="owner-badge order-status-chip status-{{ order.status|default('pending') }}">{{ order.status|default('pending') }}</span>{% if order.manual_grant %}<span class="owner-badge active-badge"><i class="fas fa-gift"></i> Manual grant · no auto-delivery</span>{% endif %}{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% elif order.delivery_status == 'partial' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Partially delivered</span>{% elif order.delivery_status == 'auto_failed' %}<span class="owner-badge suspended-badge"><i class="fas fa-triangle-exclamation"></i> Auto failed</span>{% endif %}</div></div></div>
           <div class="order-items" style="margin-top:12px;display:grid;gap:8px">
             {% if order.cart and order.cart.get('items') %}
               {% for item in order.cart.get('items') %}
               {% set delivered = (order.deliveries or {}).get(loop.index0|string) %}
-              <div class="order-line"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}{% if item.auto_delivery and item.auto_delivery.enabled %}<small>Auto-delivery: Reselling.pro</small>{% endif %}{% if delivered %}<small>Delivered {{ delivered.sent_at }} · {{ delivered.source|default('manual') }} · email {{ 'sent' if delivered.email_sent else 'not sent' }} · Discord {{ 'sent' if delivered.discord_dm_sent else 'not sent' }}</small><div class="delivery-key-preview">{{ delivered.product_key }}</div>{% endif %}</span><strong>${{ item.line_amount }}</strong></div>
+              <div class="order-line"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}{% if item.auto_delivery and item.auto_delivery.enabled %}<small>Auto-delivery: Reselling.pro</small>{% endif %}{% if delivered %}<small>Delivered {{ delivered.sent_at|local_time }} · {{ delivered.source|default('manual') }} · email {{ 'sent' if delivered.email_sent else 'not sent' }} · Discord {{ 'sent' if delivered.discord_dm_sent else 'not sent' }}</small><div class="delivery-key-preview">{{ delivered.product_key }}</div>{% endif %}</span><strong>${{ item.line_amount }}</strong></div>
               {% endfor %}
             {% endif %}
           </div>
@@ -897,7 +966,7 @@ updatePricingButtons();
             </label>
             <button class="secondary-cta" type="submit"><i class="fas fa-rotate"></i> Update status</button>
           </form>
-          {% if order.status_history %}<details class="status-history"><summary>View status history</summary><div>{% for change in order.status_history|reverse %}<p><strong>{{ change.from|title }} → {{ change.to|title }}</strong><span>{{ change.at }} · {{ change.by }}</span>{% if change.note %}<small>{{ change.note }}</small>{% endif %}</p>{% endfor %}</div></details>{% endif %}
+          {% if order.status_history %}<details class="status-history"><summary>View status history</summary><div>{% for change in order.status_history|reverse %}<p><strong>{{ change.from|title }} → {{ change.to|title }}</strong><span>{{ change.at|local_time }} · {{ change.by }}</span>{% if change.note %}<small>{{ change.note }}</small>{% endif %}</p>{% endfor %}</div></details>{% endif %}
           {% if order.status == 'paid' and order.cart and order.cart.get('items') %}
           <form class="delivery-form" action="{{ url_for('admin_order_deliver_key', order_id=order.order_id) }}" method="post" onsubmit="return confirm('Send/save this key to {{ order.user_email }}?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -921,7 +990,7 @@ updatePricingButtons();
 
     <section class="admin-card admin-section" id="audit">
       <div class="section-top"><div><div class="eyebrow">accountability</div><h2>Audit log</h2><p class="muted">Recent owner, staff, delivery, order, and settings actions. Sensitive credentials are never displayed here.</p></div><span class="tiny-pill">{{ audit_logs|length }} recent entries</span></div>
-      {% if audit_logs %}<div style="display:grid;gap:9px">{% for log in audit_logs %}<article class="security-item" style="align-items:flex-start"><i class="fas fa-clock-rotate-left"></i><span style="min-width:0"><strong>{{ log.action|replace('_',' ')|title }}</strong> · {{ log.target or 'site' }}<br><small>{{ log.actor or 'system' }} · {{ log.created_at|string }}{% if log.ip %} · {{ log.ip }}{% endif %}</small></span></article>{% endfor %}</div>{% else %}<div class="admin-search-empty" style="display:block">Audit history becomes available when MongoDB is connected and actions are recorded.</div>{% endif %}
+      {% if audit_logs %}<div style="display:grid;gap:9px">{% for log in audit_logs %}<article class="security-item" style="align-items:flex-start"><i class="fas fa-clock-rotate-left"></i><span style="min-width:0"><strong>{{ log.action|replace('_',' ')|title }}</strong> · {{ log.target or 'site' }}<br><small>{{ log.actor or 'system' }} · {{ log.created_at|local_time }}{% if log.ip %} · {{ log.ip }}{% endif %}</small></span></article>{% endfor %}</div>{% else %}<div class="admin-search-empty" style="display:block">Audit history becomes available when MongoDB is connected and actions are recorded.</div>{% endif %}
     </section>
 
     <section class="admin-card admin-section" id="security">

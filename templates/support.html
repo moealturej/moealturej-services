@@ -37,7 +37,7 @@
       <div class="eyebrow">your inbox</div><h2>Current tickets</h2><p>Email updates are sent when staff replies. Customer replies also ping the Discord support webhook.</p>
       <div class="ticket-list">
       {% for ticket in tickets %}
-        <a class="ticket-card" href="{{ url_for('support_ticket_detail', ticket_id=ticket.ticket_id) }}"><img src="{{ ticket.product_image or '/static/logo.png' }}" alt=""><div><h3>{{ ticket.subject }}</h3><p>{{ ticket.product_name }} · {{ ticket.ticket_id }} · {{ ticket.updated_at }}</p></div><span class="ticket-status">{{ ticket.status }}</span></a>
+        <a class="ticket-card" href="{{ url_for('support_ticket_detail', ticket_id=ticket.ticket_id) }}"><img src="{{ ticket.product_image or '/static/logo.png' }}" alt=""><div><h3>{{ ticket.subject }}</h3><p>{{ ticket.product_name }} · {{ ticket.ticket_id }} · {{ ticket.updated_at|local_time }}</p></div><span class="ticket-status">{{ ticket.status }}</span></a>
       {% else %}<div class="empty-box"><i class="fas fa-comments"></i><strong>No tickets yet</strong><p>Open one from a paid order when you need help.</p></div>{% endfor %}
       </div>
     </section>

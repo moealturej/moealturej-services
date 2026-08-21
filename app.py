@@ -23,6 +23,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import safe_join, secure_filename
+from markupsafe import Markup, escape as markup_escape
 import requests
 
 
@@ -151,6 +152,15 @@ BRAND_LOGO_URL = os.getenv("BRAND_LOGO_URL", "").strip()
 OWNER_ORDER_WEBHOOK_URL = env_first("OWNER_ORDER_WEBHOOK_URL", "ORDER_WEBHOOK_URL", "DISCORD_ORDER_WEBHOOK_URL")
 SUPPORT_TICKET_WEBHOOK_URL = env_first("SUPPORT_TICKET_WEBHOOK_URL", "DISCORD_SUPPORT_WEBHOOK_URL", default="https://discord.com/api/webhooks/1367237331735678986/bGwY8l7JXSksdnys1erTvQ1e7kKv08p7C7Z0odUwuRcx4E3EDlgj3vosmTZMywyDRyso")
 DELIVERY_DM_ENABLED = os.getenv("DELIVERY_DM_ENABLED", "true").lower() == "true"
+
+DEFAULT_ORDER_WEBHOOK_TEMPLATE = (
+    "✅ **New paid order** `{order_id}`\n"
+    "Buyer: {buyer}\n"
+    "Total: {currency} ${total}\n"
+    "Delivery: {delivery_status}\n"
+    "{review_status}"
+)
+ORDER_WEBHOOK_TEMPLATE_MAX_LENGTH = 1900
 
 # Reselling.pro auto key delivery. Keep the API key in .env only. Product/option
 # JSON stores the provider base URL WITHOUT the key, for example:
@@ -322,7 +332,7 @@ def sanitize_user_for_session(user: dict | None) -> dict | None:
         "discord_avatar": str(user.get("discord_avatar") or "") or None,
         "google_id": str(user.get("google_id") or "") or None,
         "status": str(user.get("status") or "active"),
-        "avatar_url": str(user.get("avatar_url") or user.get("google_avatar") or user.get("discord_avatar") or "/static/logo.png"),
+        "avatar_url": str(user.get("avatar_url") or user.get("google_avatar") or user.get("discord_avatar") or "/static/default.jpg"),
         "bio": str(user.get("bio") or "")[:240],
         "age_18_confirmed": bool(user.get("age_18_confirmed")),
         "casino_credits": int(user.get("casino_credits", 5000) or 0),
@@ -435,6 +445,27 @@ app.config.update(
     APP_URL=APP_URL,
     BRAND_LOGO_URL=BRAND_LOGO_URL,
 )
+
+def _timestamp_for_browser(value) -> str:
+    if value is None or value == "":
+        return ""
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc).isoformat()
+    return str(value).strip()
+
+
+def local_time_filter(value, fallback: str = "—"):
+    raw = _timestamp_for_browser(value)
+    if not raw:
+        return fallback
+    safe = markup_escape(raw)
+    return Markup(f'<time class="js-local-time" datetime="{safe}">{safe}</time>')
+
+
+app.jinja_env.filters["local_time"] = local_time_filter
+
 
 # -----------------------------------------------------------------------------
 # Compression
@@ -1312,6 +1343,36 @@ def process_auto_delivery(order: dict) -> dict:
     order["updated_at"] = processed_at
     return order
 
+def get_order_webhook_config(settings: dict | None = None) -> dict:
+    settings = settings if isinstance(settings, dict) else load_site_settings()
+    raw = settings.get("order_webhook") if isinstance(settings.get("order_webhook"), dict) else {}
+    return {
+        "enabled": bool(raw.get("enabled")),
+        "url": str(raw.get("url") or "").strip()[:700],
+        "message_template": str(raw.get("message_template") or DEFAULT_ORDER_WEBHOOK_TEMPLATE)[:ORDER_WEBHOOK_TEMPLATE_MAX_LENGTH],
+    }
+
+
+def render_order_webhook_message(template: str, order: dict, *, fully_delivered: bool) -> str:
+    cart = order.get("cart") or {}
+    deliveries = order.get("deliveries") or {}
+    context = {
+        "order_id": str(order.get("order_id") or ""),
+        "buyer": str(order.get("user_email") or "Unknown"),
+        "provider": str(order.get("provider") or "payment").title(),
+        "currency": str(order.get("currency") or "USD").upper(),
+        "total": cents_to_money(order.get("amount_cents", 0)),
+        "delivery_status": str(order.get("delivery_status") or "pending"),
+        "items": format_order_items_for_discord(cart, deliveries),
+        "review_status": "All configured keys were delivered automatically." if fully_delivered else "Open Admin → Orders / Keys to review or deliver remaining keys.",
+        "no_key": "NO KEY" if order.get("auto_delivery_no_key") else "",
+    }
+    rendered = str(template or DEFAULT_ORDER_WEBHOOK_TEMPLATE)
+    for key, value in context.items():
+        rendered = rendered.replace("{" + key + "}", str(value))
+    return rendered.strip()[:2000]
+
+
 def format_order_items_for_discord(cart: dict, deliveries: dict | None = None) -> str:
     lines = []
     deliveries = deliveries or {}
@@ -1323,7 +1384,12 @@ def format_order_items_for_discord(cart: dict, deliveries: dict | None = None) -
 
 
 def send_owner_order_webhook(order: dict) -> bool:
-    if not OWNER_ORDER_WEBHOOK_URL or not str(order.get("status", "")).lower() == "paid":
+    config = get_order_webhook_config()
+    webhook_url = config.get("url") or ""
+    if not config.get("enabled") or not webhook_url or not str(order.get("status", "")).lower() == "paid":
+        return False
+    if not discord_webhook_allowed(webhook_url):
+        logger.warning("Rejected invalid order webhook URL from Admin settings")
         return False
     cart = order.get("cart") or {}
     deliveries = order.get("deliveries") or {}
@@ -1349,7 +1415,7 @@ def send_owner_order_webhook(order: dict) -> bool:
     if order.get("auto_delivery_no_key"):
         fields.append({"name": "\u200b", "value": "**NO KEY**", "inline": False})
     fully_delivered = bool(cart.get("items")) and not undelivered
-    content = "✅ Paid order auto-delivered." if fully_delivered else "✅ New paid order needs key delivery / review."
+    content = render_order_webhook_message(config.get("message_template") or DEFAULT_ORDER_WEBHOOK_TEMPLATE, order, fully_delivered=fully_delivered)
     description = (
         f"All configured keys were delivered for order `{order.get('order_id','')}`."
         if fully_delivered
@@ -1368,7 +1434,7 @@ def send_owner_order_webhook(order: dict) -> bool:
         }],
     }
     try:
-        resp = requests.post(OWNER_ORDER_WEBHOOK_URL, json=payload, timeout=12)
+        resp = requests.post(webhook_url, json=payload, timeout=12)
         if resp.status_code in {200, 204}:
             return True
         logger.warning("Owner order webhook failed: %s %s", resp.status_code, resp.text[:180])
@@ -2495,7 +2561,7 @@ def update_order_status(order_id: str, status: str, details: dict | None = None)
         if previous_status != "paid":
             increment_discount_code_usage(existing.get("cart") or {})
         existing = process_auto_delivery(existing)
-    should_notify_owner = str(status).lower() == "paid" and not was_notified
+    should_notify_owner = str(status).lower() == "paid" and not was_notified and not existing.get("owner_notification_suppressed") and not existing.get("manual_grant")
     if should_notify_owner:
         existing["owner_notified_at"] = utc_now().isoformat()
     save_order(existing)
@@ -2917,6 +2983,11 @@ def default_site_settings() -> dict:
         "status_url": "/status",
         "applications_url": "/applications",
         "legal_url": "/legal",
+        "order_webhook": {
+            "enabled": bool(OWNER_ORDER_WEBHOOK_URL),
+            "url": OWNER_ORDER_WEBHOOK_URL or "",
+            "message_template": DEFAULT_ORDER_WEBHOOK_TEMPLATE,
+        },
         "loader_release": {
             "version": "1.0.0",
             "mandatory": True,
@@ -3054,20 +3125,20 @@ def build_my_products(orders: list) -> list:
             slug = str(item.get("slug") or "")
             pid = str(item.get("productId") or item.get("product_id") or "")
             product = by_slug.get(slug) or by_id.get(pid) or {}
-            key = slug or pid or str(item.get("productName") or idx)
+            key = slug or pid or str(item.get("product_name") or item.get("productName") or idx)
             delivery = deliveries.get(str(idx)) if isinstance(deliveries, dict) else None
             if not delivery and isinstance(deliveries, list) and idx < len(deliveries):
                 delivery = deliveries[idx]
             row = products_by_key.setdefault(key, {
-                "name": item.get("productName") or product.get("name") or "Product",
+                "name": item.get("product_name") or item.get("productName") or product.get("name") or "Product",
                 "slug": slug or product.get("slug", ""),
                 "image": item.get("image") or product.get("image") or "/static/logo.png",
                 "status": product.get("status") or {"state": "Operational", "label": "Online"},
                 "downloads": product.get("downloads") or {},
                 "features": product.get("features") or [],
-                "purchases": [], "latest_key": "", "latest_order": "", "option_name": item.get("optionName") or "License"
+                "purchases": [], "latest_key": "", "latest_order": "", "option_name": item.get("option_name") or item.get("optionName") or "License"
             })
-            row["purchases"].append({"order_id": order.get("order_id"), "created_at": order.get("created_at"), "option_name": item.get("optionName"), "delivery": delivery or {}})
+            row["purchases"].append({"order_id": order.get("order_id"), "created_at": order.get("created_at"), "option_name": item.get("option_name") or item.get("optionName"), "delivery": delivery or {}})
             if delivery and (delivery.get("key") or delivery.get("product_key")):
                 row["latest_key"] = delivery.get("key") or delivery.get("product_key")
             row["latest_order"] = order.get("order_id", "")
@@ -3082,12 +3153,14 @@ def load_audit_logs(limit: int = 100) -> list:
 
 def system_health_snapshot() -> list:
     release = (load_site_settings().get("loader_release") or {})
+    order_webhook = get_order_webhook_config()
     checks = [
         {"name": "MongoDB", "ok": using_mongo(), "detail": mongo_status_reason},
         {"name": "Stripe", "ok": bool(STRIPE_SECRET_KEY), "detail": "Configured" if STRIPE_SECRET_KEY else "Missing STRIPE_SECRET_KEY"},
         {"name": "PayPal", "ok": bool(PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET), "detail": "Configured" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "Credentials missing"},
         {"name": "Resend email", "ok": bool(RESEND_API_KEY), "detail": "Configured" if RESEND_API_KEY else "Missing RESEND_API_KEY"},
         {"name": "Discord OAuth", "ok": discord_oauth_ready(), "detail": "Configured" if discord_oauth_ready() else ", ".join(discord_oauth_missing())},
+        {"name": "Order webhook", "ok": bool(order_webhook.get("enabled") and order_webhook.get("url")), "detail": "Configured in Admin" if order_webhook.get("enabled") and order_webhook.get("url") else "Disabled or URL missing"},
         {"name": "Auto delivery", "ok": bool(RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY), "detail": "Ready" if RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY else "Disabled or API key missing"},
         {"name": "Loader release", "ok": bool(release.get("sha256")), "detail": f"Version {release.get('version', '1.0.0')}" if release.get("sha256") else "No verified release uploaded"},
     ]
@@ -3446,7 +3519,7 @@ def ticket_message_payload(msg: dict, staff_view: bool) -> dict:
         "actor_kind": actor_kind,
         "mine": mine,
         "sender": "You" if mine else ("Support" if actor_kind == "staff" else (actor.get("username") or actor.get("email") or "Customer")),
-        "avatar_url": actor.get("avatar_url") or "/static/logo.png",
+        "avatar_url": actor.get("avatar_url") or "/static/default.jpg",
         "created_at": str(msg.get("created_at") or ""),
         "attachments": msg.get("attachments") or [],
         "read": bool(msg.get("read_by_customer") if actor_kind == "staff" else msg.get("read_by_staff")),
@@ -4276,6 +4349,8 @@ def admin_email_preview_document(kind):
 def admin_dashboard():
     cleanup_expired_pending_orders()
     products = load_products()
+    site_settings = load_site_settings()
+    order_webhook = get_order_webhook_config(site_settings)
     stats = {
         "products": len(products),
         "store": len([p for p in products if is_store_product(p)]),
@@ -4290,11 +4365,11 @@ def admin_dashboard():
         "guides": len(visible_guides(include_disabled=True)),
         "application_submissions": len((get_applications_settings().get("submissions") or [])),
         "payments": ("Stripe " if STRIPE_SECRET_KEY else "") + ("PayPal" if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET else "") or "not configured",
-        "owner_webhook": "configured" if OWNER_ORDER_WEBHOOK_URL else "missing",
+        "owner_webhook": "configured" if order_webhook.get("enabled") and order_webhook.get("url") else "missing",
         "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
     enh = app.extensions.get("moe_enhancements", {})
-    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=load_site_settings(), mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot(),
+    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=site_settings, order_webhook=order_webhook, mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot(),
                            commerce_analytics=(enh.get("analytics") or (lambda: {}))(),
                            all_reviews=(enh.get("all_reviews") or (lambda: []))(),
                            incidents=(enh.get("all_incidents") or (lambda: []))())
@@ -4345,10 +4420,79 @@ def admin_site_settings():
         "legal_url": clean_link("legal_url", "/legal"),
     })
     save_site_settings(current)
-    record_audit("site_settings_update", "site", current)
+    audit_settings = {k: v for k, v in current.items() if k != "order_webhook"}
+    record_audit("site_settings_update", "site", audit_settings)
     flash("Site settings updated.", "success")
     return redirect(url_for("admin_dashboard") + "#owner")
 
+
+
+@app.route("/admin/order-webhook", methods=["POST"])
+@owner_required
+def admin_order_webhook_settings():
+    settings = load_site_settings()
+    enabled = bool(request.form.get("order_webhook_enabled"))
+    webhook_url = (request.form.get("order_webhook_url") or "").strip()[:700]
+    message_template = (request.form.get("order_webhook_message_template") or DEFAULT_ORDER_WEBHOOK_TEMPLATE).strip()[:ORDER_WEBHOOK_TEMPLATE_MAX_LENGTH]
+    if enabled:
+        if not webhook_url:
+            flash("Enter a Discord webhook URL before enabling order notifications.", "danger")
+            return redirect(url_for("admin_dashboard") + "#order-webhook")
+        if not discord_webhook_allowed(webhook_url):
+            flash("Order webhook must be a valid https://discord.com/api/webhooks/... URL.", "danger")
+            return redirect(url_for("admin_dashboard") + "#order-webhook")
+    if not message_template:
+        message_template = DEFAULT_ORDER_WEBHOOK_TEMPLATE
+    settings["order_webhook"] = {
+        "enabled": enabled,
+        "url": webhook_url,
+        "message_template": message_template,
+    }
+    save_site_settings(settings)
+    record_audit("order_webhook_settings_update", "discord_orders", {
+        "enabled": enabled,
+        "url_configured": bool(webhook_url),
+        "template_length": len(message_template),
+    })
+    flash("Order webhook settings updated.", "success")
+    return redirect(url_for("admin_dashboard") + "#order-webhook")
+
+
+@app.route("/admin/order-webhook/test", methods=["POST"])
+@owner_required
+@limiter.limit("6 per minute")
+def admin_order_webhook_test():
+    config = get_order_webhook_config()
+    webhook_url = config.get("url") or ""
+    if not config.get("enabled") or not webhook_url:
+        flash("Enable and save the order webhook before sending a test.", "warning")
+        return redirect(url_for("admin_dashboard") + "#order-webhook")
+    if not discord_webhook_allowed(webhook_url):
+        flash("The saved order webhook URL is invalid.", "danger")
+        return redirect(url_for("admin_dashboard") + "#order-webhook")
+    test_order = {
+        "order_id": "TEST-ORDER",
+        "status": "paid",
+        "user_email": (current_user() or {}).get("email") or "customer@example.com",
+        "provider": "admin test",
+        "currency": "USD",
+        "amount_cents": 1999,
+        "delivery_status": "manual_required",
+        "cart": {"items": [{
+            "product_name": "Example digital item",
+            "option_name": "License",
+            "quantity": 1,
+            "line_amount": "19.99",
+            "auto_delivery": {"enabled": False},
+        }]},
+        "deliveries": {},
+    }
+    if send_owner_order_webhook(test_order):
+        record_audit("order_webhook_test", "discord_orders", {})
+        flash("Test order webhook sent.", "success")
+    else:
+        flash("Discord did not accept the test webhook. Check the URL and server logs.", "danger")
+    return redirect(url_for("admin_dashboard") + "#order-webhook")
 
 
 @app.route("/admin/loader-release", methods=["POST"])
@@ -5514,6 +5658,113 @@ def stripe_webhook():
         logger.warning("Stripe webhook rejected: %s", exc)
         return jsonify({"ok": False}), 400
 
+
+
+@app.route("/admin/manual-grant", methods=["POST"])
+@owner_required
+@limiter.limit("30 per hour")
+def admin_manual_grant():
+    recipient = (request.form.get("recipient_email") or "").strip().lower()
+    recipient_user = get_user_by_email(recipient) if recipient else None
+    if not recipient_user:
+        flash("Choose an existing account email for the manual grant.", "danger")
+        return redirect(url_for("admin_dashboard") + "#manual-grant")
+
+    product_choice = (request.form.get("catalog_product") or "").strip()
+    catalog_product = None
+    if product_choice and product_choice != "__custom__":
+        catalog_product = next((p for p in load_products() if str(p.get("slug") or "") == product_choice), None)
+        if not catalog_product:
+            flash("The selected catalog product no longer exists.", "danger")
+            return redirect(url_for("admin_dashboard") + "#manual-grant")
+
+    item_name = (request.form.get("item_name") or (catalog_product or {}).get("name") or "Custom digital item").strip()[:160]
+    option_name = (request.form.get("option_name") or "Manual license").strip()[:120]
+    product_key = (request.form.get("product_key") or "").strip()
+    delivery_note = (request.form.get("delivery_note") or "").strip()[:1000]
+    if len(item_name) < 2:
+        flash("Enter an item name.", "danger")
+        return redirect(url_for("admin_dashboard") + "#manual-grant")
+    if len(product_key) < 3:
+        flash("Enter the key/license you want to give the user.", "danger")
+        return redirect(url_for("admin_dashboard") + "#manual-grant")
+
+    if catalog_product:
+        product_id = catalog_product.get("id")
+        product_slug = str(catalog_product.get("slug") or "").strip()
+        image = str(catalog_product.get("image") or "/static/logo.png")[:500]
+    else:
+        product_id = f"manual-{secrets.token_hex(6)}"
+        product_slug = clean_slug(request.form.get("custom_slug") or item_name)[:100]
+        image = (request.form.get("item_image") or "/static/logo.png").strip()[:500] or "/static/logo.png"
+
+    now_iso = utc_now().isoformat()
+    order_id = f"GRANT-{utc_now().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
+    item = {
+        "slug": product_slug,
+        "product_id": product_id,
+        "productId": product_id,
+        "product_name": item_name,
+        "productName": item_name,
+        "image": image,
+        "option_id": "manual-grant",
+        "option_name": option_name,
+        "optionName": option_name,
+        "unit_cents": 0,
+        "unit_amount": "0.00",
+        "quantity": 1,
+        "line_cents": 0,
+        "line_amount": "0.00",
+        "auto_delivery": {"enabled": False, "provider": "manual_admin"},
+        "manual_grant": True,
+    }
+    order = {
+        "order_id": order_id,
+        "user_email": recipient,
+        "status": "paid",
+        "provider": "admin_grant",
+        "currency": "USD",
+        "amount_cents": 0,
+        "manual_grant": True,
+        "granted_by": (current_user() or {}).get("email") or "admin",
+        "created_at": now_iso,
+        "updated_at": now_iso,
+        # These markers deliberately prevent the normal paid-order pipeline from
+        # contacting any auto-delivery provider or sending an owner order webhook.
+        "auto_delivery_processed_at": now_iso,
+        "owner_notification_suppressed": True,
+        "cart": {
+            "items": [item],
+            "subtotal_cents": 0,
+            "discount_cents": 0,
+            "fee_cents": 0,
+            "total_cents": 0,
+            "subtotal": "0.00",
+            "discount": "0.00",
+            "fee": "0.00",
+            "total": "0.00",
+            "currency": "USD",
+            "quantity": 1,
+            "discounts": [],
+        },
+        "deliveries": {},
+        "delivery_status": "delivered",
+    }
+    delivery = save_delivery_to_order(order, item, 0, product_key, delivery_note, f"admin:{order['granted_by']}")
+    if request.form.get("notify_recipient"):
+        notify_buyer_delivery(order, item, delivery)
+    order["delivery_status"] = "delivered"
+    order["updated_at"] = utc_now().isoformat()
+    save_order(order)
+    record_audit("manual_item_grant", recipient, {
+        "order_id": order_id,
+        "product_slug": product_slug,
+        "product_name": item_name,
+        "catalog_product": bool(catalog_product),
+        "recipient_notified": bool(request.form.get("notify_recipient")),
+    })
+    flash(f"{item_name} was granted to {recipient} without running auto-delivery.", "success")
+    return redirect(url_for("admin_dashboard") + "#manual-grant")
 
 
 @app.route("/admin/order/<order_id>/status", methods=["POST"])

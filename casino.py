@@ -338,7 +338,7 @@ def register_casino(
             user.get("avatar_url")
             or user.get("google_avatar")
             or user.get("discord_avatar")
-            or "/static/logo.png"
+            or "/static/default.jpg"
         )[:500]
 
     def _detect_profile_image(upload) -> tuple[str, str]:

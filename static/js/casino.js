@@ -15,9 +15,13 @@
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   const formatCredits = value => Math.max(0, Number(value || 0)).toLocaleString();
   const formatTime = value => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const date = window.parseSiteTimestamp ? window.parseSiteTimestamp(value) : new Date(value);
+    if (!date || Number.isNaN(date.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(date);
+    } catch {
+      return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
   };
 
   function setBalance(value) {
@@ -1024,7 +1028,7 @@
       article.className = 'casino-chat-message';
       article.dataset.messageId = message.message_id;
       const img = document.createElement('img');
-      img.src = message.avatar_url || '/static/logo.png';
+      img.src = message.avatar_url || '/static/default.jpg';
       img.alt = '';
       const body = document.createElement('div');
       body.className = 'chat-message-body';
