@@ -11,8 +11,11 @@
   const toastEl = document.getElementById('casinoToast');
   let toastTimer = 0;
   let balance = Number(String(balanceEl?.textContent || '0').replace(/,/g, '')) || 0;
+  let mutationVersion = 0;
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const storageGet = key => { try { return window.localStorage.getItem(key); } catch { return null; } };
+  const storageSet = (key, value) => { try { window.localStorage.setItem(key, String(value)); } catch {} };
   const formatCredits = value => Math.max(0, Number(value || 0)).toLocaleString();
   const formatTime = value => {
     const date = window.parseSiteTimestamp ? window.parseSiteTimestamp(value) : new Date(value);
@@ -33,6 +36,7 @@
         { duration: 450, easing: 'ease-out' }
       );
     }
+    syncWagerAffordability();
   }
 
   function showToast(message, type = '') {
@@ -45,6 +49,14 @@
     }, 3200);
   }
 
+  function handleGameError(error) {
+    showToast(error?.message || 'Something went wrong. Refreshing your game state…', 'error');
+    // A POST can complete on the server even if the browser loses the response.
+    // Always reconcile balance/active rounds after an error instead of leaving
+    // dead buttons or inviting a duplicate wager.
+    loadState(false);
+  }
+
   function wagerNumber(value) {
     const raw = String(value ?? '').replace(/[^0-9]/g, '');
     return raw ? Number(raw) : 0;
@@ -54,11 +66,30 @@
     if (!input) return;
     const safe = Math.max(minWager, Math.min(maxWager, Math.floor(Number(value) || minWager)));
     input.value = String(safe);
+    storageSet(`casino:wager:${input.id}`, safe);
     const control = input.closest('[data-wager-control]');
     control?.querySelectorAll('[data-wager-value]').forEach(button => {
       const selected = Number(button.dataset.wagerValue) === safe;
       button.classList.toggle('active', selected);
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+  }
+
+  function syncWagerAffordability() {
+    document.querySelectorAll('[data-wager-control]').forEach(control => {
+      const id = control.dataset.wagerControl;
+      const input = document.getElementById(id);
+      const locked = control.classList.contains('disabled');
+      const buttons = [...control.querySelectorAll('[data-wager-value]')];
+      buttons.forEach(button => {
+        const tooExpensive = Number(button.dataset.wagerValue || 0) > balance;
+        button.disabled = locked || tooExpensive;
+        button.classList.toggle('unaffordable', !locked && tooExpensive);
+      });
+      if (!locked && input && Number(input.value || 0) > balance) {
+        const affordable = buttons.map(button => Number(button.dataset.wagerValue || 0)).filter(value => value <= balance).sort((a, b) => b - a);
+        if (affordable.length) writeWager(input, affordable[0]);
+      }
     });
   }
 
@@ -74,29 +105,48 @@
 
   function setWagerControlDisabled(id, disabled) {
     const control = document.querySelector(`[data-wager-control="${id}"]`);
-    control?.querySelectorAll('input, button').forEach(element => { element.disabled = Boolean(disabled); });
     control?.classList.toggle('disabled', Boolean(disabled));
+    const input = document.getElementById(id);
+    if (input) input.disabled = Boolean(disabled);
+    syncWagerAffordability();
   }
 
   async function api(url, options = {}) {
+    const method = String(options.method || 'GET').toUpperCase();
+    if (method !== 'GET') mutationVersion += 1;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
     const requestOptions = {
       credentials: 'same-origin',
       headers: {
         Accept: 'application/json',
-        ...(options.method && options.method !== 'GET' ? { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf } : {}),
+        ...(method !== 'GET' ? { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf } : {}),
         ...(options.headers || {})
       },
-      ...options
+      ...options,
+      method,
+      signal: controller.signal
     };
     if (requestOptions.body && typeof requestOptions.body !== 'string') {
       requestOptions.body = JSON.stringify(requestOptions.body);
     }
-    const response = await fetch(url, requestOptions);
+    let response;
+    try {
+      response = await fetch(url, requestOptions);
+    } catch (error) {
+      const wrapped = new Error(error?.name === 'AbortError' ? 'The request timed out. Refreshing your game state…' : 'Connection problem. Refreshing your game state…');
+      wrapped.recoverState = true;
+      throw wrapped;
+    } finally {
+      window.clearTimeout(timeout);
+    }
     let data = {};
     try { data = await response.json(); } catch { data = {}; }
     if (!response.ok || data.ok === false) {
       if (data.age_gate_required) window.location.href = '/casino/age-check';
-      throw new Error(data.error || `Request failed (${response.status})`);
+      const error = new Error(data.error || `Request failed (${response.status})`);
+      error.recoverState = response.status >= 500 || /expired|no longer active|already settled|changed|refresh/i.test(error.message);
+      throw error;
     }
     return data;
   }
@@ -121,18 +171,41 @@
     control.querySelectorAll('[data-wager-value]').forEach(button => button.addEventListener('click', () => {
       writeWager(input, Number(button.dataset.wagerValue || minWager));
     }));
-    writeWager(input, wagerNumber(input.value) || 100);
+    const remembered = wagerNumber(storageGet(`casino:wager:${id}`));
+    const allowed = [...control.querySelectorAll('[data-wager-value]')].map(button => Number(button.dataset.wagerValue));
+    writeWager(input, allowed.includes(remembered) ? remembered : (wagerNumber(input.value) || 100));
   });
+  syncWagerAffordability();
 
   // Tabs
   const tabs = [...document.querySelectorAll('[data-game-tab]')];
   const panels = [...document.querySelectorAll('[data-game-panel]')];
-  tabs.forEach(tab => tab.addEventListener('click', () => {
-    const name = tab.dataset.gameTab;
-    tabs.forEach(item => item.classList.toggle('active', item === tab));
+
+  function activateGame(name, { remember = true } = {}) {
+    if (!tabs.some(tab => tab.dataset.gameTab === name)) name = 'slots';
+    tabs.forEach(tab => {
+      const active = tab.dataset.gameTab === name;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      tab.tabIndex = active ? 0 : -1;
+    });
     panels.forEach(panel => panel.classList.toggle('active', panel.dataset.gamePanel === name));
-    if (name === 'plinko') resizePlinko();
-  }));
+    if (remember) storageSet('casino:last-game', name);
+    if (name === 'plinko') window.requestAnimationFrame(resizePlinko);
+  }
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activateGame(tab.dataset.gameTab));
+    tab.addEventListener('keydown', event => {
+      if (!['ArrowRight', 'ArrowLeft'].includes(event.key)) return;
+      event.preventDefault();
+      const offset = event.key === 'ArrowRight' ? 1 : -1;
+      const next = tabs[(index + offset + tabs.length) % tabs.length];
+      next?.focus();
+      next?.click();
+    });
+  });
+  activateGame(storageGet('casino:last-game') || 'slots', { remember: false });
 
   // Fairness modal
   const fairnessModal = document.getElementById('fairnessModal');
@@ -145,7 +218,7 @@
     fairnessModal.setAttribute('aria-hidden', 'true');
   }));
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') fairnessModal?.classList.remove('open');
+    if (event.key === 'Escape') { fairnessModal?.classList.remove('open'); fairnessModal?.setAttribute('aria-hidden', 'true'); }
   });
 
   // Daily bonus
@@ -159,7 +232,7 @@
       dailyButton.disabled = true;
       dailyButton.innerHTML = '<i class="fas fa-check"></i><span>Claimed today</span>';
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
       setBusy(dailyButton, false);
     }
   });
@@ -178,7 +251,7 @@
   } catch {
     slotCatalog = {};
   }
-  let selectedSlotMachine = slotCatalog.classic ? 'classic' : Object.keys(slotCatalog)[0];
+  let selectedSlotMachine = slotCatalog[storageGet('casino:slot-machine')] ? storageGet('casino:slot-machine') : (slotCatalog.classic ? 'classic' : Object.keys(slotCatalog)[0]);
   let slotsBusy = false;
   let slotTicker = 0;
 
@@ -257,6 +330,7 @@
     const machine = slotCatalog[machineKey];
     if (!machine || slotsBusy) return;
     selectedSlotMachine = machineKey;
+    storageSet('casino:slot-machine', machineKey);
     slotMachineButtons.forEach(button => button.classList.toggle('active', button.dataset.slotMachine === machineKey));
     if (slotMachine) slotMachine.className = `slot-machine theme-${machine.theme || machineKey}`;
     const title = document.getElementById('slotPanelTitle');
@@ -281,7 +355,7 @@
       : 'Only the first 3 reels need to match for a line win; reels 4 and 5 increase the payout.';
     renderSlotPaytable(machine);
     renderSlotGrid(grid || starterSlotGrid(machine), winningCells);
-    if (slotStatus) slotStatus.textContent = `${machine.subtitle} • type any whole-number bet`;
+    if (slotStatus) slotStatus.textContent = `${machine.subtitle} • choose a preset bet`;
     if (slotWinDisplay) slotWinDisplay.textContent = 'READY';
   }
 
@@ -332,7 +406,7 @@
       );
       loadState(false);
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       window.clearInterval(slotTicker);
       slotTicker = 0;
@@ -458,7 +532,7 @@
       loadState(false);
     } catch (error) {
       rouletteWheelStage?.classList.remove('spinning');
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       setBusy(rouletteButton, false);
       rouletteBets.forEach(button => { button.disabled = false; });
@@ -533,10 +607,11 @@
       const data = await api('/api/casino/blackjack/start', { method: 'POST', body: { wager } });
       setBalance(data.balance);
       renderBlackjack(data.game);
-      if (data.game.status !== 'active') showToast(data.game.result + (data.game.payout ? ` • +${formatCredits(data.game.payout)}` : ''), data.game.payout ? 'success' : '');
+      if (data.restored) showToast('Restored your active Blackjack hand.', 'success');
+      else if (data.game.status !== 'active') showToast(data.game.result + (data.game.payout ? ` • +${formatCredits(data.game.payout)}` : ''), data.game.payout ? 'success' : '');
       loadState(false);
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       blackjackBusy = false;
       if (blackjackDeal?.dataset.originalHtml) blackjackDeal.innerHTML = blackjackDeal.dataset.originalHtml;
@@ -560,7 +635,7 @@
         loadState(false);
       }
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       blackjackBusy = false;
       if (button?.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
@@ -597,18 +672,18 @@
       const mines = Number(document.getElementById('minesCount')?.value || 5);
       setBusy(minesStart, true, 'Starting');
       const data = await api('/api/casino/mines/start', { method: 'POST', body: { wager, mines } });
-      minesGameId = data.game_id;
-      minesActive = true;
       setBalance(data.balance);
-      resetMinesBoard();
-      if (minesMultiplier) minesMultiplier.textContent = '1.00×';
-      if (minesPotential) minesPotential.textContent = formatCredits(wager);
-      if (minesCashout) minesCashout.disabled = true;
-      setWagerControlDisabled('minesWager', true);
-      document.getElementById('minesCount').disabled = true;
-      showToast('Mines round started. Pick a tile.', 'success');
+      restoreMinesRound({
+        game_id: data.game_id,
+        wager: data.wager || wager,
+        mine_count: data.mine_count || mines,
+        revealed: data.revealed || [],
+        multiplier: data.multiplier || 1,
+        potential_payout: data.potential_payout || data.wager || wager
+      });
+      showToast(data.restored ? 'Restored your active Mines round.' : 'Mines round started. Pick a tile.', 'success');
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       setBusy(minesStart, false);
       if (minesActive && minesStart) minesStart.disabled = true;
@@ -658,7 +733,7 @@
         }
       }
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       minesRevealBusy = false;
       if (minesActive) {
@@ -722,7 +797,7 @@
       finishMinesControls();
       loadState(false);
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
       if (minesCashout) minesCashout.disabled = false;
     } finally {
       if (minesCashout?.dataset.originalHtml) minesCashout.innerHTML = minesCashout.dataset.originalHtml;
@@ -809,7 +884,7 @@
       });
       points.push({ x, y: height - 32 });
       const start = performance.now();
-      const duration = 1750;
+      const duration = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 220 : 1750;
       function frame(now) {
         const progress = Math.min(1, (now - start) / duration);
         const scaled = progress * (points.length - 1);
@@ -842,7 +917,7 @@
       showToast(`${Number(data.multiplier).toFixed(2)}× slot paid ${formatCredits(data.payout)} credits`, data.payout >= wager ? 'success' : '');
       loadState(false);
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       setBusy(plinkoButton, false);
     }
@@ -897,13 +972,27 @@
     if (hlStatus) hlStatus.textContent = 'Will the next card be higher or lower? Ties lose.';
   }
 
+  function resetHigherLowerRound() {
+    hlToken = '';
+    hlReady = false;
+    if (hlHigher) hlHigher.disabled = true;
+    if (hlLower) hlLower.disabled = true;
+    if (hlDeal) hlDeal.disabled = false;
+    const higherMultiplier = document.getElementById('hlHigherMultiplier');
+    const lowerMultiplier = document.getElementById('hlLowerMultiplier');
+    if (higherMultiplier) higherMultiplier.textContent = '—';
+    if (lowerMultiplier) lowerMultiplier.textContent = '—';
+    if (hlStatus) hlStatus.textContent = 'Deal a card to begin';
+  }
+
   hlDeal?.addEventListener('click', async () => {
     try {
       setBusy(hlDeal, true, 'Dealing');
       const data = await api('/api/casino/higher-lower/start', { method: 'POST', body: {} });
       restoreHigherLowerRound(data);
+      if (data.restored) showToast('Restored your active Higher / Lower round.', 'success');
     } catch (error) {
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       setBusy(hlDeal, false);
       if (hlDeal) hlDeal.disabled = hlReady;
@@ -928,7 +1017,7 @@
       loadState(false);
     } catch (error) {
       hlReady = true;
-      showToast(error.message, 'error');
+      handleGameError(error);
     } finally {
       if (button?.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
     }
@@ -971,24 +1060,38 @@
     });
   }
 
-  function restoreActiveRounds(rounds = {}) {
-    if (rounds.blackjack?.game_id && rounds.blackjack.game_id !== blackjackGameId) {
-      renderBlackjack(rounds.blackjack);
+  function syncActiveRounds(rounds = {}) {
+    if (rounds.blackjack?.game_id) {
+      if (!blackjackBusy) renderBlackjack(rounds.blackjack);
+    } else if (blackjackGameId && !blackjackBusy) {
+      renderBlackjack(null);
     }
-    if (rounds.mines?.game_id && rounds.mines.game_id !== minesGameId) {
-      restoreMinesRound(rounds.mines);
+
+    if (rounds.mines?.game_id) {
+      if (!minesRevealBusy) restoreMinesRound(rounds.mines);
+    } else if (minesActive && !minesRevealBusy) {
+      finishMinesControls();
+      resetMinesBoard();
+      if (minesMultiplier) minesMultiplier.textContent = '1.00×';
+      if (minesPotential) minesPotential.textContent = '0';
     }
-    if (rounds.higher_lower?.token && rounds.higher_lower.token !== hlToken) {
+
+    if (rounds.higher_lower?.token) {
       restoreHigherLowerRound(rounds.higher_lower);
+    } else if (hlReady || hlToken) {
+      resetHigherLowerRound();
     }
   }
 
   async function loadState(showErrors = true) {
+    const startedAtMutation = mutationVersion;
     try {
       const data = await api('/api/casino/state');
+      // Do not let a GET that started before a wager/action overwrite newer UI.
+      if (startedAtMutation !== mutationVersion) return;
       setBalance(data.balance);
       renderHistory(data.history || []);
-      restoreActiveRounds(data.active_rounds || {});
+      syncActiveRounds(data.active_rounds || {});
       const online = document.getElementById('casinoOnlineCount');
       if (online) online.textContent = formatCredits(data.online || 1);
       if (dailyButton) {
@@ -1137,8 +1240,16 @@
   loadChat();
   window.setInterval(() => {
     if (!document.hidden) loadChat();
-  }, 2500);
+  }, 6000);
   window.setInterval(() => {
     if (!document.hidden) loadState(false);
   }, 30000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { loadState(false); loadChat(); }
+  });
+  window.addEventListener('online', () => {
+    showToast('Back online — casino state refreshed.', 'success');
+    loadState(false); loadChat();
+  });
+  window.addEventListener('offline', () => showToast('You are offline. Your active server-side game is safe.', 'error'));
 })();

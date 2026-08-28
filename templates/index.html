@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="minimal-hero-side">
-        <div class="minimal-status-row"><span><i></i> Store online</span><a href="/status">View status</a></div>
+        <div class="minimal-status-row"><span id="homeStoreStatus" aria-live="polite"><i></i> Checking status…</span><a href="/status">View status</a></div>
         <div class="minimal-side-content">
           <span class="minimal-side-label">Everything in one place</span>
           <div class="minimal-side-list">
@@ -51,11 +51,5 @@
 </section>
 {% endblock %}
 {% block extra_scripts %}
-<script>
-(()=>{const grid=document.getElementById('minimal-product-grid');if(!grid)return;
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-const price=p=>{const vals=(p?.store?.options||[]).map(x=>Number(x.price)).filter(Number.isFinite);return vals.length?'From $'+Math.min(...vals).toFixed(2):'View options'};
-fetch('/api/products',{headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():Promise.reject()).then(items=>{const list=(items||[]).filter(x=>x?.store?.enabled).slice(0,3);grid.innerHTML=list.length?list.map(x=>`<article class="minimal-product-card"><a class="minimal-product-image" href="/product/${encodeURIComponent(x.slug||x.id||'')}"><img src="${esc(x.image||'/static/logo.png')}" alt="${esc(x.name||'Product')}"><span><i></i> Available</span></a><div class="minimal-product-info"><div><small>${esc(x.category||'Digital product')}</small><h3>${esc(x.name||'Product')}</h3></div><div class="minimal-product-bottom"><strong>${esc(price(x))}</strong><a href="/product/${encodeURIComponent(x.slug||x.id||'')}" aria-label="View ${esc(x.name||'product')}"><i class="fas fa-arrow-right"></i></a></div></div></article>`).join(''):'<div class="minimal-empty">No featured products are available right now.</div>'}).catch(()=>grid.innerHTML='<div class="minimal-empty">Products are temporarily unavailable.</div>');
-})();
-</script>
+<script src="{{ url_for('static', filename='js/pages/home.js', v='20260827-full1') }}"></script>
 {% endblock %}

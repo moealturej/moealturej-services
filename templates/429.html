@@ -1,13 +1,7 @@
 {% extends "base.html" %}
 {% block title %}429 | Too many requests{% endblock %}
 {% block extra_head %}
-<style>
-  .error-page { padding-top: 24px; }
-  .error-shell { max-width: 820px; margin: 0 auto; padding: 34px; text-align: center; }
-  .error-code { display:inline-flex; align-items:center; justify-content:center; padding:10px 16px; border-radius:999px; background: rgba(139,44,255,0.10); border:1px solid rgba(139,44,255,0.22); color:#f3e9ff; font-size:13px; font-weight:900; letter-spacing:.14em; margin-bottom:18px; }
-  .error-shell h1 { margin: 0 0 14px; font-size: clamp(40px, 6vw, 62px); }
-  .error-shell p { max-width: 620px; margin: 0 auto 24px; }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/429-1.css', v='20260827-full1') }}">
 {% endblock %}
 {% block content %}
 <section class="page-section error-page">

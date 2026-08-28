@@ -10,5 +10,17 @@
       "query": ""
     },
     "created_at": "2026-07-26T17:06:17.987291+00:00"
+  },
+  {
+    "id": "8e73b9143b354108bfaf8bed4fafaf7b",
+    "event": "product_view",
+    "product_slug": "mw19-ghost-internal",
+    "value": 0,
+    "user_email": "",
+    "session_id": "cea0872aa4f84b2faba3c45877aafe01",
+    "metadata": {
+      "query": ""
+    },
+    "created_at": "2026-08-28T03:43:41.968338+00:00"
   }
 ]

@@ -8,6 +8,7 @@ import re
 import secrets
 import smtplib
 import ssl
+import time
 import uuid
 from urllib.parse import urlencode, urlparse
 from functools import wraps
@@ -16,7 +17,7 @@ from email.message import EmailMessage
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, Response, abort, flash, jsonify, redirect, render_template, request, send_from_directory, session, url_for
+from flask import Flask, Response, abort, flash, g, has_request_context, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -1799,6 +1800,94 @@ def find_store_product(identifier: str) -> dict | None:
     return None
 
 
+def public_product_payload(product: dict, *, include_download_url: bool = False) -> dict:
+    """Return only storefront-safe product fields for public JSON endpoints.
+
+    Delivery/admin configuration is intentionally excluded. Paid download URLs
+    are served only by authenticated download routes.
+    """
+    product = normalize_product(dict(product or {}))
+    store = product.get("store") if isinstance(product.get("store"), dict) else {}
+    downloads = product.get("downloads") if isinstance(product.get("downloads"), dict) else {}
+    status = product.get("status") if isinstance(product.get("status"), dict) else {}
+    options = []
+    for option in store.get("options") or []:
+        if not isinstance(option, dict):
+            continue
+        try:
+            price = float(option.get("price") or 0)
+        except (TypeError, ValueError):
+            price = 0.0
+        option_id = option.get("id") if option.get("id") is not None else option.get("uniqid")
+        options.append({
+            "id": option_id,
+            "uniqid": str(option.get("uniqid") if option.get("uniqid") is not None else (option_id or "")),
+            "name": str(option.get("name") or "Option")[:120],
+            "price": max(0.0, price),
+        })
+
+    payload = {
+        "id": product.get("id"),
+        "slug": str(product.get("slug") or ""),
+        "name": str(product.get("name") or "Untitled Product"),
+        "description": str(product.get("description") or ""),
+        "detailedDescription": str(product.get("detailedDescription") or ""),
+        "image": str(product.get("image") or "/static/logo.png"),
+        "category": str(product.get("category") or "general"),
+        "type": str(product.get("type") or "product"),
+        "featured": bool(product.get("featured")),
+        "features": [str(x)[:160] for x in (product.get("features") or []) if str(x).strip()][:40],
+        "badges": [str(x)[:80] for x in (product.get("badges") or []) if str(x).strip()][:10],
+        "compatibility": {
+            str(k)[:60]: str(v)[:240]
+            for k, v in ((product.get("compatibility") or {}).items() if isinstance(product.get("compatibility"), dict) else [])
+            if str(k).strip() and str(v).strip()
+        },
+        "changelog": [
+            ({"text": str(x.get("text") or "")[:500], "date": str(x.get("date") or "")[:80]} if isinstance(x, dict) else str(x)[:500])
+            for x in (product.get("changelog") or [])[:20]
+            if (str(x.get("text") or "").strip() if isinstance(x, dict) else str(x).strip())
+        ],
+        "displayOrder": product.get("displayOrder", 9999),
+        "store": {
+            "enabled": bool(store.get("enabled")),
+            "stockStatus": str(store.get("stockStatus") or "In Stock")[:80],
+            "options": options,
+        },
+        "downloads": {
+            "enabled": bool(downloads.get("enabled")),
+            "version": str(downloads.get("version") or "Latest")[:80],
+            "fileSize": str(downloads.get("fileSize") or downloads.get("file_size") or "")[:80],
+        },
+        "status": {
+            "enabled": bool(status.get("enabled", True)),
+            "state": str(status.get("state") or "Operational")[:80],
+            "label": str(status.get("label") or status.get("state") or "Online")[:80],
+            "lastUpdated": str(status.get("lastUpdated") or status.get("last_updated") or "")[:80],
+        },
+    }
+    is_free = not bool(store.get("enabled")) or str(store.get("stockStatus") or "").strip().lower() == "free"
+    if include_download_url and is_free:
+        raw_url = str(downloads.get("downloadUrl") or downloads.get("download_url") or "").strip()
+        if raw_url.startswith("/download/"):
+            payload["downloads"]["downloadUrl"] = raw_url
+    return payload
+
+
+def public_json_response(payload, *, cache_seconds: int = 30):
+    """Return cacheable public JSON with ETag conditional-request support."""
+    response = jsonify(payload)
+    response.cache_control.public = True
+    response.cache_control.max_age = max(0, int(cache_seconds))
+    response.headers["Vary"] = "Accept-Encoding"
+    try:
+        response.add_etag()
+        response.make_conditional(request)
+    except Exception:
+        pass
+    return response
+
+
 def money_to_cents(value) -> int:
     try:
         return max(0, int(round(float(value) * 100)))
@@ -2629,7 +2718,39 @@ def get_allowed_download_files() -> set[str]:
 
     return allowed_files
 
+def get_download_product(filename: str) -> dict | None:
+    """Resolve a whitelisted /download filename back to its configured product."""
+    normalized = str(filename or "").strip("/")
+    if not normalized:
+        return None
+    for product in load_products():
+        downloads = product.get("downloads") if isinstance(product.get("downloads"), dict) else {}
+        raw = str(downloads.get("downloadUrl") or downloads.get("download_url") or "").strip()
+        if raw.startswith("/download/") and raw.replace("/download/", "", 1).strip("/") == normalized:
+            return product
+    return None
 
+
+def account_owns_product(user: dict | None, product: dict | None) -> bool:
+    if not user or not product:
+        return False
+    if has_admin_access(user):
+        return True
+    email = str(user.get("email") or "").strip().lower()
+    if not email:
+        return False
+    product_id = str(product.get("id") or "").strip()
+    slug = str(product.get("slug") or "").strip()
+    aliases = {str(x).strip() for x in (product.get("legacySlugs") or []) if str(x).strip()}
+    for order in load_orders_for_user(email):
+        if str(order.get("status") or "").strip().lower() not in {"paid", "completed", "delivered"}:
+            continue
+        for item in ((order.get("cart") or {}).get("items") or []):
+            item_id = str(item.get("product_id") or item.get("productId") or "").strip()
+            item_slug = str(item.get("slug") or item.get("product_slug") or "").strip()
+            if (product_id and item_id == product_id) or (slug and item_slug == slug) or item_slug in aliases:
+                return True
+    return False
 
 
 # -----------------------------------------------------------------------------
@@ -3005,19 +3126,28 @@ def default_site_settings() -> dict:
 
 
 def load_site_settings() -> dict:
+    # Site settings are read by several helpers/templates in the same request.
+    # Reuse the merged value for that request instead of repeating the Mongo read.
+    if has_request_context():
+        cached = getattr(g, "site_settings_cache", None)
+        if isinstance(cached, dict):
+            return cached
+
     settings = default_site_settings()
     try:
         if using_mongo() and settings_col is not None:
             found = settings_col.find_one({"key": "site"}, {"_id": 0}) or {}
             data = found.get("value", {}) if isinstance(found.get("value", {}), dict) else {}
             settings.update(data)
-            return settings
-        if SETTINGS_FILE.exists():
+        elif SETTINGS_FILE.exists():
             data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
             if isinstance(data, dict):
                 settings.update(data)
     except Exception:
         logger.exception("Could not load site settings")
+
+    if has_request_context():
+        g.site_settings_cache = settings
     return settings
 
 
@@ -3028,9 +3158,11 @@ def save_site_settings(settings: dict) -> None:
     merged["updated_at"] = utc_now().isoformat()
     if using_mongo() and settings_col is not None:
         settings_col.update_one({"key": "site"}, {"$set": {"key": "site", "value": merged}}, upsert=True)
-        return
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    SETTINGS_FILE.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+    else:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        SETTINGS_FILE.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+    if has_request_context():
+        g.site_settings_cache = merged
 
 
 def is_maintenance_mode() -> bool:
@@ -3062,8 +3194,13 @@ def get_user_preferences(email: str | None) -> dict:
     defaults = {"email_product_updates": True, "email_ticket_replies": True, "email_expiry_reminders": True, "reduced_motion": False}
     if not email or not using_mongo():
         return defaults
-    user = users_col.find_one({"email": email.lower()}, {"preferences": 1}) or {}
-    prefs = user.get("preferences") if isinstance(user.get("preferences"), dict) else {}
+    normalized_email = email.lower()
+    account = getattr(g, "current_account", None) if has_request_context() else None
+    if isinstance(account, dict) and str(account.get("email") or "").lower() == normalized_email:
+        prefs = account.get("preferences") if isinstance(account.get("preferences"), dict) else {}
+    else:
+        user = users_col.find_one({"email": normalized_email}, {"preferences": 1}) or {}
+        prefs = user.get("preferences") if isinstance(user.get("preferences"), dict) else {}
     defaults.update(prefs)
     return defaults
 
@@ -3088,11 +3225,16 @@ def create_notification(email: str, title: str, message: str, kind: str = "info"
 def load_notifications(email: str | None, limit: int = 30) -> list:
     if not email:
         return []
+    normalized_email = email.lower()
     if using_mongo():
-        user = users_col.find_one({"email": email.lower()}, {"notifications": 1}) or {}
-        items = user.get("notifications") if isinstance(user.get("notifications"), list) else []
+        account = getattr(g, "current_account", None) if has_request_context() else None
+        if isinstance(account, dict) and str(account.get("email") or "").lower() == normalized_email:
+            items = account.get("notifications") if isinstance(account.get("notifications"), list) else []
+        else:
+            user = users_col.find_one({"email": normalized_email}, {"notifications": 1}) or {}
+            items = user.get("notifications") if isinstance(user.get("notifications"), list) else []
     else:
-        items = [x for x in _read_json_list(NOTIFICATIONS_FILE) if x.get("email") == email.lower()]
+        items = [x for x in _read_json_list(NOTIFICATIONS_FILE) if x.get("email") == normalized_email]
     return sorted(items, key=lambda x: str(x.get("created_at", "")), reverse=True)[:limit]
 
 
@@ -3171,9 +3313,17 @@ def system_health_snapshot() -> list:
 # -----------------------------------------------------------------------------
 @app.context_processor
 def inject_global_template_vars():
+    user = current_user() or {}
+    account = getattr(g, "current_account", None)
+    notification_items = account.get("notifications") if isinstance(account, dict) else []
+    if not isinstance(notification_items, list):
+        notification_items = []
+    notification_unread_count = sum(1 for item in notification_items if isinstance(item, dict) and not item.get("read"))
+    account_preferences = account.get("preferences") if isinstance(account, dict) and isinstance(account.get("preferences"), dict) else {}
+    reduced_motion_preference = bool(account_preferences.get("reduced_motion"))
     return {
         "current_year": datetime.now().year,
-        "current_user": current_user(),
+        "current_user": user or None,
         "csrf_token": csrf_token,
         "discord_oauth_enabled": discord_oauth_ready(),
         "discord_oauth_missing": discord_oauth_missing(),
@@ -3194,19 +3344,29 @@ def inject_global_template_vars():
         "using_mongo": using_mongo(),
         "application_questions_to_text": application_questions_to_text,
         "support_webhook_configured": bool(SUPPORT_TICKET_WEBHOOK_URL),
-        "notification_unread_count": len([n for n in load_notifications((current_user() or {}).get("email"), 100) if not n.get("read")]),
+        "notification_unread_count": notification_unread_count,
+        "reduced_motion_preference": reduced_motion_preference,
     }
 
 
 # -----------------------------------------------------------------------------
 # Request hooks
 # -----------------------------------------------------------------------------
+_pending_cleanup_last_run = 0.0
+
+
 @app.before_request
 def cleanup_stale_pending_orders_before_request():
-    # Render/Flask apps do not always have a background worker. Running a tiny
-    # cleanup on normal requests keeps abandoned pending orders out of user/admin panels.
-    if request.path.startswith(("/static/", "/media/", "/webhooks/")):
+    # This used to scan up to 500 pending orders on nearly every page/API hit.
+    # A once-per-minute in-process sweep is enough for a 10-minute expiry and
+    # removes a large amount of avoidable Mongo work during chat/casino traffic.
+    global _pending_cleanup_last_run
+    if request.path.startswith(("/static/", "/media/", "/webhooks/", "/health", "/service-worker.js")):
         return None
+    now = time.monotonic()
+    if now - _pending_cleanup_last_run < 60.0:
+        return None
+    _pending_cleanup_last_run = now
     try:
         cleanup_expired_pending_orders()
     except Exception as exc:
@@ -3216,13 +3376,18 @@ def cleanup_stale_pending_orders_before_request():
 
 @app.before_request
 def set_session_timeout():
-    # A normal login uses a browser-session cookie. "Keep me signed in"
-    # marks the signed Flask session cookie as persistent for 30 days.
-    # Clearing browser cookies removes both the login and remembered-device state.
+    g.current_account = None
+    # Static/media/health traffic should never trigger an authenticated Mongo
+    # refresh. On the casino API, api_guard already loads the fresh account, so
+    # doing it here as well doubled the account reads for every poll/action.
+    if request.path.startswith(("/static/", "/media/", "/webhooks/", "/health", "/service-worker.js")):
+        return None
+
     session.permanent = bool(session.get("remember_login", False))
     user = current_user()
-    if user and using_mongo():
+    if user and using_mongo() and not request.path.startswith("/api/casino/"):
         fresh = get_user_by_email(user.get("email"))
+        g.current_account = fresh
         if not fresh or fresh.get("status") == "suspended":
             session.clear()
             abort(403, description="This account is not allowed to access the site.")
@@ -3230,6 +3395,7 @@ def set_session_timeout():
     if request.method == "POST" and not request.path.startswith("/api/") and not request.path.startswith("/webhooks/"):
         if not verify_csrf():
             abort(403, description="Security token expired. Refresh the page and try again.")
+    return None
 
 
 @app.before_request
@@ -3270,9 +3436,23 @@ def apply_security_headers(response):
     response.headers["X-Download-Options"] = "noopen"
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
     response.headers["Cross-Origin-Resource-Policy"] = "same-site"
+    public_api = (
+        request.method == "GET"
+        and (
+            request.path in {"/api/products", "/api/store-products", "/api/downloads", "/api/status"}
+            or request.path.startswith("/api/store-products/")
+        )
+    )
     if request.path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
-    elif request.path.startswith(("/admin", "/account", "/checkout")):
+    elif public_api:
+        response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
+    elif response.mimetype == "text/html":
+        # HTML can contain account navigation, CSRF tokens, flash messages, and
+        # order state. Never let a shared cache reuse it for another visitor.
+        response.headers["Cache-Control"] = "no-store, private"
+        response.vary.add("Cookie")
+    elif request.path.startswith(("/api/", "/admin", "/account", "/checkout", "/support", "/casino")):
         response.headers["Cache-Control"] = "no-store, private"
 
     if IS_PRODUCTION and request.is_secure:
@@ -3308,7 +3488,7 @@ def ratelimit_handler(error):
         response.headers["Retry-After"] = retry_after
         response.headers["Cache-Control"] = "no-store"
         return response
-    return render_template("403.html", error="Too many requests. Please slow down.", active_page=None), 429
+    return render_template("429.html", error="Too many requests. Please slow down.", active_page=None), 429
 
 
 @app.errorhandler(500)
@@ -3349,8 +3529,10 @@ def checkout():
 @login_required
 def checkout_success():
     cleanup_expired_pending_orders()
-    order_id = request.args.get("order_id", "")
-    stripe_session_id = request.args.get("session_id", "")
+    user = current_user() or {}
+    order_id = (request.args.get("order_id") or "").strip()
+    stripe_session_id = (request.args.get("session_id") or "").strip()
+
     if stripe_session_id and STRIPE_SECRET_KEY:
         try:
             import stripe
@@ -3362,30 +3544,55 @@ def checkout_success():
                 order = find_order_by_id(resolved_order_id)
                 paid_cents = object_get(checkout_session, "amount_total")
                 paid_currency = str(object_get(checkout_session, "currency", "")).upper()
-                if order and str(order.get("provider_session_id", "")) == str(stripe_session_id) and str(order.get("user_email", "")).lower() == str((current_user() or {}).get("email", "")).lower() and order_amount_matches(order, paid_cents, paid_currency):
-                    update_order_status(resolved_order_id, "paid", {"provider_payment_id": stripe_session_id})
+                if (
+                    order
+                    and str(order.get("provider_session_id", "")) == stripe_session_id
+                    and str(order.get("user_email", "")).lower() == str(user.get("email", "")).lower()
+                    and order_amount_matches(order, paid_cents, paid_currency)
+                ):
+                    order_id = str(resolved_order_id or order_id)
+                    update_order_status(order_id, "paid", {"provider_payment_id": stripe_session_id})
                     flash("Payment confirmed. Your order is ready in your account.", "success")
                 else:
                     logger.warning("Rejected Stripe success verification for order=%s session=%s", resolved_order_id, stripe_session_id)
         except Exception as exc:
             logger.warning("Could not verify Stripe success session: %s", exc)
-    return render_template("checkout_success.html", active_page="products", order_id=order_id)
+
+    order = find_order_by_id(order_id) if order_id else None
+    if order and str(order.get("user_email", "")).lower() != str(user.get("email", "")).lower():
+        order = None
+    order_status = str((order or {}).get("status") or "unknown").strip().lower()
+    payment_confirmed = bool(order and order_status in {"paid", "completed", "delivered"})
+    payment_pending = bool(order and order_status == "pending")
+
+    return render_template(
+        "checkout_success.html",
+        active_page="products",
+        order_id=order_id,
+        payment_confirmed=payment_confirmed,
+        payment_pending=payment_pending,
+        order_status=order_status,
+    )
 
 
 @app.route("/product/<slug>")
 @app.route("/store/<slug>")
 def product_detail(slug):
     product = find_store_product(slug)
-
     if not product:
         abort(404)
 
     enh = app.extensions.get("moe_enhancements", {})
     email = (current_user() or {}).get("email")
-    return render_template("product_detail.html", product=product, active_page="products",
-                           reviews=(enh.get("reviews") or (lambda *_: []))(slug),
-                           related_products=(enh.get("related") or (lambda *_: []))(product),
-                           owns_product=(enh.get("owns") or (lambda *_: False))(slug, email))
+    related_raw = (enh.get("related") or (lambda *_: []))(product)
+    return render_template(
+        "product_detail.html",
+        product=public_product_payload(product),
+        active_page="products",
+        reviews=(enh.get("reviews") or (lambda *_: []))(slug),
+        related_products=[public_product_payload(item) for item in (related_raw or [])],
+        owns_product=(enh.get("owns") or (lambda *_: False))(slug, email),
+    )
 
 @app.route("/downloads")
 def downloads():
@@ -5929,37 +6136,36 @@ def dmca_policy():
 @app.route("/api/products")
 @limiter.limit("120 per minute")
 def api_products():
-    return jsonify(load_products())
+    return public_json_response([public_product_payload(p) for p in load_products()])
 
 
 @app.route("/api/store-products")
 @limiter.limit("120 per minute")
 def api_store_products():
     if not load_site_settings().get("store_enabled", True):
-        return jsonify([])
-    return jsonify(filter_products("store"))
+        return public_json_response([])
+    return public_json_response([public_product_payload(p) for p in filter_products("store")])
 
 
 @app.route("/api/store-products/<slug>")
 @limiter.limit("120 per minute")
 def api_store_product(slug):
     product = find_store_product(slug)
-
     if not product:
         abort(404)
+    return public_json_response(public_product_payload(product))
 
-    return jsonify(product)
 
 @app.route("/api/downloads")
 @limiter.limit("120 per minute")
 def api_downloads():
-    return jsonify(filter_products("downloads"))
+    return public_json_response([public_product_payload(p, include_download_url=True) for p in filter_products("downloads")])
 
 
 @app.route("/api/status")
 @limiter.limit("120 per minute")
 def api_status():
-    return jsonify(filter_products("status"))
+    return public_json_response([public_product_payload(p) for p in filter_products("status")])
 
 
 # -----------------------------------------------------------------------------
@@ -6021,6 +6227,18 @@ def download_file(filename):
 
     if normalized_filename not in allowed_files:
         abort(404)
+
+    product = get_download_product(normalized_filename)
+    if not product:
+        abort(404)
+    store = product.get("store") if isinstance(product.get("store"), dict) else {}
+    is_free = not bool(store.get("enabled")) or str(store.get("stockStatus") or "").strip().lower() == "free"
+    if not is_free:
+        user = current_user()
+        if not user:
+            return redirect(url_for("login", next=request.path))
+        if not account_owns_product(user, product):
+            abort(403, description="This download is only available to accounts that own the product.")
 
     file_path = Path(safe_path)
 

@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Support | moealturej{% endblock %}
 {% block extra_head %}
-<style>
-.support-page{padding-top:28px}.support-shell{display:grid;gap:18px}.support-hero,.support-panel{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(18,9,33,.76),rgba(7,3,15,.66));border:1px solid rgba(216,180,254,.14);box-shadow:0 24px 70px rgba(0,0,0,.32);backdrop-filter:blur(16px)}.support-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;overflow:hidden;position:relative}.support-hero:before{content:"";position:absolute;inset:-1px;background:radial-gradient(circle at 80% 0%,rgba(168,85,247,.20),transparent 36%);pointer-events:none}.support-hero>*{position:relative}.support-hero h1{margin:8px 0 10px;font-size:clamp(42px,7vw,78px);line-height:.92;letter-spacing:-.075em}.support-hero p,.support-panel p{color:var(--muted);line-height:1.65}.ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.ticket-form{display:grid;gap:12px}.ticket-form label{display:grid;gap:7px;color:#eadfff;font-weight:900;font-size:13px}.ticket-form input,.ticket-form select,.ticket-form textarea{width:100%;min-height:46px;border-radius:16px;border:1px solid rgba(216,180,254,.14);background:rgba(0,0,0,.22);color:#fff;padding:12px 13px;outline:none}.ticket-form textarea{resize:vertical}.ticket-note{padding:13px;border-radius:16px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.15);color:#d9c5ff;line-height:1.55;font-size:13px}.ticket-list{display:grid;gap:12px}.ticket-card{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-decoration:none;color:inherit}.ticket-card:hover{border-color:rgba(216,180,254,.25);transform:translateY(-1px)}.ticket-card img{width:56px;height:56px;border-radius:15px;object-fit:cover;background:#08040f}.ticket-card h3{margin:0;color:#fff;font-size:15px}.ticket-card p{margin:5px 0 0;font-size:12px}.ticket-status{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:950;text-transform:uppercase;color:#eadfff;white-space:nowrap}.empty-box{padding:28px 18px;border-radius:22px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075);text-align:center;color:var(--muted)}.empty-box i{font-size:30px;color:#d8b4fe;margin-bottom:10px}@media(max-width:900px){.support-hero,.ticket-grid{grid-template-columns:1fr}.ticket-card{grid-template-columns:48px minmax(0,1fr)}.ticket-status{grid-column:1/-1;width:max-content}}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/support-1.css', v='20260827-full1') }}">
 {% endblock %}
 {% block content %}
 <section class="page-section support-page"><div class="container"><div class="support-shell">
@@ -15,19 +13,19 @@
     <section class="support-panel">
       <div class="eyebrow">new ticket</div><h2>Create ticket</h2><p>Only paid purchases show here, so support stays clean and you do not get random unsold-product tickets.</p>
       {% if orders %}
-      <form class="ticket-form" action="{{ url_for('support_ticket_create') }}" method="post" enctype="multipart/form-data">
+      <form class="ticket-form" id="supportTicketForm" action="{{ url_for('support_ticket_create') }}" method="post" enctype="multipart/form-data" data-max-file-mb="{{ config.MAX_SUPPORT_ATTACHMENT_MB if config.MAX_SUPPORT_ATTACHMENT_MB is defined else 8 }}" data-max-files="{{ config.MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE if config.MAX_SUPPORT_ATTACHMENTS_PER_MESSAGE is defined else 3 }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>Paid order / product<select name="order_item" id="orderItemSelect" onchange="syncOrderItem()">
+        <label>Paid order / product<select name="order_item" id="orderItemSelect">
           {% for order in orders %}{% for item in order.cart.get('items', []) if order.cart %}<option value="{{ order.order_id }}::{{ loop.index0 }}">{{ item.product_name }} — {{ item.option_name }} · {{ order.order_id }}</option>{% endfor %}{% endfor %}
         </select></label>
         <input type="hidden" name="order_id" id="orderIdInput"><input type="hidden" name="item_index" id="itemIndexInput" value="0">
-        <label>Subject<input name="subject" maxlength="120" placeholder="Example: Key not working / loader issue"></label>
+        <label>Subject<input name="subject" maxlength="120" placeholder="Example: Key not working / loader issue"><span class="field-counter" data-count-for="subject">0 / 120</span></label>
         <label>Issue type<select name="issue_type"><option value="launch">Product will not launch</option><option value="key">Key or activation issue</option><option value="download">Download or loader issue</option><option value="compatibility">Compatibility question</option><option value="billing">Order or billing</option><option value="general">Other</option></select></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Windows version<input name="windows_version" maxlength="80" placeholder="Windows 11 25H2"></label><label>Loader version<input name="loader_version" maxlength="80" placeholder="Example: 2.4.1"></label></div>
         <label>Error code / exact message<input name="error_code" maxlength="160" placeholder="Paste the exact error shown"></label>
-        <label>What you already tried<textarea name="steps_tried" rows="3" maxlength="800" placeholder="Restarted, disabled antivirus, re-downloaded…"></textarea></label>
-        <label>Message<textarea name="message" rows="6" maxlength="3000" required placeholder="Explain the issue, what you tried, and any error shown."></textarea></label>
-        <label>Helpful files / screenshots<input type="file" name="attachments" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.txt,.pdf,.zip,.rar,.7z,.json"></label>
+        <label>What you already tried<textarea name="steps_tried" rows="3" maxlength="800" placeholder="Restarted, disabled antivirus, re-downloaded…"></textarea><span class="field-counter" data-count-for="steps_tried">0 / 800</span></label>
+        <label>Message<textarea name="message" rows="6" maxlength="3000" minlength="8" required placeholder="Explain the issue, what you tried, and any error shown."></textarea><span class="field-counter" data-count-for="message">0 / 3000</span></label>
+        <label>Helpful files / screenshots<input id="supportAttachments" type="file" name="attachments" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.txt,.pdf,.zip,.rar,.7z,.json"><span class="field-counter" id="supportFileSummary">No files selected</span></label>
         <div class="ticket-note"><i class="fas fa-shield-halved"></i> Max {{ config.MAX_SUPPORT_ATTACHMENT_MB if config.MAX_SUPPORT_ATTACHMENT_MB is defined else 8 }}MB per file and only safe support file types are allowed.</div>
         <button class="primary-cta" type="submit"><i class="fas fa-paper-plane"></i> Create ticket</button>
       </form>
@@ -43,5 +41,5 @@
     </section>
   </div>
 </div></div></section>
-<script>function syncOrderItem(){const s=document.getElementById('orderItemSelect');if(!s)return;const parts=(s.value||'::0').split('::');document.getElementById('orderIdInput').value=parts[0]||'';document.getElementById('itemIndexInput').value=parts[1]||'0';}syncOrderItem();</script>
+<script src="{{ url_for('static', filename='js/pages/support.js', v='20260827-full1') }}"></script>
 {% endblock %}

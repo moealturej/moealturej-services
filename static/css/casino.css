@@ -38,3 +38,11 @@
 .wager-preset-grid button.active{border-color:rgba(208,155,255,.7);background:linear-gradient(180deg,rgba(168,85,247,.34),rgba(111,45,168,.28));box-shadow:0 0 0 2px rgba(168,85,247,.1),0 5px 15px rgba(89,28,135,.2);color:#fff;transform:translateY(-1px)}
 .casino-wager-control.disabled .wager-preset-grid button{cursor:not-allowed;transform:none}
 @media(max-width:700px){.wager-preset-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.wager-preset-grid button{height:34px;font-size:9px}}
+
+
+/* 2026-08-27 reliability + accessibility polish */
+.wager-preset-grid button:disabled{opacity:.38;cursor:not-allowed;filter:saturate(.55);transform:none;box-shadow:none}
+.casino-game-tab:focus-visible,.casino-action-button:focus-visible,.casino-daily-button:focus-visible,.slot-spin-button:focus-visible,.slot-lever:focus-visible,.wager-preset-grid button:focus-visible,.slot-machine-selector>button:focus-visible,.roulette-bet-grid button:focus-visible{outline:2px solid rgba(219,176,255,.95);outline-offset:3px}
+.casino-game-tab[aria-selected="true"]{border-color:rgba(205,154,255,.42)}
+@media(max-width:700px){.wager-preset-grid button{min-height:40px;height:40px}.casino-action-button,.casino-daily-button{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.casino-game-tab,.casino-action-button,.casino-daily-button,.slot-spin-button,.slot-lever,.wager-preset-grid button,.roulette-wheel,.roulette-ball-track{transition:none!important;animation:none!important;scroll-behavior:auto!important}}

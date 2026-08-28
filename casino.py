@@ -15,7 +15,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import abort, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
 INITIAL_CREDITS = 5_000
@@ -321,16 +321,37 @@ def register_casino(
             ledger_col.create_index([("email", ASCENDING), ("created_at", DESCENDING)])
             rounds_col.create_index([("game_id", ASCENDING)], unique=True)
             rounds_col.create_index([("email", ASCENDING), ("status", ASCENDING)])
-            rounds_col.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0)
+            # Active rounds must never disappear before their wager is reconciled.
+            # Older builds TTL-deleted ``expires_at`` directly, which could strand a
+            # debit after a user closed the tab. Finished/expired rounds now purge
+            # through a separate field instead.
+            for index_name, index_info in rounds_col.index_information().items():
+                keys = index_info.get("key") or []
+                if index_name != "_id_" and keys == [("expires_at", 1)] and "expireAfterSeconds" in index_info:
+                    rounds_col.drop_index(index_name)
+            rounds_col.create_index([("purge_at", ASCENDING)], expireAfterSeconds=0, name="casino_round_purge")
+            rounds_col.create_index(
+                [("email", ASCENDING), ("game", ASCENDING)],
+                unique=True,
+                partialFilterExpression={"status": "active"},
+                name="casino_one_active_round",
+            )
         except Exception:
             app.logger.exception("Casino index setup failed")
 
-    def _fresh_user() -> dict | None:
+    def _fresh_user(*, force: bool = False) -> dict | None:
+        # api_guard + the endpoint used to query the same account twice per request.
+        # Cache the fresh Mongo user for this request only; wallet mutators below keep
+        # the cached balance in sync.
+        if not force and hasattr(g, "casino_user"):
+            return g.casino_user
         user = current_user() or {}
         email = str(user.get("email") or "").strip().lower()
         if not email or not using_mongo() or users_col is None:
             return None
-        return users_col.find_one({"email": email}, {"_id": 0})
+        fresh = users_col.find_one({"email": email}, {"_id": 0})
+        g.casino_user = fresh
+        return fresh
 
     def _avatar_for(user: dict | None) -> str:
         user = user or {}
@@ -407,7 +428,10 @@ def register_casino(
             return False
         return not any(char in username for char in "<>/\\@")
 
-    def _ensure_wallet(email: str) -> dict:
+    def _ensure_wallet(email: str, user: dict | None = None) -> dict:
+        user = user or _fresh_user() or {}
+        if "casino_credits" in user:
+            return user
         users_col.update_one(
             {"email": email, "casino_credits": {"$exists": False}},
             {"$set": {
@@ -418,13 +442,23 @@ def register_casino(
                 "casino_created_at": _naive_now(),
             }},
         )
-        return users_col.find_one({"email": email}, {"_id": 0}) or {}
+        fresh = users_col.find_one({"email": email}, {"_id": 0}) or {}
+        g.casino_user = fresh
+        return fresh
 
     def _wallet_user() -> dict:
         user = _fresh_user()
         if not user:
             raise RuntimeError("Casino requires MongoDB and a signed-in account.")
-        return _ensure_wallet(str(user["email"]).lower())
+        return _ensure_wallet(str(user["email"]).lower(), user)
+
+    def _cache_balance(value: int) -> None:
+        cached = getattr(g, "casino_user", None)
+        if isinstance(cached, dict):
+            cached["casino_credits"] = int(value)
+
+    def _round_purge_at(hours: int = 24) -> datetime:
+        return _naive_now() + timedelta(hours=hours)
 
     def _parse_wager(value: Any) -> int:
         if isinstance(value, bool):
@@ -473,8 +507,10 @@ def register_casino(
         )
         if not updated:
             raise ValueError("You do not have enough credits for that wager.")
+        balance = int(updated.get("casino_credits", 0))
+        _cache_balance(balance)
         _log_game(user, game, wager, payout, details)
-        return int(updated.get("casino_credits", 0))
+        return balance
 
     def _debit(user: dict, game: str, wager: int, *, count_game: bool = True) -> int:
         from pymongo import ReturnDocument
@@ -493,7 +529,9 @@ def register_casino(
         )
         if not updated:
             raise ValueError("You do not have enough credits for that wager.")
-        return int(updated.get("casino_credits", 0))
+        balance = int(updated.get("casino_credits", 0))
+        _cache_balance(balance)
+        return balance
 
     def _credit(user: dict, amount: int) -> int:
         from pymongo import ReturnDocument
@@ -503,16 +541,50 @@ def register_casino(
             return_document=ReturnDocument.AFTER,
             projection={"_id": 0, "casino_credits": 1},
         )
-        return int((updated or {}).get("casino_credits", 0))
+        balance = int((updated or {}).get("casino_credits", 0))
+        _cache_balance(balance)
+        return balance
 
     def _refund_debit(user: dict, amount: int, *, count_game: bool = True) -> None:
+        from pymongo import ReturnDocument
         increments = {
             "casino_credits": int(amount),
             "casino_total_wagered": -int(amount),
         }
         if count_game:
             increments["casino_games_played"] = -1
-        users_col.update_one({"email": str(user["email"]).lower()}, {"$inc": increments})
+        updated = users_col.find_one_and_update(
+            {"email": str(user["email"]).lower()},
+            {"$inc": increments},
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": 0, "casino_credits": 1},
+        )
+        if updated:
+            _cache_balance(int(updated.get("casino_credits", 0)))
+
+    def _expire_stale_rounds(user: dict) -> int:
+        """Refund abandoned wagered rounds exactly once after their soft expiry."""
+        if rounds_col is None:
+            return 0
+        from pymongo import ReturnDocument
+        expired = 0
+        now = _naive_now()
+        while True:
+            game = rounds_col.find_one_and_update(
+                {
+                    "email": str(user["email"]).lower(),
+                    "status": "active",
+                    "expires_at": {"$lte": now},
+                },
+                {"$set": {"status": "expired", "finished_at": now, "purge_at": _round_purge_at()}},
+                return_document=ReturnDocument.BEFORE,
+            )
+            if not game:
+                break
+            if game.get("game") in {"mines", "blackjack"}:
+                _refund_debit(user, int(game.get("wager", 0)), count_game=True)
+            expired += 1
+        return expired
 
     def api_guard(*, csrf: bool = False, age: bool = True):
         def decorator(view):
@@ -525,6 +597,9 @@ def register_casino(
                 user = _fresh_user()
                 if not user:
                     return jsonify({"ok": False, "error": "Account could not be loaded."}), 401
+                if str(user.get("status") or "active").lower() == "suspended":
+                    session.clear()
+                    return jsonify({"ok": False, "error": "This account is not allowed to access the casino."}), 403
                 if age and not bool(user.get("age_18_confirmed")):
                     return jsonify({"ok": False, "error": "Confirm that you are 18 or older first.", "age_gate_required": True}), 403
                 if csrf and not verify_csrf():
@@ -534,8 +609,14 @@ def register_casino(
         return decorator
 
     def _json_error(exc: Exception, status: int = 400):
-        app.logger.info("Casino request rejected: %s", exc)
-        return jsonify({"ok": False, "error": str(exc)}), status
+        if isinstance(exc, ValueError):
+            app.logger.info("Casino request rejected: %s", exc)
+            return jsonify({"ok": False, "error": str(exc)}), status
+        if isinstance(exc, RuntimeError):
+            app.logger.warning("Casino temporarily unavailable: %s", exc)
+            return jsonify({"ok": False, "error": str(exc)}), 503
+        app.logger.exception("Casino request failed")
+        return jsonify({"ok": False, "error": "The game could not be completed. Your balance and active rounds will refresh automatically."}), 500
 
     @app.route("/casino/age-check", methods=["GET", "POST"])
     @login_required
@@ -605,7 +686,7 @@ def register_casino(
                     "updated_at": _naive_now(),
                 }},
             )
-            fresh = _fresh_user()
+            fresh = _fresh_user(force=True)
             session["user"] = sanitize_user_for_session(fresh)
             record_audit("account_avatar_update", str(user.get("email") or ""), {"avatar_url": avatar_url})
             if wants_json:
@@ -675,7 +756,7 @@ def register_casino(
                 return redirect(url_for("account") + "#profile")
 
         users_col.update_one({"email": user["email"]}, {"$set": update})
-        fresh = _fresh_user()
+        fresh = _fresh_user(force=True)
         session["user"] = sanitize_user_for_session(fresh)
         record_audit("account_profile_update", str(user.get("email") or ""), {"username": username})
         flash("Profile updated.", "success")
@@ -686,6 +767,7 @@ def register_casino(
     @limiter.limit("120 per minute")
     def casino_state():
         user = _wallet_user()
+        _expire_stale_rounds(user)
         users_col.update_one({"email": user["email"]}, {"$set": {"casino_last_seen": _naive_now()}})
         history = []
         if ledger_col is not None:
@@ -720,15 +802,19 @@ def register_casino(
             if blackjack_game:
                 active_rounds["blackjack"] = _blackjack_payload(blackjack_game)
 
-        hl_round = session.get("casino_hl") or {}
-        if _safe_int(hl_round.get("expires")) >= int(_utcnow().timestamp()):
-            value = _safe_int(hl_round.get("value"))
-            if 2 <= value <= 14 and hl_round.get("token"):
-                active_rounds["higher_lower"] = {
-                    "token": hl_round["token"],
-                    "card": hl_round.get("card") or _hl_card_payload(value),
-                    "multipliers": _hl_multipliers(value),
-                }
+        if rounds_col is not None:
+            hl_round = rounds_col.find_one(
+                {"email": user["email"], "game": "higher_lower", "status": "active"},
+                {"_id": 0},
+            )
+            if hl_round:
+                value = _safe_int(hl_round.get("value"))
+                if 2 <= value <= 14:
+                    active_rounds["higher_lower"] = {
+                        "token": hl_round.get("game_id"),
+                        "card": hl_round.get("card") or _hl_card_payload(value),
+                        "multipliers": _hl_multipliers(value),
+                    }
 
         return jsonify({
             "ok": True,
@@ -759,6 +845,7 @@ def register_casino(
         )
         if not updated:
             return jsonify({"ok": False, "error": "You already claimed today’s free credits."}), 409
+        _cache_balance(int(updated["casino_credits"]))
         return jsonify({"ok": True, "balance": int(updated["casino_credits"]), "bonus": DAILY_CREDITS})
 
     @app.route("/api/casino/play/slots", methods=["POST"])
@@ -856,41 +943,118 @@ def register_casino(
     @api_guard(csrf=True)
     @limiter.limit("60 per minute")
     def casino_hl_start():
-        value = secrets.randbelow(13) + 2
-        token = secrets.token_urlsafe(18)
-        card = _hl_card_payload(value)
-        session["casino_hl"] = {
-            "token": token,
-            "value": value,
-            "card": card,
-            "expires": int(_utcnow().timestamp()) + 300,
-        }
-        return jsonify({"ok": True, "token": token, "card": card, "multipliers": _hl_multipliers(value)})
+        try:
+            user = _wallet_user()
+            _expire_stale_rounds(user)
+            existing = rounds_col.find_one({"email": user["email"], "game": "higher_lower", "status": "active"})
+            if existing:
+                value = _safe_int(existing.get("value"))
+                return jsonify({
+                    "ok": True,
+                    "restored": True,
+                    "token": existing.get("game_id"),
+                    "card": existing.get("card") or _hl_card_payload(value),
+                    "multipliers": _hl_multipliers(value),
+                })
+
+            value = secrets.randbelow(13) + 2
+            card = _hl_card_payload(value)
+            game_id = uuid.uuid4().hex
+            game = {
+                "game_id": game_id,
+                "game": "higher_lower",
+                "email": user["email"],
+                "value": value,
+                "card": card,
+                "status": "active",
+                "created_at": _naive_now(),
+                "expires_at": _naive_now() + timedelta(minutes=5),
+            }
+            try:
+                rounds_col.insert_one(game)
+            except Exception:
+                existing = rounds_col.find_one({"email": user["email"], "game": "higher_lower", "status": "active"})
+                if not existing:
+                    raise
+                value = _safe_int(existing.get("value"))
+                return jsonify({
+                    "ok": True,
+                    "restored": True,
+                    "token": existing.get("game_id"),
+                    "card": existing.get("card") or _hl_card_payload(value),
+                    "multipliers": _hl_multipliers(value),
+                })
+            return jsonify({"ok": True, "token": game_id, "card": card, "multipliers": _hl_multipliers(value)})
+        except Exception as exc:
+            return _json_error(exc)
 
     @app.route("/api/casino/higher-lower/guess", methods=["POST"])
     @api_guard(csrf=True)
     @limiter.limit("45 per minute")
     def casino_hl_guess():
         try:
+            from pymongo import ReturnDocument
             payload = request.get_json(silent=True) or {}
             user = _wallet_user()
             wager = _parse_wager(payload.get("wager"))
             direction = str(payload.get("direction") or "").lower()
-            round_data = session.get("casino_hl") or {}
-            if payload.get("token") != round_data.get("token") or _safe_int(round_data.get("expires")) < int(_utcnow().timestamp()):
-                raise ValueError("That Higher/Lower round expired. Deal a new card.")
+            token = str(payload.get("token") or "")
+            now = _naive_now()
+            round_data = rounds_col.find_one_and_update(
+                {
+                    "game_id": token,
+                    "email": user["email"],
+                    "game": "higher_lower",
+                    "status": "active",
+                    "expires_at": {"$gt": now},
+                },
+                {"$set": {"status": "resolving", "updated_at": now, "purge_at": _round_purge_at()}},
+                return_document=ReturnDocument.BEFORE,
+            )
+            if not round_data:
+                raise ValueError("That Higher/Lower round expired or was already played. Deal a new card.")
+
             current = _safe_int(round_data.get("value"))
             multipliers = _hl_multipliers(current)
             if direction not in {"higher", "lower"} or not multipliers.get(direction):
+                rounds_col.update_one(
+                    {"_id": round_data["_id"], "status": "resolving"},
+                    {"$set": {"status": "active"}, "$unset": {"purge_at": ""}},
+                )
                 raise ValueError("That guess is not available for this card.")
+
             next_value = secrets.randbelow(13) + 2
             current_card = round_data.get("card") or _hl_card_payload(current)
             next_card = _hl_card_payload(next_value)
             won = next_value > current if direction == "higher" else next_value < current
             multiplier = float(multipliers[direction]) if won else 0.0
             payout = int(math.floor(wager * multiplier)) if won else 0
-            session.pop("casino_hl", None)
-            balance = _settle_single(user, "higher_lower", wager, payout, {"current": current, "next": next_value, "direction": direction, "multiplier": multiplier})
+            try:
+                balance = _settle_single(
+                    user,
+                    "higher_lower",
+                    wager,
+                    payout,
+                    {"current": current, "next": next_value, "direction": direction, "multiplier": multiplier},
+                )
+            except Exception:
+                rounds_col.update_one(
+                    {"_id": round_data["_id"], "status": "resolving"},
+                    {"$set": {"status": "active"}, "$unset": {"purge_at": ""}},
+                )
+                raise
+            rounds_col.update_one(
+                {"_id": round_data["_id"]},
+                {"$set": {
+                    "status": "done",
+                    "direction": direction,
+                    "next": next_card,
+                    "won": won,
+                    "payout": payout,
+                    "finished_at": _naive_now(),
+                    "purge_at": _round_purge_at(),
+                }},
+            )
             return jsonify({"ok": True, "won": won, "current": current_card, "next": next_card, "multiplier": multiplier, "payout": payout, "balance": balance})
         except Exception as exc:
             return _json_error(exc)
@@ -913,9 +1077,22 @@ def register_casino(
             mine_count = _safe_int(payload.get("mines"), 5)
             if not 3 <= mine_count <= 10:
                 raise ValueError("Choose between 3 and 10 mines.")
-            existing = rounds_col.find_one({"email": user["email"], "game": "mines", "status": "active"}, {"_id": 1})
+            _expire_stale_rounds(user)
+            existing = rounds_col.find_one({"email": user["email"], "game": "mines", "status": "active"}, {"_id": 0, "mines": 0})
             if existing:
-                raise ValueError("You already have an active Mines round. Finish or cash it out first.")
+                revealed = list(existing.get("revealed", []))
+                multiplier = _mines_multiplier(int(existing["mine_count"]), len(revealed))
+                return jsonify({
+                    "ok": True,
+                    "restored": True,
+                    "game_id": existing["game_id"],
+                    "wager": int(existing["wager"]),
+                    "mine_count": int(existing["mine_count"]),
+                    "revealed": revealed,
+                    "multiplier": multiplier,
+                    "potential_payout": int(math.floor(int(existing["wager"]) * multiplier)),
+                    "balance": int(user.get("casino_credits", 0)),
+                })
             balance = _debit(user, "mines", wager)
             positions = _secure_shuffle(list(range(25)))[:mine_count]
             game_id = uuid.uuid4().hex
@@ -934,8 +1111,23 @@ def register_casino(
                 })
             except Exception:
                 _refund_debit(user, wager)
+                existing = rounds_col.find_one({"email": user["email"], "game": "mines", "status": "active"}, {"_id": 0, "mines": 0})
+                if existing:
+                    revealed = list(existing.get("revealed", []))
+                    multiplier = _mines_multiplier(int(existing["mine_count"]), len(revealed))
+                    return jsonify({
+                        "ok": True,
+                        "restored": True,
+                        "game_id": existing["game_id"],
+                        "wager": int(existing["wager"]),
+                        "mine_count": int(existing["mine_count"]),
+                        "revealed": revealed,
+                        "multiplier": multiplier,
+                        "potential_payout": int(math.floor(int(existing["wager"]) * multiplier)),
+                        "balance": int((getattr(g, "casino_user", {}) or {}).get("casino_credits", 0)),
+                    })
                 raise
-            return jsonify({"ok": True, "game_id": game_id, "mine_count": mine_count, "balance": balance, "multiplier": 1.0})
+            return jsonify({"ok": True, "game_id": game_id, "wager": wager, "mine_count": mine_count, "balance": balance, "multiplier": 1.0, "potential_payout": wager, "revealed": []})
         except Exception as exc:
             return _json_error(exc)
 
@@ -956,7 +1148,7 @@ def register_casino(
             if tile in game.get("revealed", []):
                 raise ValueError("That tile is already open.")
             if tile in game.get("mines", []):
-                loss_result = rounds_col.update_one({"_id": game["_id"], "status": "active"}, {"$set": {"status": "lost", "lost_tile": tile, "finished_at": _naive_now()}})
+                loss_result = rounds_col.update_one({"_id": game["_id"], "status": "active"}, {"$set": {"status": "lost", "lost_tile": tile, "finished_at": _naive_now(), "purge_at": _round_purge_at()}})
                 if loss_result.modified_count != 1:
                     raise ValueError("That Mines round changed before the tile was settled.")
                 _log_game(user, "mines", int(game["wager"]), 0, {"mines": game.get("mines", []), "revealed": game.get("revealed", []), "lost_tile": tile})
@@ -977,7 +1169,7 @@ def register_casino(
                 from pymongo import ReturnDocument
                 completed_game = rounds_col.find_one_and_update(
                     {"_id": fresh_game["_id"], "status": "active"},
-                    {"$set": {"status": "won", "finished_at": _naive_now()}},
+                    {"$set": {"status": "won", "finished_at": _naive_now(), "purge_at": _round_purge_at()}},
                     return_document=ReturnDocument.BEFORE,
                 )
                 if completed_game:
@@ -1014,7 +1206,7 @@ def register_casino(
             user = _wallet_user()
             game = rounds_col.find_one_and_update(
                 {"game_id": str(payload.get("game_id") or ""), "email": user["email"], "game": "mines", "status": "active", "revealed.0": {"$exists": True}},
-                {"$set": {"status": "cashed_out", "finished_at": _naive_now()}},
+                {"$set": {"status": "cashed_out", "finished_at": _naive_now(), "purge_at": _round_purge_at()}},
                 return_document=ReturnDocument.BEFORE,
             )
             if not game:
@@ -1093,6 +1285,7 @@ def register_casino(
                     "wager": int(game.get("wager", 0)),
                     "doubled": bool(game.get("doubled")),
                     "finished_at": finished_at,
+                    "purge_at": _round_purge_at(),
                 },
                 "$unset": {"action_lock": ""},
             },
@@ -1111,9 +1304,10 @@ def register_casino(
         try:
             user = _wallet_user()
             wager = _parse_wager((request.get_json(silent=True) or {}).get("wager"))
-            existing = rounds_col.find_one({"email": user["email"], "game": "blackjack", "status": "active"}, {"_id": 1})
+            _expire_stale_rounds(user)
+            existing = rounds_col.find_one({"email": user["email"], "game": "blackjack", "status": "active"})
             if existing:
-                raise ValueError("You already have an active Blackjack hand. Finish it first.")
+                return jsonify({"ok": True, "restored": True, "game": _blackjack_payload(existing), "balance": int(user.get("casino_credits", 0))})
             balance = _debit(user, "blackjack", wager)
             shoe = _new_shoe()
             player = [shoe.pop(), shoe.pop()]
@@ -1135,6 +1329,14 @@ def register_casino(
                 game["_id"] = insert.inserted_id
             except Exception:
                 _refund_debit(user, wager)
+                existing = rounds_col.find_one({"email": user["email"], "game": "blackjack", "status": "active"})
+                if existing:
+                    return jsonify({
+                        "ok": True,
+                        "restored": True,
+                        "game": _blackjack_payload(existing),
+                        "balance": int((getattr(g, "casino_user", {}) or {}).get("casino_credits", 0)),
+                    })
                 raise
             player_value, _ = _hand_value(player)
             dealer_value, _ = _hand_value(dealer)
@@ -1185,10 +1387,28 @@ def register_casino(
                 if action == "double":
                     if len(player) != 2 or game.get("doubled"):
                         raise ValueError("Double down is only available on your first two cards.")
-                    _debit(user, "blackjack_double", int(game["wager"]), count_game=False)
-                    game["wager"] = int(game["wager"]) * 2
+                    extra_wager = int(game["wager"])
+                    _debit(user, "blackjack_double", extra_wager, count_game=False)
+                    game["wager"] = extra_wager * 2
                     game["doubled"] = True
                     player.append(shoe.pop())
+                    # Persist the doubled wager and forced card before settlement. If
+                    # this write fails, refund only the extra debit so the original
+                    # hand stays recoverable instead of silently losing credits.
+                    persisted = rounds_col.update_one(
+                        {"_id": game["_id"], "status": "active", "action_lock": True},
+                        {"$set": {
+                            "wager": game["wager"],
+                            "doubled": True,
+                            "player": player,
+                            "shoe": shoe,
+                            "dealer": dealer,
+                            "updated_at": _naive_now(),
+                        }},
+                    )
+                    if persisted.modified_count != 1:
+                        _refund_debit(user, extra_wager, count_game=False)
+                        raise ValueError("The double-down could not be saved. Your extra wager was refunded.")
                     action = "stand" if _hand_value(player)[0] <= 21 else "bust"
                 elif action == "hit":
                     player.append(shoe.pop())
