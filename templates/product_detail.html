@@ -3,7 +3,7 @@
 {% block meta_description %}View details, compatibility, status, and purchase options for {{ product.name }}.{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/product_detail-1.css', v='20260827-full1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/product_detail-1.css', v='20260902-sharefix2') }}">
 {% endblock %}
 
 {% block content %}
@@ -44,5 +44,5 @@
 
 {% block extra_scripts %}
 <script type="application/json" id="productData">{{ product|tojson }}</script>
-<script src="{{ url_for('static', filename='js/pages/product-detail.js', v='20260827-full1') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/product-detail.js', v='20260902-sharefix2') }}"></script>
 {% endblock %}

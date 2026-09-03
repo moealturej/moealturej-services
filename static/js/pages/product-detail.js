@@ -63,12 +63,89 @@
     const saved=Boolean(window.MoeWishlist?.has(product.slug||product.id));
     wishlistButton?.classList.toggle('active',saved);wishlistButton?.setAttribute('aria-pressed',String(saved));wishlistButton?.setAttribute('aria-label',saved?'Remove saved product':'Save product');
   }
+  function shareUrl(){
+    // Keep the product URL clean when copying/sharing (no temporary anchors).
+    return `${location.origin}${location.pathname}${location.search}`;
+  }
+  async function copyProductLink(url){
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(url);
+      return true;
+    }
+
+    // Reliable fallback for localhost, older browsers, and restricted clipboard contexts.
+    const input=document.createElement('textarea');
+    input.value=url;
+    input.setAttribute('readonly','');
+    input.style.position='fixed';
+    input.style.left='-9999px';
+    input.style.opacity='0';
+    document.body.appendChild(input);
+    input.focus();
+    input.select();
+    let copied=false;
+    try{copied=document.execCommand('copy')}catch{}
+    input.remove();
+    return copied;
+  }
+  function flashShareSuccess(){
+    if(!shareButton)return;
+    const icon=shareButton.querySelector('i');
+    const originalClass=icon?.className||'';
+    shareButton.classList.add('copied');
+    shareButton.setAttribute('aria-label','Product link copied');
+    if(icon)icon.className='fas fa-check';
+    setTimeout(()=>{
+      shareButton.classList.remove('copied');
+      shareButton.setAttribute('aria-label','Share product');
+      if(icon)icon.className=originalClass||'fas fa-share-nodes';
+    },1500);
+  }
+  function shouldUseNativeShare(){
+    // Chrome/Edge on Windows expose navigator.share, but the desktop share panel can
+    // open with no usable targets (the "Try that again" screen). Only use the native
+    // share sheet on devices that are actually mobile/tablet-like.
+    const ua=String(navigator.userAgent||'');
+    const mobileUA=/(Android|iPhone|iPod|Mobile)/i.test(ua);
+    const iPadLike=/iPad/i.test(ua) || (navigator.platform==='MacIntel' && Number(navigator.maxTouchPoints)>1);
+    return mobileUA || iPadLike;
+  }
+  async function copyAndConfirm(url){
+    if(!await copyProductLink(url))return false;
+    flashShareSuccess();
+    show('Product link copied','success');
+    return true;
+  }
   async function share(){
-    const data={title:product.name||'Product',text:`View ${product.name||'this product'} on moealturej`,url:location.href};
+    const url=shareUrl();
+    const data={title:product.name||'Product',text:`View ${product.name||'this product'} on moealturej`,url};
+
+    // Desktop: copy immediately instead of opening the unreliable Windows/Chrome
+    // Web Share UI. This also makes localhost development behave consistently.
+    if(!shouldUseNativeShare()){
+      try{
+        if(await copyAndConfirm(url))return;
+      }catch{}
+      show('Could not copy this product link','error');
+      return;
+    }
+
+    // Mobile/tablet: use the native share sheet where it is useful, then fall back
+    // to copying if the browser/device cannot complete the share.
     try{
-      if(navigator.share){await navigator.share(data);return}
-      await navigator.clipboard.writeText(location.href);show('Product link copied','success');
-    }catch(err){if(err?.name!=='AbortError')show('Could not share this link','error')}
+      if(typeof navigator.share==='function' && (!navigator.canShare || navigator.canShare(data))){
+        await navigator.share(data);
+        return;
+      }
+      if(await copyAndConfirm(url))return;
+      throw new Error('Share unavailable');
+    }catch(err){
+      if(err?.name==='AbortError')return;
+      try{
+        if(await copyAndConfirm(url))return;
+      }catch{}
+      show('Could not share this product link','error');
+    }
   }
 
   addButton?.addEventListener('click',addToCart);
