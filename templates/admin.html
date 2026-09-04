@@ -3,32 +3,6 @@
 
 {% block extra_scripts %}
 <script>
-(function setupManualGrant(){
-  const select=document.getElementById('manualGrantProduct');
-  const name=document.getElementById('manualGrantName');
-  const slug=document.getElementById('manualGrantSlug');
-  const image=document.getElementById('manualGrantImage');
-  if(!select||!name||!slug||!image)return;
-  function sync(){
-    const option=select.options[select.selectedIndex];
-    const custom=select.value==='__custom__';
-    slug.disabled=!custom; image.disabled=!custom;
-    if(custom){
-      if(!name.value||name.dataset.catalogFill==='1') name.value='';
-      name.dataset.catalogFill='0';
-      slug.value=''; image.value='/static/logo.png';
-      name.focus();
-    }else{
-      name.value=option.dataset.name||option.textContent.trim();
-      name.dataset.catalogFill='1';
-      slug.value=option.dataset.slug||select.value;
-      image.value=option.dataset.image||'/static/logo.png';
-    }
-  }
-  select.addEventListener('change',sync);
-  name.addEventListener('input',()=>{name.dataset.catalogFill='0'});
-  sync();
-})();
 function updatePricingButtons(){
   const rows=[...document.querySelectorAll('#pricingOptions .pricing-row')];
   rows.forEach((row)=>{
@@ -140,15 +114,9 @@ updatePricingButtons();
     if(up || down) move(event.target.closest('.admin-product'), up ? -1 : 1);
   });
   list.querySelectorAll('.admin-product').forEach(card=>{
-    card.draggable=false;
-    const handle=card.querySelector('.drag-handle');
-    if(!handle) return;
-    handle.draggable=true;
-    handle.addEventListener('dragstart',(event)=>{
-      dragEl=card; card.classList.add('is-dragging');
-      try{ event.dataTransfer.effectAllowed='move'; event.dataTransfer.setData('text/plain',card.dataset.slug||'product'); }catch(_e){}
-    });
-    handle.addEventListener('dragend',()=>{ card.classList.remove('is-dragging'); dragEl=null; updateInput(); });
+    card.draggable=true;
+    card.addEventListener('dragstart',()=>{ dragEl=card; card.classList.add('is-dragging'); });
+    card.addEventListener('dragend',()=>{ card.classList.remove('is-dragging'); dragEl=null; updateInput(); });
   });
   list.addEventListener('dragover',(event)=>{
     event.preventDefault();
@@ -230,20 +198,16 @@ updatePricingButtons();
   const count=document.getElementById('adminResultCount');
   const key='moe-admin-density';
   const focusKey='moe-admin-focus';
-  // Focus mode must never survive a reload. Older builds stored this setting,
-  // which caused the command center to flash and then disappear on page load.
-  localStorage.removeItem(focusKey);
-  page.classList.remove('focus-mode');
   const sync=()=>{
     const compact=localStorage.getItem(key)==='compact';
-    const focused=page.classList.contains('focus-mode');
-    page.classList.toggle('compact-mode',compact);
+    const focused=localStorage.getItem(focusKey)==='on';
+    page.classList.toggle('compact-mode',compact);page.classList.toggle('focus-mode',focused);
     density?.classList.toggle('is-active',compact);focus?.classList.toggle('is-active',focused);
     if(density)density.innerHTML=`<i class="fas ${compact?'fa-grip':'fa-table-cells'}"></i> ${compact?'Comfortable':'Compact'}`;
     if(focus)focus.innerHTML=`<i class="fas ${focused?'fa-compress':'fa-expand'}"></i> ${focused?'Overview':'Focus'}`;
   };
   density?.addEventListener('click',()=>{localStorage.setItem(key,localStorage.getItem(key)==='compact'?'comfortable':'compact');sync()});
-  focus?.addEventListener('click',()=>{page.classList.toggle('focus-mode');sync()});
+  focus?.addEventListener('click',()=>{localStorage.setItem(focusKey,localStorage.getItem(focusKey)==='on'?'off':'on');sync()});
   const search=document.getElementById('adminSearch');
   const updateCount=()=>{const visible=[...document.querySelectorAll('.admin-section')].filter(el=>getComputedStyle(el).display!=='none').length; if(count)count.innerHTML=`<strong>${visible}</strong> sections visible`;};
   search?.addEventListener('input',()=>requestAnimationFrame(updateCount));
@@ -254,35 +218,178 @@ updatePricingButtons();
 </script>
 {% endblock %}
 {% block extra_head %}
-<script>
-/* Admin should always open at the command-center overview, never at a stale section anchor. */
-(()=>{
-  try{ if('scrollRestoration' in history) history.scrollRestoration='manual'; }catch(_e){}
-  if(location.hash){
-    try{ history.replaceState(history.state,'',location.pathname+location.search); }catch(_e){}
-  }
-  window.scrollTo(0,0);
-})();
-</script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-1.css', v='20260903-refresh1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-2.css', v='20260903-refresh1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-3.css', v='20260903-refresh1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-experience.css', v='20260903-refresh1') }}">
-{% endblock %}
-{% block page_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-final-20260903.css', v='20260903-fix2') }}">
+<style>
+  .admin-page{--admin-line:rgba(213,156,255,.16);--admin-soft:rgba(255,255,255,.035)}
+  .admin-command{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:stretch;margin-bottom:18px}
+  .admin-hero{position:relative;overflow:hidden;min-height:240px}.admin-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% 12%,rgba(213,156,255,.22),transparent 34%),radial-gradient(circle at 8% 92%,rgba(169,53,255,.14),transparent 32%);pointer-events:none}.admin-hero>*{position:relative;z-index:1}.admin-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .admin-side-panel{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(13,7,27,.88),rgba(4,2,10,.94));border:1px solid var(--admin-line);box-shadow:0 24px 70px rgba(0,0,0,.34);display:grid;gap:12px;align-content:start}.admin-side-panel h2{margin:0}.admin-health{display:grid;gap:10px}.health-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075)}.health-item span{color:var(--muted);font-size:13px;font-weight:800}.health-pill{padding:7px 10px;border-radius:999px;background:rgba(57,255,159,.10);border:1px solid rgba(57,255,159,.18);color:#b9ffd9;font-weight:900;font-size:12px;white-space:nowrap}.health-pill.warn{background:rgba(255,200,87,.10);border-color:rgba(255,200,87,.24);color:#ffe7ad}.health-note{margin:2px 0 0;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;line-height:1.55;color:#b7abc9;word-break:break-word}
+  .admin-stats{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.admin-stats div{min-height:96px;display:grid;align-content:center;background:linear-gradient(180deg,rgba(255,255,255,.058),rgba(255,255,255,.022))!important;border:1px solid rgba(213,156,255,.15)!important}.admin-stats strong{font-size:clamp(20px,2.2vw,30px)}.admin-stats span{line-height:1.25}
+  .admin-tabs{position:sticky;top:105px;z-index:20;display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;padding:9px;border-radius:24px;background:rgba(4,2,10,.82);border:1px solid rgba(213,156,255,.14);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.28)}.admin-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.14);color:#efe3ff;font-weight:950;text-decoration:none;transition:.18s ease}.admin-tab:hover,.admin-tab.is-active{background:rgba(169,53,255,.14);border-color:rgba(213,156,255,.32);transform:translateY(-1px)}
+  .email-compose{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:16px;align-items:start}.email-preview-card{position:sticky;top:180px;border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid rgba(213,156,255,.14);padding:18px}.recipient-tools{display:grid;gap:10px}.recipient-mode{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.recipient-mode label{display:flex!important;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.13);cursor:pointer}.recipient-mode input{width:auto!important;min-height:auto!important}.select-users-box{min-height:170px!important}.email-mock{border-radius:22px;background:#05020a;border:1px solid rgba(255,255,255,.1);padding:14px}.email-mock-head{display:flex;gap:12px;align-items:center;padding:10px 8px 16px;border-bottom:1px solid rgba(255,255,255,.08)}.email-mock-logo{width:44px;height:44px;border-radius:14px;object-fit:cover;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:grid;place-items:center;font-weight:950}.email-mock h3{margin:16px 0 8px;font-size:24px;letter-spacing:-.04em}.email-mock p{color:#b9a8d8;line-height:1.65;white-space:pre-wrap}.email-mock-btn{display:inline-flex;margin-top:10px;padding:12px 15px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:950}.admin-polish-note{display:none!important}
+
+  .admin-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.admin-section{scroll-margin-top:190px}.admin-card{padding:24px!important;border-radius:30px!important;background:linear-gradient(180deg,rgba(11,6,23,.86),rgba(5,2,12,.92))!important;border:1px solid var(--admin-line)!important;box-shadow:0 24px 70px rgba(0,0,0,.30)!important}.section-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}.section-top h2{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.04em}.muted{color:var(--muted);line-height:1.65}.admin-two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-form-grid .wide{grid-column:1/-1}.check-row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px}.check-row label{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(213,156,255,.11)}.check-row input{width:auto!important;min-height:auto!important}.admin-page label{color:#f1e7ff;font-weight:900;font-size:13px}.admin-page select,.admin-page input,.admin-page textarea{background:#0b0615!important;color:#fff!important;border-color:rgba(213,156,255,.22)!important}.admin-page select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#d59cff 50%),linear-gradient(135deg,#d59cff 50%,transparent 50%)!important;background-position:calc(100% - 18px) 22px,calc(100% - 12px) 22px!important;background-size:6px 6px,6px 6px!important;background-repeat:no-repeat!important;padding-right:38px!important}.admin-page select option{background:#0b0615!important;color:#f7efff!important}.admin-page select option:checked{background:#251036!important;color:#fff!important}
+  .media-grid,.users-grid,.product-list{display:grid;gap:12px}.media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media-item,.user-row,.admin-product{display:grid;gap:13px;padding:16px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.018));border:1px solid rgba(213,156,255,.12)}.media-top{display:flex;gap:14px;align-items:center;min-width:0}.media-preview,.media-file-icon{width:78px;height:78px;flex:0 0 auto;border-radius:20px;border:1px solid rgba(213,156,255,.18);background:#090411}.media-preview{object-fit:cover}.media-file-icon{display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,rgba(169,53,255,.24),rgba(255,68,188,.10))}.copy-field{display:flex;gap:8px}.copy-field input{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis}.copy-field button{white-space:nowrap}
+  .product-list{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-product-main{display:flex;gap:14px;align-items:center}.admin-product-main img{width:82px;height:82px;border-radius:21px;object-fit:cover;border:1px solid rgba(213,156,255,.18);background:#08040f}.admin-product-main h3{margin:0 0 5px}.admin-product-main p{margin:0}.admin-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.admin-tags span,.owner-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(169,53,255,.11);border:1px solid rgba(169,53,255,.18);font-size:12px;font-weight:900;color:#eadfff}.status-mini{display:grid;grid-template-columns:auto 170px 1fr auto;gap:10px;align-items:center}.status-mini input[type=checkbox]{width:auto!important;min-height:auto!important}.status-mini button,.small-btn,.danger-btn{border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.05);color:#fff;font-weight:900;cursor:pointer;transition:.18s ease}.small-btn:hover,.status-mini button:hover{background:rgba(169,53,255,.13);border-color:rgba(213,156,255,.28);transform:translateY(-1px)}.danger-btn{background:rgba(255,55,95,.10);border-color:rgba(255,55,95,.28);color:#ffd8df}.danger-btn:hover{background:rgba(255,55,95,.16);transform:translateY(-1px)}.danger-btn.compact{margin-top:0}.json-editor{margin-top:2px}.json-editor summary{cursor:pointer;color:#dca8ff;font-weight:900}.json-editor textarea{margin-top:12px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5}.admin-actions{margin-top:10px}.pricing-builder{display:grid;gap:10px}.pricing-row{display:grid;grid-template-columns:1fr 130px auto;gap:10px;align-items:end;padding:12px;border:1px solid rgba(213,156,255,.14);background:rgba(255,255,255,.035);border-radius:18px}.parser-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.detail-preview{white-space:pre-wrap;margin-top:10px;padding:14px;border-radius:18px;background:rgba(6,3,12,.72);border:1px dashed rgba(213,156,255,.22);font-size:12px;color:#d7cdea;max-height:260px;overflow:auto}.helper-text{display:block;margin-top:6px;color:#9b91ad;font-size:12px;line-height:1.45}
+  .user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}.user-email{font-weight:950;color:#fff}.user-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.owner-badge{background:rgba(255,198,75,.12);border-color:rgba(255,198,75,.25);color:#ffe3a3}.suspended-badge{background:rgba(255,70,101,.13);border-color:rgba(255,70,101,.32);color:#ffd3dc}.active-badge{background:rgba(57,255,159,.10);border-color:rgba(57,255,159,.22);color:#b8ffd8}.discord-badge{background:rgba(88,101,242,.14);border-color:rgba(88,101,242,.32);color:#dfe2ff}.user-forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.inline-form{display:flex;gap:8px;align-items:center;padding:10px;border-radius:18px;background:rgba(255,255,255,.026);border:1px solid rgba(213,156,255,.10)}.inline-form select,.inline-form input{flex:1 1 160px;min-width:0}.security-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.security-item{display:flex;gap:12px;align-items:flex-start;padding:15px;border-radius:20px;background:rgba(255,255,255,.034);border:1px solid rgba(213,156,255,.12)}.security-item i{color:#dca8ff;margin-top:2px;font-size:20px}.admin-page code{color:#e6c7ff;background:rgba(169,53,255,.12);border:1px solid rgba(213,156,255,.15);padding:2px 7px;border-radius:9px}.secondary-cta{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:0 16px;border-radius:999px;border:1px solid rgba(213,156,255,.22);background:rgba(255,255,255,.035);font-weight:900;color:#fff}.secondary-cta:hover{background:rgba(169,53,255,.12)}.delivery-form{display:grid;grid-template-columns:170px minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:12px;padding:12px;border-radius:18px;background:rgba(57,229,140,.05);border:1px solid rgba(57,229,140,.12)}.delivery-form label{margin:0!important}.delivery-form textarea{min-height:46px!important;height:46px!important;resize:vertical}.delivery-status{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.delivery-key-preview{padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.24);border:1px dashed rgba(213,156,255,.28);font-family:ui-monospace,Consolas,monospace;color:#fff;word-break:break-all;font-size:12px}.order-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;color:var(--muted);font-size:13px;padding:10px;border-radius:15px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}.order-line strong{color:#fff}.order-line small{display:block;color:#8f80ad;margin-top:4px}@media(max-width:880px){.delivery-form{grid-template-columns:1fr}.order-line{grid-template-columns:1fr}}
+  @media(max-width:1100px){.admin-command,.admin-two-col{grid-template-columns:1fr}.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.product-list,.media-grid{grid-template-columns:1fr}.admin-tabs{top:96px}}
+  @media(max-width:760px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tabs{position:relative;top:auto}.admin-tab{flex:1;justify-content:center}.admin-form-grid,.user-forms,.security-grid,.email-compose,.recipient-mode{grid-template-columns:1fr}.inline-form,.copy-field,.status-mini{display:grid;grid-template-columns:1fr}.admin-product-main{align-items:flex-start}.admin-hero{min-height:auto}.admin-side-panel,.admin-card{border-radius:24px!important}.email-preview-card{position:relative;top:auto}.select-users-box{min-height:130px!important}}
+
+  .download-editor{margin-top:10px;border-radius:18px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.026);overflow:hidden}
+  .download-editor summary{cursor:pointer;padding:13px 15px;font-weight:900;color:#f3eaff;list-style:none}
+  .download-editor summary::-webkit-details-marker{display:none}
+  .download-editor summary:before{content:"\f0ed";font-family:"Font Awesome 6 Free";font-weight:900;margin-right:9px;color:#d8b4fe}
+  .download-update-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 15px 15px}.download-update-grid .wide{grid-column:1/-1}.download-update-grid label{display:grid;gap:7px;margin:0!important;color:#cfc4db!important;font-size:12px!important}.download-update-grid .inline-check{display:flex!important;align-items:center;gap:8px}.download-update-grid .inline-check input{width:auto!important;min-height:auto!important}.download-update-grid input{min-height:42px!important;border-radius:13px!important}.download-update-grid button{min-height:42px;border:0}@media(max-width:780px){.download-update-grid{grid-template-columns:1fr}}
+
+  /* cleaner admin refresh + auto-delivery editor */
+  .admin-page{padding-top:28px}
+  .admin-command{grid-template-columns:minmax(0,1.25fr) 360px}
+  .admin-stats{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .admin-tabs{top:82px;justify-content:center}
+  .product-list{grid-template-columns:1fr!important}
+  .admin-product{padding:18px!important;gap:14px!important}
+  .admin-product-main{padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .admin-product-main h3{font-size:20px;letter-spacing:-.02em}
+  .product-order-shell{display:grid;gap:12px;margin-bottom:16px;padding:14px;border-radius:24px;background:linear-gradient(180deg,rgba(169,53,255,.09),rgba(255,255,255,.025));border:1px solid rgba(213,156,255,.18)}
+  .product-order-header{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}.product-order-header h3{margin:0;font-size:20px;letter-spacing:-.03em}.product-order-header p{margin:5px 0 0;color:#a99bbd;font-size:13px;line-height:1.45}
+  .product-order-actions,.product-order-savebar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.product-order-savebar{position:sticky;bottom:16px;z-index:25;justify-content:space-between;padding:12px 14px;border-radius:20px;background:rgba(8,3,17,.92);border:1px solid rgba(213,156,255,.26);box-shadow:0 16px 42px rgba(0,0,0,.38);backdrop-filter:blur(16px)}.product-order-savebar[hidden]{display:none}.product-order-savebar span{color:#eadfff;font-weight:900}
+  .admin-product{position:relative}.admin-product[draggable=true]{cursor:grab}.admin-product.is-dragging{opacity:.55;transform:scale(.985);border-color:rgba(213,156,255,.38)!important}.product-list.is-reordered .admin-product{border-color:rgba(213,156,255,.20)}
+  .product-order-control{display:flex;align-items:center;gap:8px;margin-left:auto}.drag-handle{display:inline-flex;align-items:center;gap:8px;padding:9px 11px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(213,156,255,.14);color:#d8c7ef;font-weight:950;user-select:none}.move-btn{width:38px;height:38px;border-radius:13px;border:1px solid rgba(213,156,255,.16);background:rgba(255,255,255,.045);color:#fff;cursor:pointer;font-weight:950}.move-btn:hover{background:rgba(169,53,255,.16);border-color:rgba(213,156,255,.30)}
+  .order-number{position:absolute;top:14px;right:14px;min-width:30px;height:30px;padding:0 9px;border-radius:999px;display:grid;place-items:center;background:rgba(169,53,255,.16);border:1px solid rgba(213,156,255,.22);color:#f4eaff;font-weight:950;font-size:12px}
+
+    .pricing-row{grid-template-columns:minmax(150px,1fr) 120px minmax(260px,1.5fr) auto auto!important}
+  .pricing-row .auto-url-field{min-width:0}.auto-toggle{display:flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 12px;border-radius:14px;background:rgba(57,229,140,.055);border:1px solid rgba(57,229,140,.16);white-space:nowrap}.auto-toggle input{width:auto!important;min-height:auto!important}
+  .auto-delivery-editor{margin-top:10px;border-radius:18px;border:1px solid rgba(57,229,140,.16);background:linear-gradient(180deg,rgba(57,229,140,.055),rgba(255,255,255,.018));overflow:hidden}
+  .auto-delivery-editor summary{cursor:pointer;padding:13px 15px;font-weight:950;color:#d9ffe9;list-style:none}.auto-delivery-editor summary::-webkit-details-marker{display:none}.auto-delivery-editor summary i{color:#85ffbd;margin-right:8px}
+  .auto-delivery-grid{display:grid;grid-template-columns:1fr 220px;gap:10px;padding:0 15px 15px}.auto-delivery-grid .wide{grid-column:1/-1}.auto-delivery-grid label{display:grid;gap:7px;margin:0!important}.auto-delivery-grid input{min-height:42px!important;border-radius:13px!important}.auto-delivery-note{padding:12px 13px;border-radius:16px;background:rgba(0,0,0,.20);border:1px solid rgba(57,229,140,.13);color:#b9abca;font-size:12px;line-height:1.6}.discount-admin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.discount-admin-grid .wide{grid-column:1/-1}.discount-admin-grid label,.discount-panel label{display:grid;gap:7px;margin:0!important}.discount-panel{padding:13px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(213,156,255,.12);display:grid;gap:10px}.discount-help{color:#a99bbd;font-size:12px;line-height:1.55}.option-api-list{display:grid;gap:10px}.option-api-row{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:10px;align-items:end;padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}.option-api-row strong{display:block;color:#fff}.option-api-row small{display:block;margin-top:4px;color:#998aae}.inline-check{display:flex!important;align-items:center;gap:8px}.inline-check input{width:auto!important;min-height:auto!important}
+  @media(max-width:1100px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pricing-row,.option-api-row,.auto-delivery-grid,.discount-admin-grid{grid-template-columns:1fr!important}.auto-toggle{justify-content:flex-start}}
+  @media(max-width:760px){.admin-stats{grid-template-columns:1fr 1fr!important}.admin-command{grid-template-columns:1fr}.pricing-row{gap:8px}.auto-delivery-note{font-size:11px}.product-order-header{display:grid}.product-order-actions,.product-order-savebar{display:grid;grid-template-columns:1fr}.product-order-actions .small-btn,.product-order-savebar button{width:100%}.product-order-control{width:100%;margin-left:0;justify-content:space-between}.drag-handle{flex:1;justify-content:center}.order-number{top:10px;right:10px}}
+
+.guide-admin-icon{display:grid;place-items:center;width:54px;height:54px;border-radius:16px;background:rgba(169,53,255,.1);border:1px solid rgba(213,156,255,.16);color:#ddaaff;font-size:19px;flex:0 0 auto}
+
+/* ========================================================================
+   ADMIN WORKSPACE 2.0 — navigation/workflow upgrade (functionality-safe)
+   ======================================================================== */
+.admin-page{
+  --aw-bg:#07030d;--aw-panel:rgba(12,7,23,.92);--aw-panel-2:rgba(17,10,31,.82);
+  --aw-line:rgba(204,153,255,.14);--aw-line-strong:rgba(204,153,255,.28);
+  --aw-text:#f8f2ff;--aw-muted:#aa9cba;--aw-accent:#a855f7;--aw-accent-2:#7c3aed;
+  --aw-good:#79f2b0;--aw-warn:#ffd27d;--aw-danger:#ff7890;
+}
+.admin-page>.container{max-width:1540px!important}
+.admin-command{margin-bottom:14px!important}
+.admin-hero,.admin-side-panel,.admin-card{box-shadow:0 20px 60px rgba(0,0,0,.28)!important}
+.admin-hero{padding:32px!important;border-radius:30px!important;border:1px solid var(--aw-line)!important;background:linear-gradient(145deg,rgba(25,11,48,.86),rgba(7,3,14,.96))!important}
+.admin-hero h1{max-width:680px;font-size:clamp(36px,5vw,62px)!important;line-height:.96!important;letter-spacing:-.055em!important}
+.admin-hero p{max-width:720px;font-size:15px!important}
+.admin-side-panel{max-height:390px;overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(168,85,247,.35) transparent}
+.admin-stats{margin:0 0 18px!important;grid-template-columns:repeat(6,minmax(0,1fr))!important}
+.admin-stats div{min-height:86px!important;border-radius:19px!important;padding:14px!important}
+.admin-stats div:nth-child(n+7){background:rgba(255,255,255,.025)!important}
+.admin-stats strong{font-size:24px!important}
+.admin-stats span{font-size:11px!important;text-transform:uppercase;letter-spacing:.08em;color:#9e91ad!important}
+
+.admin-workspace{display:grid;grid-template-columns:264px minmax(0,1fr);gap:18px;align-items:start}
+.admin-workspace-rail{position:sticky;top:86px;z-index:30;max-height:calc(100vh - 104px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--aw-line);border-radius:26px;background:linear-gradient(180deg,rgba(14,7,26,.96),rgba(7,3,13,.96));box-shadow:0 22px 60px rgba(0,0,0,.32);backdrop-filter:blur(18px)}
+.admin-rail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.admin-rail-title{display:flex;align-items:center;gap:10px;min-width:0}.admin-rail-title>span:first-child{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(168,85,247,.24),rgba(124,58,237,.11));border:1px solid rgba(192,132,252,.20);color:#dfbdff}.admin-rail-title strong{display:block;font-size:14px}.admin-rail-title small{display:block;color:var(--aw-muted);font-size:10px;margin-top:2px;letter-spacing:.05em;text-transform:uppercase}
+.admin-rail-close{display:none;width:34px;height:34px;border:1px solid var(--aw-line);border-radius:11px;background:rgba(255,255,255,.035);color:#fff}
+.admin-tabs{position:relative!important;top:auto!important;z-index:auto!important;display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;gap:4px!important;margin:0!important;padding:12px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(168,85,247,.35) transparent}
+.admin-tab{width:100%;justify-content:flex-start!important;gap:11px!important;padding:10px 11px!important;border-radius:13px!important;border-color:transparent!important;background:transparent!important;color:#cfc3dc!important;font-size:12px!important;font-weight:850!important;transform:none!important}
+.admin-tab i{width:18px;text-align:center;color:#9e82bd}.admin-tab:hover{background:rgba(255,255,255,.045)!important;color:#fff!important;border-color:rgba(255,255,255,.055)!important}.admin-tab.is-active{background:linear-gradient(90deg,rgba(168,85,247,.18),rgba(168,85,247,.06))!important;color:#fff!important;border-color:rgba(192,132,252,.20)!important;box-shadow:inset 3px 0 0 #b66cff}.admin-tab.is-active i{color:#d9adff}
+.admin-tab-group{margin:10px 9px 4px;padding-top:10px;border-top:1px solid rgba(255,255,255,.055);color:#756882;font-size:9px;font-weight:950;letter-spacing:.14em;text-transform:uppercase}.admin-tab-group:first-child{margin-top:0;padding-top:0;border-top:0}
+.admin-tools{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;margin:0!important;padding:12px!important;border-top:1px solid rgba(255,255,255,.06)!important;background:rgba(255,255,255,.018)!important}
+.admin-search{grid-column:1/-1!important;min-width:0!important;border-radius:13px!important;padding:0 10px!important}.admin-search input{height:40px!important;min-height:40px!important;font-size:12px!important}.admin-search kbd{display:none!important}
+.admin-tool-btn{min-height:38px!important;padding:8px 9px!important;border-radius:12px!important;font-size:10px!important;justify-content:center!important}.admin-tool-btn i{margin-right:3px}.admin-result-count{grid-column:1/-1;text-align:center!important;font-size:10px!important;color:#887c95!important}
+.admin-workspace-main{min-width:0}.admin-layout{gap:16px!important}
+.admin-mobile-bar{display:none;position:sticky;top:76px;z-index:28;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;border-radius:17px;background:rgba(10,5,18,.92);border:1px solid var(--aw-line);backdrop-filter:blur(16px)}
+.admin-mobile-menu{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#fff;font-weight:900}.admin-mobile-current{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bbaaca;font-size:12px}
+.admin-rail-overlay{display:none;position:fixed;inset:0;z-index:89;background:rgba(0,0,0,.62);backdrop-filter:blur(4px)}
+
+.admin-section{scroll-margin-top:100px!important;transition:opacity .18s ease,transform .18s ease}
+.admin-section[data-search-hidden="true"],.admin-tab[data-search-hidden="true"]{display:none!important}
+.admin-card{border-radius:24px!important;padding:22px!important;background:linear-gradient(180deg,rgba(15,8,28,.83),rgba(7,3,14,.91))!important}
+.section-top{position:relative;padding-right:46px;margin-bottom:18px!important}.section-top h2{font-size:clamp(23px,2.4vw,31px)!important}.section-top .muted{max-width:850px;margin-bottom:0}.section-collapse{position:absolute;right:0;top:0;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;border:1px solid var(--aw-line);background:rgba(255,255,255,.035);color:#c9b5dc;cursor:pointer;transition:.18s ease}.section-collapse:hover{color:#fff;background:rgba(168,85,247,.12);border-color:var(--aw-line-strong)}.section-collapse i{transition:transform .18s ease}.admin-section.is-collapsed>.admin-card:not(:first-child),.admin-section.is-collapsed>:not(.section-top),.admin-section.admin-card.is-collapsed>:not(.section-top){display:none!important}.admin-section.is-collapsed .section-collapse i{transform:rotate(-90deg)}.admin-section.is-collapsed{min-height:auto!important}
+.admin-section.is-dirty{border-color:rgba(255,210,125,.34)!important}.admin-section.is-dirty>.section-top:after,.admin-section.is-dirty .section-top:first-child:after{content:"Unsaved changes";display:inline-flex;margin-top:9px;padding:5px 8px;border-radius:999px;background:rgba(255,210,125,.09);border:1px solid rgba(255,210,125,.20);color:#ffe2a6;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+
+.admin-form-grid{gap:14px!important}.admin-page label{display:grid;gap:7px}.admin-page input,.admin-page select,.admin-page textarea{min-height:47px!important;border-radius:14px!important;padding:12px 13px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025);transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}.admin-page textarea{min-height:110px!important}.admin-page input:focus,.admin-page select:focus,.admin-page textarea:focus{outline:none!important;border-color:rgba(192,132,252,.54)!important;box-shadow:0 0 0 4px rgba(168,85,247,.09)!important;background:#0e071a!important}.check-row{padding:5px 0}.check-row label{min-height:44px;justify-content:flex-start}.primary-cta,.secondary-cta,.small-btn,.danger-btn,.admin-tool-btn{transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease!important}.primary-cta:hover,.secondary-cta:hover,.small-btn:hover,.danger-btn:hover{transform:translateY(-1px)!important}.primary-cta{box-shadow:0 10px 28px rgba(124,58,237,.18)}
+.admin-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.inline-form{align-items:end!important}.user-row,.media-item,.admin-product,.discount-panel,.security-item{border-radius:18px!important}.user-row:hover,.media-item:hover,.admin-product:hover{border-color:rgba(204,153,255,.22)!important;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.023))!important}.product-order-shell{border-radius:19px!important}.pricing-row{border-radius:15px!important}.email-preview-card{top:104px!important}
+
+.admin-quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.admin-quick-action{display:flex;align-items:center;gap:11px;padding:13px 14px;border-radius:17px;border:1px solid var(--aw-line);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));color:#fff;text-decoration:none;min-width:0}.admin-quick-action:hover{border-color:var(--aw-line-strong);background:rgba(168,85,247,.09)}.admin-quick-action>i{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:rgba(168,85,247,.12);color:#dcb7ff}.admin-quick-action strong{display:block;font-size:12px}.admin-quick-action small{display:block;margin-top:3px;color:#92859f;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-back-top{position:fixed;right:22px;bottom:22px;z-index:40;width:46px;height:46px;border-radius:15px;border:1px solid var(--aw-line-strong);background:rgba(12,6,22,.92);color:#fff;box-shadow:0 16px 38px rgba(0,0,0,.35);backdrop-filter:blur(14px);opacity:0;pointer-events:none;transform:translateY(8px);transition:.18s ease}.admin-back-top.show{opacity:1;pointer-events:auto;transform:none}
+
+@media(max-width:1250px){.admin-stats{grid-template-columns:repeat(4,minmax(0,1fr))!important}.admin-workspace{grid-template-columns:226px minmax(0,1fr)}.admin-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.pricing-row{grid-template-columns:1fr 120px!important}.pricing-row .auto-url-field,.pricing-row .auto-toggle{grid-column:1/-1}}
+@media(max-width:900px){
+  .admin-command{grid-template-columns:1fr!important}.admin-stats{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .admin-workspace{display:block}.admin-mobile-bar{display:flex}.admin-workspace-rail{position:fixed;top:0;left:0;bottom:0;z-index:90;width:min(86vw,320px);max-height:none;border-radius:0 24px 24px 0;transform:translateX(-105%);transition:transform .2s ease}.admin-workspace-rail.is-open{transform:none}.admin-rail-close{display:grid;place-items:center}.admin-rail-overlay.show{display:block}.admin-tabs{flex:1}.admin-tools{flex:0 0 auto}.admin-page.admin-nav-open{overflow:hidden}.email-preview-card{position:relative!important;top:auto!important}
+}
+@media(max-width:640px){.admin-page{padding-top:18px!important}.admin-hero{padding:24px!important}.admin-hero h1{font-size:39px!important}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.admin-stats div{min-height:76px!important}.admin-quick-actions{grid-template-columns:1fr}.admin-card{padding:17px!important;border-radius:20px!important}.section-top{padding-right:42px}.admin-form-grid,.admin-two-col,.email-compose,.user-forms,.security-grid{grid-template-columns:1fr!important}.admin-actions>*{width:100%}.admin-product-main{padding-right:34px}.admin-back-top{right:14px;bottom:14px}}
+@media(prefers-reduced-motion:reduce){.admin-page *{scroll-behavior:auto!important;transition:none!important}}
+</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-experience.css') }}">
+
+<style id="admin-final-layout-fix">
+/* Final admin layout guardrails — intentionally loaded after admin-experience.css. */
+.admin-page>.container{max-width:1480px!important;padding-inline:20px!important}
+.admin-workspace{display:grid!important;grid-template-columns:248px minmax(0,1fr)!important;gap:18px!important;align-items:start!important;width:100%!important}
+.admin-workspace-main{min-width:0!important;width:100%!important;overflow:visible!important}
+.admin-workspace-rail{position:sticky!important;top:88px!important;width:248px!important;max-width:248px!important;min-width:248px!important;max-height:calc(100vh - 108px)!important;overflow:hidden!important;border-radius:22px!important}
+.admin-workspace-rail *{box-sizing:border-box!important}
+.admin-workspace-rail .admin-rail-head{flex:0 0 auto!important;min-width:0!important;padding:14px 14px 11px!important}
+.admin-workspace-rail .admin-rail-title{min-width:0!important;overflow:hidden!important}
+.admin-workspace-rail .admin-rail-title>span:last-child{min-width:0!important;overflow:hidden!important}
+.admin-workspace-rail .admin-rail-title strong,.admin-workspace-rail .admin-rail-title small{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.admin-workspace-rail .admin-tabs{display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;justify-content:flex-start!important;gap:4px!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;padding:10px!important;overflow-x:hidden!important;overflow-y:auto!important;scrollbar-gutter:stable!important}
+.admin-workspace-rail .admin-tab-group{display:block!important;width:auto!important;min-width:0!important;margin:9px 8px 3px!important;padding:9px 2px 0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.admin-workspace-rail .admin-tab{display:flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:flex-start!important;width:100%!important;min-width:0!important;max-width:100%!important;height:42px!important;margin:0!important;padding:0 11px!important;border-radius:12px!important;overflow:hidden!important;white-space:nowrap!important;line-height:1!important}
+.admin-workspace-rail .admin-tab i{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 18px!important;width:18px!important;min-width:18px!important;margin:0!important}
+.admin-workspace-rail .admin-tab{font-size:12px!important;text-overflow:ellipsis!important}
+.admin-workspace-rail .admin-tools{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;width:100%!important;min-width:0!important;padding:10px!important;margin:0!important;overflow:hidden!important;flex:0 0 auto!important}
+.admin-workspace-rail .admin-search{grid-column:1/-1!important;display:flex!important;align-items:center!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.admin-workspace-rail .admin-search input{width:100%!important;min-width:0!important;max-width:100%!important}
+.admin-workspace-rail .admin-tool-btn{width:100%!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.admin-workspace-rail .admin-result-count{grid-column:1/-1!important;width:100%!important;text-align:center!important}
+.admin-quick-actions{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.admin-quick-action{min-width:0!important;overflow:hidden!important}
+.admin-quick-action span{min-width:0!important;overflow:hidden!important}
+.admin-layout{min-width:0!important;width:100%!important}
+.admin-section{min-width:0!important;width:100%!important}
+.admin-section>.section-top,.admin-section.admin-card>.section-top{min-height:54px!important;margin-bottom:0!important;padding:10px 48px 10px 2px!important;align-items:center!important}
+.admin-section.is-collapsed{padding-top:12px!important;padding-bottom:12px!important}
+.admin-section.is-collapsed>.section-top,.admin-section.admin-card.is-collapsed>.section-top{margin-bottom:0!important}
+.admin-section.is-collapsed .section-top h2{font-size:15px!important;line-height:1.25!important;margin:0!important;letter-spacing:-.02em!important}
+.admin-section.is-collapsed .section-top .eyebrow{display:none!important}
+.admin-section.is-collapsed .section-top .muted{font-size:10px!important;line-height:1.35!important;margin:3px 0 0!important;max-width:none!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.admin-section.is-collapsed .section-top>a.secondary-cta{display:none!important}
+.admin-section.is-collapsed .section-collapse{top:50%!important;transform:translateY(-50%)!important}
+/* Never let a product's inner editor render open on first paint. */
+#products details[open]>*:not(summary){display:none!important}
+#products details[open]{overflow:hidden!important}
+@media(max-width:1250px){
+  .admin-workspace{grid-template-columns:228px minmax(0,1fr)!important}
+  .admin-workspace-rail{width:228px!important;min-width:228px!important;max-width:228px!important}
+  .admin-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:900px){
+  .admin-page>.container{padding-inline:14px!important}
+  .admin-workspace{display:block!important}
+  .admin-workspace-rail{position:fixed!important;top:0!important;bottom:0!important;left:0!important;width:min(86vw,320px)!important;min-width:0!important;max-width:320px!important;max-height:none!important;border-radius:0 22px 22px 0!important;transform:translateX(-105%)!important}
+  .admin-workspace-rail.is-open{transform:translateX(0)!important}
+  .admin-workspace-rail .admin-tabs{flex:1 1 auto!important}
+}
+@media(max-width:640px){.admin-quick-actions{grid-template-columns:1fr!important}}
+</style>
 {% endblock %}
 {% block content %}
 <section class="page-section admin-page"><div class="container">
   <div class="admin-command">
     <section class="admin-hero">
       <div>
-        <div class="eyebrow">owner dashboard</div>
-        <h1>Admin dashboard</h1>
-        <p>Manage products, orders, customers, releases, content, and site settings from one clear workspace.</p>
+        <div class="eyebrow">owner control</div>
+        <h1>Site command center</h1>
+        <p>Production controls for products, orders, customers, emails, uploads, status, and account safety.</p>
         <div class="admin-hero-actions">
-          <a class="primary-cta" href="#products"><i class="fas fa-box"></i> Products</a>
-          <a class="secondary-cta" href="/" target="_blank" rel="noopener noreferrer"><i class="fas fa-arrow-up-right-from-square"></i> View site</a>
+          <a class="primary-cta" href="#products"><i class="fas fa-box"></i> Manage products</a>
+          <a class="secondary-cta" href="/" target="_blank"><i class="fas fa-arrow-up-right-from-square"></i> View site</a>
           <a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
         </div>
       </div>
@@ -319,23 +426,17 @@ updatePricingButtons();
 
   <nav class="admin-tabs" aria-label="Admin sections">
     <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
-    <a class="admin-tab" href="#analytics"><i class="fas fa-chart-line"></i> Analytics</a>
-    <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
-    <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
-    <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
-    <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
-    <a class="admin-tab" href="#manual-grant"><i class="fas fa-gift"></i> Manual grant</a>
-    <a class="admin-tab" href="#support"><i class="fas fa-headset"></i> Support</a>
-    <a class="admin-tab" href="#reviews"><i class="fas fa-star"></i> Reviews</a>
-    <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
+    <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
     <a class="admin-tab" href="#emails"><i class="fas fa-envelope-open-text"></i> Email sender</a>
-    <a class="admin-tab" href="#order-webhook"><i class="fab fa-discord"></i> Order webhook</a>
+    <a class="admin-tab" href="#create"><i class="fas fa-plus"></i> Add product</a>
+    <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
+    <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
+    <a class="admin-tab" href="#support"><i class="fas fa-headset"></i> Support</a>
     <a class="admin-tab" href="#applications"><i class="fas fa-clipboard-list"></i> Applications</a>
     <a class="admin-tab" href="#guides"><i class="fas fa-book-open"></i> Guides</a>
-    <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
-    <a class="admin-tab" href="#incidents"><i class="fas fa-triangle-exclamation"></i> Incidents</a>
-    <a class="admin-tab" href="#health"><i class="fas fa-heart-pulse"></i> System health</a>
-    <a class="admin-tab" href="#audit"><i class="fas fa-clock-rotate-left"></i> Audit log</a>
+    <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
+    <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
+    <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
     <a class="admin-tab" href="#security"><i class="fas fa-shield-halved"></i> Security</a>
   </nav>
 
@@ -352,7 +453,7 @@ updatePricingButtons();
   <div class="admin-layout">
 
     <section class="admin-card admin-section" id="owner">
-      <div class="section-top"><div><div class="eyebrow">production controls</div><h2>Owner site controls</h2><p class="muted">Manage global brand details, links, contact destinations, feature switches, and announcements from one place. Changes apply everywhere those values are used.</p></div><a class="secondary-cta" href="/admin/api/diagnostics" target="_blank" rel="noopener noreferrer"><i class="fas fa-stethoscope"></i> Diagnostics JSON</a></div>
+      <div class="section-top"><div><div class="eyebrow">production controls</div><h2>Owner site controls</h2><p class="muted">Manage global brand details, links, contact destinations, feature switches, and announcements from one place. Changes apply everywhere those values are used.</p></div><a class="secondary-cta" href="/admin/api/diagnostics" target="_blank"><i class="fas fa-stethoscope"></i> Diagnostics JSON</a></div>
       <form class="admin-form-grid" action="/admin/settings" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Site name<input name="site_name" value="{{ site_settings.site_name or 'moealturej' }}" maxlength="80"></label>
@@ -383,25 +484,6 @@ updatePricingButtons();
     </section>
 
 
-    <section class="admin-card admin-section" id="order-webhook">
-      <div class="section-top">
-        <div><div class="eyebrow">Discord order notifications</div><h2>Order webhook</h2><p class="muted">Control the paid-order Discord webhook from Admin. The URL and message template are stored in site settings; you no longer need to redeploy just to change the order destination or wording.</p></div>
-        <form action="{{ url_for('admin_order_webhook_test') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary-cta" type="submit"><i class="fas fa-paper-plane"></i> Send saved test</button></form>
-      </div>
-      <form class="admin-form-grid" action="{{ url_for('admin_order_webhook_settings') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label class="inline-check wide"><input type="checkbox" name="order_webhook_enabled" {% if order_webhook.enabled %}checked{% endif %}> Enable paid-order Discord notifications</label>
-        <label class="wide">Discord webhook URL<input name="order_webhook_url" type="url" value="{{ order_webhook.url }}" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" spellcheck="false"></label>
-        <label class="wide">Message template<textarea name="order_webhook_message_template" rows="8" maxlength="1900" spellcheck="false">{{ order_webhook.message_template }}</textarea><small class="helper-text">Available placeholders: <code>{order_id}</code> <code>{buyer}</code> <code>{provider}</code> <code>{currency}</code> <code>{total}</code> <code>{delivery_status}</code> <code>{items}</code> <code>{review_status}</code> <code>{no_key}</code>. The rich order embed and NO KEY field are still attached automatically.</small></label>
-        <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save webhook settings</button>
-      </form>
-      <div class="security-grid" style="margin-top:16px">
-        <div class="security-item"><i class="fab fa-discord"></i><span><strong>Status:</strong> {{ 'Enabled' if order_webhook.enabled and order_webhook.url else 'Disabled' }}<br><small>Only paid checkout orders use this notification. Admin manual grants are intentionally excluded.</small></span></div>
-        <div class="security-item"><i class="fas fa-shield-halved"></i><span><strong>Protected:</strong> webhook URLs are accepted only on Discord's HTTPS webhook endpoint.<br><small>The webhook value is never sent to customer pages or client-side JavaScript.</small></span></div>
-      </div>
-    </section>
-
-
     <section class="admin-card admin-section" id="loader-release">
       {% set loader_release = site_settings.loader_release or {} %}
       <div class="section-top">
@@ -410,13 +492,13 @@ updatePricingButtons();
           <h2>Loader release management</h2>
           <p class="muted">Upload the newest Loader.exe and set the version checked by every loader at startup. Publishing here updates the API immediately—no environment variable changes required.</p>
         </div>
-        <a class="secondary-cta" href="/api/loader/version" target="_blank" rel="noopener noreferrer"><i class="fas fa-code"></i> View version API</a>
+        <a class="secondary-cta" href="/api/loader/version" target="_blank"><i class="fas fa-code"></i> View version API</a>
       </div>
 
       <div class="security-grid" style="margin-bottom:16px">
         <div class="security-item"><i class="fas fa-tag"></i><span><strong>Current version:</strong> {{ loader_release.version or '1.0.0' }}<br><small>{{ 'Mandatory update' if loader_release.mandatory is not sameas false else 'Optional update' }}</small></span></div>
         <div class="security-item"><i class="fas fa-file-shield"></i><span><strong>Published file:</strong> {{ loader_release.file_name or 'Loader.exe' }}<br><small>{{ ((loader_release.file_size or 0) / 1048576)|round(2) }} MB · {{ loader_release.storage or 'not uploaded yet' }}</small></span></div>
-        <div class="security-item"><i class="fas fa-clock-rotate-left"></i><span><strong>Last published:</strong> {{ (loader_release.published_at|local_time) if loader_release.published_at else 'Never' }}<br><small>{{ loader_release.published_by or 'No release has been published.' }}</small></span></div>
+        <div class="security-item"><i class="fas fa-clock-rotate-left"></i><span><strong>Last published:</strong> {{ loader_release.published_at or 'Never' }}<br><small>{{ loader_release.published_by or 'No release has been published.' }}</small></span></div>
         <div class="security-item"><i class="fas fa-fingerprint"></i><span><strong>SHA-256:</strong><br><small style="word-break:break-all">{{ loader_release.sha256 or 'Calculated automatically when a file is uploaded.' }}</small></span></div>
       </div>
 
@@ -482,7 +564,44 @@ updatePricingButtons();
       </div>
     </section>
 
-    <section class="admin-card admin-section" id="uploads">
+    <section class="admin-two-col admin-section" id="create">
+      <div class="admin-card">
+        <div class="section-top"><div><div class="eyebrow">quick add</div><h2>Add product</h2><p class="muted">Create an item once, then decide if it appears in Store, Downloads, and Status.</p></div></div>
+        <form class="admin-form-grid" action="/admin/product/new" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Name<input name="name" required placeholder="New product"></label>
+          <label>Slug<input name="slug" placeholder="new-product"></label>
+          <label>Category<input name="category" placeholder="cod"></label>
+          <label>Image URL<input name="image" placeholder="/media/your-image.png"></label>
+          <label class="wide">Short description<textarea name="description" rows="3" placeholder="Short store-card description..."></textarea></label>
+          <label class="wide">Detailed description parser
+            <textarea id="detailSource" name="detailed_source" rows="12" placeholder="Paste raw feature text here. Headings like Aimbot, ESP, Misc, Config will be converted into the product JSON detailedDescription format."></textarea>
+            <small class="helper-text">On save, this turns raw lists into lines like <code>• Aimbot: Silent Aim, FOV Circle...</code> inside <code>detailedDescription</code>.</small>
+            <div class="parser-actions"><button class="small-btn" type="button" onclick="previewDetailedDescription()"><i class="fas fa-wand-magic-sparkles"></i> Preview parsed description</button><button class="small-btn" type="button" onclick="clearDetailPreview()">Clear preview</button></div>
+            <pre id="detailPreview" class="detail-preview" hidden></pre>
+          </label>
+          <div class="wide pricing-builder">
+            <label>Pricing options</label>
+            <small class="helper-text">Starts with 1 option. Add as many as you need; these become <code>store.options</code> in product JSON.</small>
+            <div id="pricingOptions">
+              <div class="pricing-row">
+                <label>Option name<input name="option_name" value="DAY KEY" placeholder="DAY KEY" required></label>
+                <label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label>
+                <label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day"></label>
+                <label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label>
+                <button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <button class="small-btn" type="button" onclick="addPricingOption()"><i class="fas fa-plus"></i> Add pricing option</button>
+          </div>
+          <label>Download URL<input name="download_url" placeholder="/download/file.zip"></label>
+          <label>File size<input name="file_size" placeholder="25 MB"></label>
+          <div class="check-row"><label><input type="checkbox" name="store_enabled" checked> Store</label><label><input type="checkbox" name="downloads_enabled"> Downloads</label><label><input type="checkbox" name="status_enabled" checked> Status</label><label><input type="checkbox" name="featured"> Featured</label></div>
+          <button class="primary-cta" type="submit"><i class="fas fa-plus"></i> Add item</button>
+        </form>
+      </div>
+
+      <div class="admin-card" id="uploads">
         <div class="section-top"><div><div class="eyebrow">safe storage</div><h2>Upload files/images</h2><p class="muted">Images become <code>/media/...</code>. Download files become <code>/download/...</code> and only work publicly once attached to a product.</p></div></div>
         <form class="admin-form-grid" action="/admin/media/upload" method="post" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -502,6 +621,7 @@ updatePricingButtons();
           </article>
           {% else %}<p class="muted">No uploads yet.</p>{% endfor %}
         </div>
+      </div>
     </section>
 
     <section class="admin-card admin-section" id="discounts">
@@ -550,30 +670,18 @@ updatePricingButtons();
 
 
     <section class="admin-card admin-section" id="guides">
-      <div class="section-top"><div><div class="eyebrow">visual documentation builder</div><h2>Guide editor</h2><p class="muted">Create as many individual guides as needed, then build each guide from reusable text, steps, checklist, note, warning, and image sections.</p></div><a class="secondary-cta" href="/guides" target="_blank" rel="noopener noreferrer"><i class="fas fa-up-right-from-square"></i> Preview guides</a></div>
-      <details class="guide-create-panel">
-        <summary><i class="fas fa-plus"></i><span><strong>Create another individual guide</strong><small>Add a new page to the guides sidebar and documentation hub.</small></span></summary>
-        <form class="admin-form-grid" action="/admin/guides" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <label>Guide title<input name="title" placeholder="Product setup guide" required></label><label>Slug<input name="slug" placeholder="product-setup-guide"></label><label>Category<input name="category" value="Individual guides"></label><label>Icon<input name="icon" value="fa-book-open"></label><label>Badge<input name="badge" placeholder="New"></label><label>Order<input name="sort_order" type="number" value="100"></label><label class="wide">Summary<textarea name="summary" rows="3" placeholder="A short description shown on the guides page."></textarea></label><label class="inline-check wide"><input type="checkbox" name="enabled" checked> Publish immediately</label><button class="primary-cta wide" type="submit"><i class="fas fa-plus"></i> Create guide</button>
-        </form>
-      </details>
-      <div class="guide-admin-list">
-      {% for guide in guides_settings['items'] %}<article class="guide-builder-card" data-guide-builder>
-        <div class="guide-admin-head"><div><span class="guide-admin-icon"><i class="fas {{ guide.icon }}"></i></span><div><h3>{{ guide.title }}</h3><p>{{ guide.category }} · /guides/{{ guide.slug }} · {{ guide.sections|length }} sections</p></div></div><div class="guide-admin-head-actions"><a class="small-btn" href="/guides/{{ guide.slug }}" target="_blank" rel="noopener noreferrer"><i class="fas fa-eye"></i> Preview</a><button class="small-btn guide-edit-toggle" type="button" aria-expanded="false"><i class="fas fa-pen"></i> Edit</button></div></div>
-        <div class="guide-editor-body" hidden>
+      <div class="section-top"><div><div class="eyebrow">visual documentation builder</div><h2>Guide editor</h2><p class="muted">Full control over every section, instruction list, checklist, image, caption, and page order. Only Basic PC Requirements is kept for now.</p></div><a class="secondary-cta" href="/guides/basic-pc-requirements" target="_blank"><i class="fas fa-up-right-from-square"></i> Preview guide</a></div>
+      {% for guide in guides_settings['items'] %}<div class="admin-card guide-builder-card" data-guide-builder>
         <form action="/admin/guides/{{ guide.id }}" method="post" class="admin-form-grid guide-main-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="sections_json" class="guide-sections-json">
           <label>Title<input name="title" value="{{ guide.title }}" required></label><label>Slug<input name="slug" value="{{ guide.slug }}" required></label><label>Category<input name="category" value="{{ guide.category }}"></label><label>Icon<input name="icon" value="{{ guide.icon }}"></label><label>Badge<input name="badge" value="{{ guide.badge }}"></label><label>Order<input name="sort_order" type="number" value="{{ guide.sort_order }}"></label><label class="wide">Summary<textarea name="summary" rows="3">{{ guide.summary }}</textarea></label><div class="check-row"><label><input type="checkbox" name="enabled" {% if guide.enabled %}checked{% endif %}> Published</label></div>
-          <div class="wide guide-builder-toolbar"><div><strong>Page sections</strong><small>Drag sections to reorder. Add unlimited focused sections to this guide.</small></div><button type="button" class="secondary-cta add-guide-section"><i class="fas fa-plus"></i> Add section</button></div>
+          <div class="wide guide-builder-toolbar"><div><strong>Page sections</strong><small>Drag sections to reorder. Each section can have text, numbered steps, a checklist, note, warning, and an image.</small></div><button type="button" class="secondary-cta add-guide-section"><i class="fas fa-plus"></i> Add section</button></div>
           <div class="wide guide-section-list" data-sections='{{ guide.sections|tojson|forceescape }}'></div>
-          <div class="admin-actions wide"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save complete guide</button></div>
+          <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save complete guide</button>
         </form>
-        {% if guide.slug != 'basic-pc-requirements' %}<form action="/admin/guides/{{ guide.id }}/delete" method="post" onsubmit="return confirm('Delete this guide and all of its sections?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete guide</button></form>{% endif %}
-        </div>
-      </article>{% endfor %}
-      </div>
+      </div>{% endfor %}
     </section>
     <section class="admin-card admin-section" id="applications">
-      <div class="section-top"><div><div class="eyebrow">custom forms</div><h2>Applications</h2><p class="muted">Create public application listings. Visitors can see open applications, but only logged-in accounts can submit. Each application can send submissions to its own Discord webhook.</p></div><a class="secondary-cta" href="/applications" target="_blank" rel="noopener noreferrer"><i class="fas fa-up-right-from-square"></i> View page</a></div>
+      <div class="section-top"><div><div class="eyebrow">custom forms</div><h2>Applications</h2><p class="muted">Create public application listings. Visitors can see open applications, but only logged-in accounts can submit. Each application can send submissions to its own Discord webhook.</p></div><a class="secondary-cta" href="/applications" target="_blank"><i class="fas fa-up-right-from-square"></i> View page</a></div>
       <div class="admin-two-col">
         <div class="admin-card">
           <h3>Add new application</h3>
@@ -600,7 +708,7 @@ updatePricingButtons();
             {% for sub in (applications_settings["submissions"] or [])[-8:]|reverse %}
             <article class="user-row">
               <div class="user-email">{{ sub.application_title }}</div>
-              <p class="muted">{{ sub.user.email }} · {{ sub.created_at|local_time }} · webhook {{ 'sent' if sub.webhook_sent else 'not sent' }}</p>
+              <p class="muted">{{ sub.user.email }} · {{ sub.created_at }} · webhook {{ 'sent' if sub.webhook_sent else 'not sent' }}</p>
               <details class="json-editor"><summary>View answers</summary><pre class="detail-preview">{% for ans in sub.answers %}{{ ans.label }}: {{ ans.value }}
 {% endfor %}</pre></details>
             </article>
@@ -636,59 +744,7 @@ updatePricingButtons();
     </section>
 
     <section class="admin-card admin-section" id="products">
-      <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Create products, arrange their display order, and manage every store, download, delivery, discount, and status setting from one place.</p></div><button class="primary-cta" type="button" id="openNewProduct"><i class="fas fa-plus"></i> New product</button></div>
-
-      <details class="new-product-panel" id="newProductPanel">
-        <summary><span class="new-product-summary-icon"><i class="fas fa-box-open"></i></span><span><strong>Create a new product</strong><small>Complete the guided setup below. Advanced settings are included, but grouped so the form stays easy to follow.</small></span><i class="fas fa-chevron-down new-product-chevron"></i></summary>
-        <form class="new-product-form" action="/admin/product/new" method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-          <fieldset class="product-form-step"><legend><span>1</span> Basic information</legend><div class="admin-form-grid">
-            <label>Product name<input name="name" required maxlength="100" placeholder="MW19 Internal"></label>
-            <label>URL slug<input name="slug" maxlength="100" placeholder="mw19-internal"><small class="helper-text">Leave blank to generate it from the name.</small></label>
-            <label>Category<input name="category" value="general" maxlength="60" placeholder="cod"></label>
-            <label>Product type<select name="product_type"><option value="product">Digital product</option><option value="service">Service</option><option value="download">Free download</option></select></label>
-            <label class="wide">Product image URL<input name="image" value="/static/logo.png" placeholder="/media/product-image.png"><small class="helper-text">Upload art in the Uploads section, then paste its /media/ URL here.</small></label>
-            <label class="wide">Short description<textarea name="description" rows="3" maxlength="400" placeholder="A clear summary shown on store cards."></textarea></label>
-            <label class="wide">Features <textarea name="features_text" rows="5" placeholder="Undetected updates&#10;Instant delivery&#10;24/7 support"></textarea><small class="helper-text">One feature per line.</small></label>
-          </div></fieldset>
-
-          <fieldset class="product-form-step"><legend><span>2</span> Full product description</legend>
-            <label class="wide">Detailed description parser<textarea id="detailSource" name="detailed_source" rows="10" placeholder="Paste headings, feature lists, setup notes, or raw product details here. The site will format them automatically."></textarea><small class="helper-text">Headings and lists are converted into the product page description format.</small></label>
-            <div class="parser-actions"><button class="small-btn" type="button" onclick="previewDetailedDescription()"><i class="fas fa-wand-magic-sparkles"></i> Preview formatting</button><button class="small-btn" type="button" onclick="clearDetailPreview()">Clear preview</button></div><pre id="detailPreview" class="detail-preview" hidden></pre>
-          </fieldset>
-
-          <fieldset class="product-form-step"><legend><span>3</span> Pricing & automatic delivery</legend>
-            <div class="pricing-builder"><div class="product-step-head"><div><strong>Pricing options</strong><small>Add each duration or package customers can purchase.</small></div><button class="small-btn" type="button" onclick="addPricingOption()"><i class="fas fa-plus"></i> Add option</button></div>
-              <div id="pricingOptions"><div class="pricing-row"><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/1day"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled aria-label="Remove pricing option"><i class="fas fa-trash"></i></button></div></div>
-            </div>
-          </fieldset>
-
-          <fieldset class="product-form-step"><legend><span>4</span> Download settings</legend><div class="admin-form-grid">
-            <label class="wide">Download URL<input name="download_url" placeholder="/download/product.zip"></label>
-            <label>Version<input name="download_version" value="Latest" maxlength="40" placeholder="1.0.0"></label>
-            <label>Displayed file size<input name="file_size" maxlength="40" placeholder="25 MB"></label>
-          </div></fieldset>
-
-          <fieldset class="product-form-step"><legend><span>5</span> Availability & status</legend><div class="admin-form-grid">
-            <label>Stock status<select name="stock_status"><option>In Stock</option><option>Low Stock</option><option>Out of Stock</option><option>Coming Soon</option><option>Unavailable</option></select></label>
-            <label>Status state<select name="status_state"><option>Operational</option><option>Degraded</option><option>Offline</option><option>Updating</option></select></label>
-            <label>Status label<input name="status_label" value="Online" maxlength="50"></label>
-            <div class="check-row wide"><label><input type="checkbox" name="store_enabled" checked> Show in Store</label><label><input type="checkbox" name="downloads_enabled"> Show in Downloads</label><label><input type="checkbox" name="status_enabled" checked> Show on Status page</label><label><input type="checkbox" name="featured"> Featured product</label></div>
-          </div></fieldset>
-
-          <fieldset class="product-form-step"><legend><span>6</span> Optional product discount</legend><div class="admin-form-grid">
-            <label class="inline-check wide"><input type="checkbox" name="product_discount_enabled"> Enable an automatic discount for this product</label>
-            <label>Discount label<input name="product_discount_label" value="Product discount"></label>
-            <label>Discount type<select name="product_discount_type"><option value="percent">Percent</option><option value="fixed">Fixed USD</option></select></label>
-            <label>Discount value<input name="product_discount_value" type="number" min="0" step="0.01" value="0"></label>
-            <label>Minimum quantity<input name="product_discount_min_quantity" type="number" min="1" step="1" value="1"></label>
-            <label>Minimum subtotal<input name="product_discount_min_subtotal" type="number" min="0" step="0.01" value="0"></label>
-          </div></fieldset>
-
-          <div class="new-product-submit"><div><strong>Ready to create the product?</strong><small>You can edit every setting again after creation.</small></div><button class="primary-cta" type="submit"><i class="fas fa-plus"></i> Create product</button></div>
-        </form>
-      </details>
+      <div class="section-top"><div><div class="eyebrow">catalog control</div><h2>Products, downloads & status</h2><p class="muted">Drag products into the order you want customers to see, then save. You can also edit status, downloads, auto-delivery, discounts, or full JSON below.</p></div></div>
       <form id="productOrderForm" class="product-order-shell" action="{{ url_for('admin_products_reorder') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" id="productOrderInput" name="product_order" value="">
@@ -703,103 +759,70 @@ updatePricingButtons();
       <div class="product-list" id="productOrderList">
         {% for product in products %}
         <article class="admin-product" data-slug="{{ product.slug }}" data-name="{{ product.name|lower }}">
-          <div class="admin-product-main">
-            <span class="order-number">{{ loop.index }}</span>
-            <img src="{{ product.image or url_for('static', filename='logo.png') }}" alt="">
-            <div class="admin-product-summary">
-              <h3>{{ product.name }}</h3>
-              <p class="muted">{{ product.slug }} · {{ product.category }}</p>
-              <div class="admin-tags"><span>Store {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads {{ 'on' if product.downloads.enabled else 'off' }}</span><span>{{ product.status.label or product.status.state }}</span></div>
-            </div>
-            <div class="product-order-control">
-              <span class="drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i><span>Drag</span></span>
-              <button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button>
-              <button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button>
-              <button class="product-edit-toggle" type="button" aria-expanded="false"><i class="fas fa-sliders"></i><span>Edit</span></button>
-            </div>
-          </div>
-          <div class="product-editor-body" hidden>
-            <form class="full-product-editor" action="{{ url_for('admin_product_update', slug=product.slug) }}" method="post" enctype="multipart/form-data">
+          <span class="order-number">{{ loop.index }}</span>
+          <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Order: {{ product.displayOrder if product.displayOrder is defined else loop.index0 }}</span><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div><div class="product-order-control"><span class="drag-handle"><i class="fas fa-grip-vertical"></i> Drag</span><button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button><button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button></div></div>
+          <form class="status-mini" action="/admin/status/{{ product.slug }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label><input type="checkbox" name="enabled" {% if product.status.enabled %}checked{% endif %}> Track</label>
+            <select name="state"><option {% if product.status.state == 'Operational' %}selected{% endif %}>Operational</option><option {% if product.status.state == 'Degraded' %}selected{% endif %}>Degraded</option><option {% if product.status.state == 'Offline' %}selected{% endif %}>Offline</option><option {% if product.status.state == 'Updating' %}selected{% endif %}>Updating</option></select>
+            <input name="label" value="{{ product.status.label or 'Online' }}"><button type="submit">Update</button>
+          </form>
+          <details class="download-editor"><summary>Update download file</summary>
+            <form class="download-update-grid" action="/admin/product/{{ product.slug }}/download" method="post" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-              <details open class="product-edit-section"><summary><i class="fas fa-id-card"></i> Product information</summary>
-                <div class="admin-form-grid product-edit-grid">
-                  <label>Product name<input name="name" value="{{ product.name }}" required maxlength="100"></label>
-                  <label>URL slug<input name="slug" value="{{ product.slug }}" required maxlength="100"><small class="helper-text">Changing this updates the product URL.</small></label>
-                  <label>Category<input name="category" value="{{ product.category }}" maxlength="60"></label>
-                  <label>Product type<select name="product_type"><option value="product" {% if product.type == 'product' %}selected{% endif %}>Digital product</option><option value="service" {% if product.type == 'service' %}selected{% endif %}>Service</option><option value="download" {% if product.type == 'download' %}selected{% endif %}>Free download</option></select></label>
-                  <label>Display order<input name="display_order" type="number" min="0" step="1" value="{{ product.displayOrder or 0 }}"></label>
-                  <label class="inline-check product-featured"><input type="checkbox" name="featured" {% if product.featured %}checked{% endif %}> Featured product</label>
-                  <label class="wide">Product image URL<input name="image" value="{{ product.image }}" placeholder="/media/product-image.png"></label>
-                  <label class="wide">Short description<textarea name="description" rows="3" maxlength="500">{{ product.description or '' }}</textarea></label>
-                  <label class="wide">Features<textarea name="features_text" rows="6" placeholder="One feature per line">{{ (product.features or [])|join('\n') }}</textarea></label>
-                  <label class="wide">Detailed description<textarea name="detailed_description" rows="12" placeholder="Full product details">{{ product.detailedDescription or '' }}</textarea><small class="helper-text">You can edit the saved formatted description directly—no JSON required.</small></label>
-                </div>
-              </details>
-
-              <details open class="product-edit-section"><summary><i class="fas fa-cart-shopping"></i> Store & pricing</summary>
-                <div class="admin-form-grid product-edit-grid">
-                  <label class="inline-check"><input type="checkbox" name="store_enabled" {% if product.store.enabled %}checked{% endif %}> Show in Store</label>
-                  <label>Stock status<select name="stock_status">{% for value in ['In Stock','Low Stock','Out of Stock','Coming Soon','Unavailable'] %}<option {% if product.store.stockStatus == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
-                  <div class="wide pricing-builder existing-pricing-builder">
-                    <div class="product-step-head"><div><strong>Pricing options</strong><small>Edit, remove, or add purchase durations and packages.</small></div><button class="small-btn add-edit-option" type="button"><i class="fas fa-plus"></i> Add option</button></div>
-                    <div class="edit-pricing-options">
-                      {% for opt in product.store.options %}
-                      {% set oa = opt.autoDelivery if opt.autoDelivery is defined else {} %}
-                      <div class="pricing-row edit-pricing-row">
-                        <input type="hidden" name="option_id" value="{{ opt.id or opt.uniqid or '' }}">
-                        <label>Option name<input name="option_name" value="{{ opt.name }}" required></label>
-                        <label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="{{ '%.2f'|format(opt.price|float) }}" required></label>
-                        <label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" value="{{ oa.base_url if oa else '' }}" placeholder="https://api.reselling.pro/rft/api/seller/keys/..."></label>
-                        <label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="{{ loop.index0 }}" {% if oa and oa.enabled %}checked{% endif %}> Auto deliver</label>
-                        <button class="danger-btn remove-edit-option" type="button" aria-label="Remove pricing option"><i class="fas fa-trash"></i></button>
-                      </div>
-                      {% else %}
-                      <div class="pricing-row edit-pricing-row"><input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button"><i class="fas fa-trash"></i></button></div>
-                      {% endfor %}
-                    </div>
-                  </div>
-                  {% set product_auto = product.store.autoDelivery if product.store.autoDelivery is defined else {} %}
-                  <label class="wide">Product fallback auto-delivery URL<input name="product_auto_base_url" value="{{ product_auto.base_url if product_auto else '' }}" placeholder="Used when an option has no URL"></label>
-                  <label class="inline-check wide"><input type="checkbox" name="product_auto_enabled" {% if product_auto and product_auto.enabled %}checked{% endif %}> Enable fallback auto-delivery</label>
-                </div>
-              </details>
-
-              <details class="product-edit-section"><summary><i class="fas fa-download"></i> Download settings</summary>
-                <div class="admin-form-grid product-edit-grid">
-                  <label class="inline-check wide"><input type="checkbox" name="downloads_enabled" {% if product.downloads.enabled %}checked{% endif %}> Show in Downloads / Loader</label>
-                  <label>Upload replacement file<input type="file" name="download_file"></label>
-                  <label>Version<input name="download_version" value="{{ product.downloads.version or 'Latest' }}"></label>
-                  <label>Displayed file size<input name="file_size" value="{{ product.downloads.fileSize or '' }}" placeholder="Auto when uploading"></label>
-                  <label class="wide">Download URL<input name="download_url" value="{{ product.downloads.downloadUrl or '' }}"></label>
-                </div>
-              </details>
-
-              <details class="product-edit-section"><summary><i class="fas fa-signal"></i> Status & availability</summary>
-                <div class="admin-form-grid product-edit-grid">
-                  <label class="inline-check"><input type="checkbox" name="status_enabled" {% if product.status.enabled %}checked{% endif %}> Show on Status page</label>
-                  <label>Status state<select name="status_state">{% for value in ['Operational','Degraded','Offline','Updating'] %}<option {% if product.status.state == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
-                  <label>Status label<input name="status_label" value="{{ product.status.label or 'Online' }}"></label>
-                  <label>Last updated<input name="status_last_updated" type="date" value="{{ product.status.lastUpdated or '' }}"></label>
-                </div>
-              </details>
-
-              {% set pd = product.store.autoDiscount if product.store.autoDiscount is defined else {} %}
-              <details class="product-edit-section"><summary><i class="fas fa-tags"></i> Product discount</summary>
-                <div class="admin-form-grid product-edit-grid">
-                  <label class="inline-check wide"><input type="checkbox" name="product_discount_enabled" {% if pd.enabled %}checked{% endif %}> Enable automatic product discount</label>
-                  <label>Label<input name="product_discount_label" value="{{ pd.label or 'Product discount' }}"></label>
-                  <label>Type<select name="product_discount_type"><option value="percent" {% if pd.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if pd.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
-                  <label>Value<input name="product_discount_value" type="number" min="0" step="0.01" value="{{ pd.value or 0 }}"></label>
-                  <label>Minimum quantity<input name="product_discount_min_quantity" type="number" min="1" step="1" value="{{ pd.min_quantity or 1 }}"></label>
-                  <label>Minimum subtotal<input name="product_discount_min_subtotal" type="number" min="0" step="0.01" value="{{ pd.min_subtotal or 0 }}"></label>
-                </div>
-              </details>
-
-              <div class="full-product-savebar"><span><i class="fas fa-circle-check"></i> All product fields are editable here.</span><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save all product changes</button></div>
+              <label><span>New file</span><input type="file" name="download_file"></label>
+              <label><span>Version</span><input name="download_version" value="{{ product.downloads.version if product.downloads else 'Latest' }}" placeholder="v1.0.0"></label>
+              <label><span>File size</span><input name="file_size" value="{{ product.downloads.fileSize if product.downloads else '' }}" placeholder="Auto if uploading"></label>
+              <label class="wide"><span>Download URL</span><input name="download_url" value="{{ product.downloads.downloadUrl if product.downloads else '' }}" placeholder="/download/file.zip"></label>
+              <label class="inline-check"><input type="checkbox" name="downloads_enabled" {% if product.downloads.enabled %}checked{% endif %}> Show in downloads</label>
+              <button class="small-btn" type="submit"><i class="fas fa-cloud-arrow-up"></i> Save download</button>
             </form>
-            <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete product</button></form>
-          </div>
+          </details>
+          <details class="auto-delivery-editor">
+            <summary><i class="fas fa-robot"></i> Auto-delivery API settings</summary>
+            <form class="auto-delivery-grid" action="{{ url_for('admin_product_auto_delivery_update', slug=product.slug) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% set product_auto = (product.store.autoDelivery if product.store and product.store.autoDelivery is defined else {}) %}
+              <div class="auto-delivery-note wide">
+                Paste the base URL only. Example: <code>https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day</code>. The secret API key is appended on the backend from <code>RESELLING_PRO_API_KEY</code>.
+              </div>
+              <label class="wide"><span>Product fallback base URL</span><input name="product_auto_base_url" value="{{ product_auto.base_url if product_auto else '' }}" placeholder="Used when an option has no URL"></label>
+              <label class="inline-check wide"><input type="checkbox" name="product_auto_enabled" {% if product_auto and product_auto.enabled %}checked{% endif %}> Enable product fallback auto-delivery</label>
+              <div class="option-api-list wide">
+                {% for opt in product.store.options if product.store and product.store.options %}
+                  {% set option_key = (opt.id or opt.uniqid or opt.name)|string %}
+                  {% set option_auto = (opt.autoDelivery if opt.autoDelivery is defined else {}) %}
+                  <div class="option-api-row">
+                    <div>
+                      <strong>{{ opt.name }}</strong>
+                      <small>${{ '%.2f'|format(opt.price|float) }} · {{ option_key }}</small>
+                    </div>
+                    <label>Base URL<input name="option_auto_base_url_{{ option_key }}" value="{{ option_auto.base_url if option_auto else '' }}" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/duration"></label>
+                    <label class="inline-check"><input type="checkbox" name="option_auto_enabled" value="{{ option_key }}" {% if option_auto and option_auto.enabled %}checked{% endif %}> Auto</label>
+                  </div>
+                {% else %}
+                  <p class="muted">No pricing options yet. Add options in JSON or create a new product with options.</p>
+                {% endfor %}
+              </div>
+              <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save auto-delivery</button>
+            </form>
+          </details>
+          <details class="auto-delivery-editor">
+            <summary><i class="fas fa-tags"></i> Product auto-discount</summary>
+            {% set pd = product.store.autoDiscount if product.store and product.store.autoDiscount is defined else {} %}
+            <form class="auto-delivery-grid" action="{{ url_for('admin_product_discount_update', slug=product.slug) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label class="inline-check wide"><input type="checkbox" name="product_discount_enabled" {% if pd.enabled %}checked{% endif %}> Enable auto discount for this product</label>
+              <label>Label<input name="product_discount_label" value="{{ pd.label or 'Product discount' }}"></label>
+              <label>Type<select name="product_discount_type"><option value="percent" {% if pd.type != 'fixed' %}selected{% endif %}>Percent</option><option value="fixed" {% if pd.type == 'fixed' %}selected{% endif %}>Fixed USD</option></select></label>
+              <label>Value<input name="product_discount_value" type="number" min="0" step="0.01" value="{{ pd.value or 0 }}"></label>
+              <label>Minimum quantity<input name="product_discount_min_quantity" type="number" min="1" step="1" value="{{ pd.min_quantity or 1 }}"></label>
+              <label class="wide">Minimum product line subtotal<input name="product_discount_min_subtotal" type="number" min="0" step="0.01" value="{{ pd.min_subtotal or 0 }}"></label>
+              <button class="primary-cta wide" type="submit"><i class="fas fa-floppy-disk"></i> Save product discount</button>
+            </form>
+          </details>
+          <details class="json-editor"><summary>Edit full product JSON</summary><form action="/admin/product/{{ product.slug }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="product_json" rows="18">{{ product|tojson(indent=2) }}</textarea><div class="admin-actions"><button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save JSON</button></div></form></details>
+          <form action="/admin/product/{{ product.slug }}/delete" method="post" onsubmit="return confirm('Delete {{ product.name }}?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-btn" type="submit"><i class="fas fa-trash"></i> Delete item</button></form>
         </article>
         {% else %}<p class="muted">No products yet. Add your first item above.</p>{% endfor %}
       </div>
@@ -847,39 +870,17 @@ updatePricingButtons();
     </section>
 
 
-    <section class="admin-card admin-section" id="manual-grant">
-      <div class="section-top"><div><div class="eyebrow">admin-only entitlement</div><h2>Give a manual digital item</h2><p class="muted">Grant an existing catalog product or a completely custom digital item to an account. You enter the key yourself, so this path never calls Reselling.pro or any other auto-delivery provider.</p></div><span class="tiny-pill"><i class="fas fa-shield-halved"></i> Admin only</span></div>
-      <form class="admin-form-grid" action="{{ url_for('admin_manual_grant') }}" method="post" id="manualGrantForm" onsubmit="return confirm('Grant this item and key to ' + this.recipient_email.value + '? Auto-delivery will NOT run.')">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>Recipient account<input name="recipient_email" type="email" list="manualGrantUsers" placeholder="customer@example.com" required autocomplete="off"><datalist id="manualGrantUsers">{% for user in users %}<option value="{{ user.email }}">{{ user.username or user.email }}</option>{% endfor %}</datalist></label>
-        <label>Catalog item<select name="catalog_product" id="manualGrantProduct"><option value="__custom__">Custom item (not in catalog)</option>{% for product in products %}<option value="{{ product.slug }}" data-name="{{ product.name }}" data-image="{{ product.image or '/static/logo.png' }}" data-slug="{{ product.slug }}">{{ product.name }}</option>{% endfor %}</select></label>
-        <label>Item name<input name="item_name" id="manualGrantName" maxlength="160" placeholder="Custom digital item" required></label>
-        <label>License / option name<input name="option_name" value="Manual license" maxlength="120" placeholder="Lifetime key"></label>
-        <label class="wide">Key / license<input name="product_key" minlength="3" required autocomplete="off" spellcheck="false" placeholder="Paste the exact key/license to give this user"></label>
-        <label>Custom slug<input name="custom_slug" id="manualGrantSlug" maxlength="100" placeholder="custom-digital-item"><small class="helper-text">Used only for a custom item. Existing products keep their catalog ID/slug so loader ownership works normally.</small></label>
-        <label>Custom image URL<input name="item_image" id="manualGrantImage" value="/static/logo.png" maxlength="500" placeholder="/media/item.png"><small class="helper-text">Used only for a custom item.</small></label>
-        <label class="wide">Delivery note<textarea name="delivery_note" rows="3" maxlength="1000" placeholder="Optional instructions shown with the key"></textarea></label>
-        <label class="inline-check wide"><input type="checkbox" name="notify_recipient" checked> Notify the recipient by in-app notification and available email / Discord DM delivery channels</label>
-        <button class="primary-cta" type="submit"><i class="fas fa-gift"></i> Grant item without auto-delivery</button>
-      </form>
-      <div class="security-grid" style="margin-top:16px">
-        <div class="security-item"><i class="fas fa-ban"></i><span><strong>Auto-delivery bypassed</strong><br><small>The grant is saved directly as a paid manual entitlement with the supplied key. No provider key request is made.</small></span></div>
-        <div class="security-item"><i class="fas fa-receipt"></i><span><strong>Tracked like an entitlement</strong><br><small>It appears in the user's products/order history and in Admin Orders with a Manual grant badge for auditing.</small></span></div>
-      </div>
-    </section>
-
-
     <section class="admin-card admin-section" id="orders">
       <div class="section-top"><div><div class="eyebrow">payment center</div><h2>Orders & key delivery</h2><p class="muted">Paid Stripe/PayPal orders appear here. Products with Reselling.pro auto-delivery fetch keys server-side from your .env API key; anything not delivered can still be handled manually.</p></div></div>
       <div class="users-grid">
         {% for order in orders[:30] %}
         <article class="user-row">
-          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|replace('_',' ')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }} · {{ order.created_at|local_time }}</p><div class="user-meta"><span class="owner-badge order-status-chip status-{{ order.status|default('pending') }}">{{ order.status|default('pending') }}</span>{% if order.manual_grant %}<span class="owner-badge active-badge"><i class="fas fa-gift"></i> Manual grant · no auto-delivery</span>{% endif %}{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% elif order.delivery_status == 'partial' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Partially delivered</span>{% elif order.delivery_status == 'auto_failed' %}<span class="owner-badge suspended-badge"><i class="fas fa-triangle-exclamation"></i> Auto failed</span>{% endif %}</div></div></div>
+          <div class="user-head"><div><div class="user-email">{{ order.order_id }}</div><p class="muted">{{ order.user_email }} · {{ order.provider|default('payment')|title }} · {{ order.currency|default('USD') }} {{ '%.2f'|format((order.amount_cents|default(0))/100) }}</p><div class="user-meta"><span class="owner-badge order-status-chip status-{{ order.status|default('pending') }}">{{ order.status|default('pending') }}</span>{% if order.owner_notified_at %}<span class="owner-badge active-badge"><i class="fab fa-discord"></i> Owner notified</span>{% endif %}{% if order.delivery_status == 'delivered' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Key delivered</span>{% elif order.delivery_status == 'partial' %}<span class="owner-badge active-badge"><i class="fas fa-key"></i> Partially delivered</span>{% elif order.delivery_status == 'auto_failed' %}<span class="owner-badge suspended-badge"><i class="fas fa-triangle-exclamation"></i> Auto failed</span>{% endif %}</div></div></div>
           <div class="order-items" style="margin-top:12px;display:grid;gap:8px">
             {% if order.cart and order.cart.get('items') %}
               {% for item in order.cart.get('items') %}
               {% set delivered = (order.deliveries or {}).get(loop.index0|string) %}
-              <div class="order-line"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}{% if item.auto_delivery and item.auto_delivery.enabled %}<small>Auto-delivery: Reselling.pro</small>{% endif %}{% if delivered %}<small>Delivered {{ delivered.sent_at|local_time }} · {{ delivered.source|default('manual') }} · email {{ 'sent' if delivered.email_sent else 'not sent' }} · Discord {{ 'sent' if delivered.discord_dm_sent else 'not sent' }}</small><div class="delivery-key-preview">{{ delivered.product_key }}</div>{% endif %}</span><strong>${{ item.line_amount }}</strong></div>
+              <div class="order-line"><span>{{ item.product_name }} — {{ item.option_name }} × {{ item.quantity }}{% if item.auto_delivery and item.auto_delivery.enabled %}<small>Auto-delivery: Reselling.pro</small>{% endif %}{% if delivered %}<small>Delivered {{ delivered.sent_at }} · {{ delivered.source|default('manual') }} · email {{ 'sent' if delivered.email_sent else 'not sent' }} · Discord {{ 'sent' if delivered.discord_dm_sent else 'not sent' }}</small><div class="delivery-key-preview">{{ delivered.product_key }}</div>{% endif %}</span><strong>${{ item.line_amount }}</strong></div>
               {% endfor %}
             {% endif %}
           </div>
@@ -897,7 +898,7 @@ updatePricingButtons();
             </label>
             <button class="secondary-cta" type="submit"><i class="fas fa-rotate"></i> Update status</button>
           </form>
-          {% if order.status_history %}<details class="status-history"><summary>View status history</summary><div>{% for change in order.status_history|reverse %}<p><strong>{{ change.from|title }} → {{ change.to|title }}</strong><span>{{ change.at|local_time }} · {{ change.by }}</span>{% if change.note %}<small>{{ change.note }}</small>{% endif %}</p>{% endfor %}</div></details>{% endif %}
+          {% if order.status_history %}<details class="status-history"><summary>View status history</summary><div>{% for change in order.status_history|reverse %}<p><strong>{{ change.from|title }} → {{ change.to|title }}</strong><span>{{ change.at }} · {{ change.by }}</span>{% if change.note %}<small>{{ change.note }}</small>{% endif %}</p>{% endfor %}</div></details>{% endif %}
           {% if order.status == 'paid' and order.cart and order.cart.get('items') %}
           <form class="delivery-form" action="{{ url_for('admin_order_deliver_key', order_id=order.order_id) }}" method="post" onsubmit="return confirm('Send/save this key to {{ order.user_email }}?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -912,16 +913,6 @@ updatePricingButtons();
         </article>
         {% else %}<p class="muted">No orders yet.</p>{% endfor %}
       </div>
-    </section>
-
-    <section class="admin-card admin-section" id="health">
-      <div class="section-top"><div><div class="eyebrow">production monitoring</div><h2>System health</h2><p class="muted">A clear readiness check for the services your store, delivery system, and loader depend on.</p></div><a class="secondary-cta" href="/admin/system-health" target="_blank" rel="noopener noreferrer"><i class="fas fa-code"></i> Health JSON</a></div>
-      <div class="security-grid">{% for check in health_checks %}<div class="security-item"><i class="fas {{ 'fa-circle-check' if check.ok else 'fa-circle-exclamation' }}" style="color:{{ '#62e5a1' if check.ok else '#ffc85c' }}"></i><span><strong>{{ check.name }}</strong><br><small>{{ check.detail }}</small></span></div>{% endfor %}</div>
-    </section>
-
-    <section class="admin-card admin-section" id="audit">
-      <div class="section-top"><div><div class="eyebrow">accountability</div><h2>Audit log</h2><p class="muted">Recent owner, staff, delivery, order, and settings actions. Sensitive credentials are never displayed here.</p></div><span class="tiny-pill">{{ audit_logs|length }} recent entries</span></div>
-      {% if audit_logs %}<div style="display:grid;gap:9px">{% for log in audit_logs %}<article class="security-item" style="align-items:flex-start"><i class="fas fa-clock-rotate-left"></i><span style="min-width:0"><strong>{{ log.action|replace('_',' ')|title }}</strong> · {{ log.target or 'site' }}<br><small>{{ log.actor or 'system' }} · {{ log.created_at|local_time }}{% if log.ip %} · {{ log.ip }}{% endif %}</small></span></article>{% endfor %}</div>{% else %}<div class="admin-search-empty" style="display:block">Audit history becomes available when MongoDB is connected and actions are recorded.</div>{% endif %}
     </section>
 
     <section class="admin-card admin-section" id="security">
@@ -953,17 +944,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   const layout=document.querySelector('.admin-layout');
   if(!page||!tabs||!tools||!layout||tabs.closest('.admin-workspace')) return;
 
-  /* Keep the newer intelligence/operations panels inside the same visual workspace. */
-  ['analytics','reviews','incidents'].forEach(id=>{
-    const section=document.getElementById(id);
-    if(section && section.parentElement!==layout) layout.appendChild(section);
-  });
-
   /* Build a task-focused workspace without changing any form, action, or route. */
   const workspace=document.createElement('div'); workspace.className='admin-workspace';
   const rail=document.createElement('aside'); rail.className='admin-workspace-rail'; rail.setAttribute('aria-label','Admin workspace navigation');
   const railHead=document.createElement('div'); railHead.className='admin-rail-head';
   railHead.innerHTML='<div class="admin-rail-title"><span><i class="fas fa-command"></i></span><span><strong>Admin workspace</strong><small>moealturej control</small></span></div><button class="admin-rail-close" type="button" aria-label="Close navigation"><i class="fas fa-xmark"></i></button>';
+  rail.append(railHead,tabs,tools);
   const main=document.createElement('main'); main.className='admin-workspace-main';
 
   const mobile=document.createElement('div'); mobile.className='admin-mobile-bar';
@@ -972,7 +958,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   const quick=document.createElement('div'); quick.className='admin-quick-actions'; quick.setAttribute('aria-label','Common admin actions');
   [
-    ['#products','fa-plus','Add product','Create a new store item'],
+    ['#create','fa-plus','Add product','Create a new store item'],
     ['#orders','fa-key','Orders & keys','Deliver and manage purchases'],
     ['#support','fa-headset','Support queue','Handle customer tickets'],
     ['#loader-release','fa-rocket','Publish loader','Release a new desktop build']
@@ -984,7 +970,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   const parent=tabs.parentNode;
   parent.insertBefore(workspace,tabs);
   workspace.append(rail,main);
-  rail.append(railHead,tabs,tools);
   main.append(mobile,quick);
   if(empty) main.append(empty);
   main.append(layout);
@@ -992,12 +977,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   /* Group navigation by workflow so the rail scans quickly. */
   const groups={
-    owner:'Workspace',analytics:'Workspace',
-    products:'Catalog',discounts:'Catalog',uploads:'Catalog',
-    orders:'Customers','manual-grant':'Customers',support:'Customers',reviews:'Customers',accounts:'Customers',
-    emails:'Communication','order-webhook':'Communication',
-    applications:'Content',guides:'Content',
-    'loader-release':'Operations',incidents:'Operations',health:'Operations',audit:'Operations',security:'Operations'
+    owner:'Workspace','loader-release':'Workspace','emails':'Workspace',
+    create:'Catalog','products':'Catalog','uploads':'Catalog','discounts':'Catalog',
+    orders:'Customers','support':'Customers','accounts':'Customers',
+    applications:'Content','guides':'Content',security:'System'
   };
   let last='';
   [...tabs.querySelectorAll('.admin-tab')].forEach(tab=>{
@@ -1020,20 +1003,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     form.addEventListener('input',check);form.addEventListener('change',check);form.addEventListener('submit',()=>{section.classList.remove('is-dirty');base=snapshot()});
   });
 
-  /* Give the overview KPIs a consistent visual key without touching backend values. */
-  const statIcons={
-    'Total items':'fa-box','Store enabled':'fa-store','Downloads':'fa-download','Status tracked':'fa-signal',
-    'Accounts':'fa-users','Uploads':'fa-cloud-arrow-up','Orders':'fa-receipt','Support tickets':'fa-headset',
-    'Applications':'fa-clipboard-list','Member guides':'fa-book-open','Storage':'fa-database'
-  };
-  document.querySelectorAll('.admin-stats > div').forEach(card=>{
-    if(card.querySelector('.admin-stat-icon')) return;
-    const label=card.querySelector('span')?.textContent.trim()||'';
-    const icon=document.createElement('span'); icon.className='admin-stat-icon';
-    icon.innerHTML=`<i class="fas ${statIcons[label]||'fa-chart-simple'}"></i>`;
-    card.prepend(icon);
-  });
-
   /* Keep the active workspace label synchronized on scroll. */
   const observer=new IntersectionObserver(entries=>{
     const hit=entries.filter(x=>x.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
@@ -1046,302 +1015,75 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded',()=>{
-  const page=document.querySelector('.admin-page');
-  if(!page)return;
+<script id="admin-final-behavior-fix">
+(() => {
+  /* Do not restore a stale scroll position when reopening /admin. */
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  const resetInitialViewport = () => {
+    if (!location.hash) window.scrollTo(0, 0);
+  };
+  window.addEventListener('pageshow', resetInitialViewport, {once:true});
 
-  const listConfigs=[
-    ['products','#productOrderList','.admin-product','Search products by name, slug, category or status'],
-    ['orders','#orders .users-grid','.user-row','Search orders, customers, products or status'],
-    ['accounts','#accounts .users-grid','.user-row','Search accounts, usernames, roles or status'],
-    ['support','#support .users-grid','.user-row','Search tickets, customers, products or status'],
-    ['applications','#applications .users-grid','.user-row','Search application submissions'],
-    ['uploads','#uploads .media-grid','.media-item','Search uploaded files or URLs']
-  ];
-  listConfigs.forEach(([sectionId,listSelector,itemSelector,placeholder])=>{
-    const section=document.getElementById(sectionId);
-    const list=document.querySelector(listSelector);
-    if(!section||!list||section.querySelector('.section-list-tools'))return;
-    const items=[...list.querySelectorAll(itemSelector)];
-    if(items.length<2)return;
-    const tools=document.createElement('div');tools.className='section-list-tools';
-    tools.innerHTML=`<div class="section-list-search"><i class="fas fa-magnifying-glass"></i><input type="search" placeholder="${placeholder}" aria-label="${placeholder}"></div><span class="section-list-count"><strong>${items.length}</strong> shown</span>`;
-    const empty=document.createElement('div');empty.className='list-empty-state';empty.innerHTML='<i class="fas fa-filter-circle-xmark"></i><br>No matching items in this section.';
-    const anchor=section.querySelector('.section-top');
-    if(anchor)anchor.insertAdjacentElement('afterend',tools);else section.prepend(tools);
-    list.insertAdjacentElement('afterend',empty);
-    const input=tools.querySelector('input'),count=tools.querySelector('.section-list-count strong');
-    const apply=()=>{const q=input.value.trim().toLowerCase();let shown=0;items.forEach(item=>{const hit=!q||item.innerText.toLowerCase().includes(q);item.classList.toggle('is-list-hidden',!hit);if(hit)shown++});count.textContent=shown;empty.classList.toggle('show',shown===0)};
-    input.addEventListener('input',apply);
-  });
+  document.addEventListener('DOMContentLoaded', () => {
+    const page = document.querySelector('.admin-page');
+    if (!page) return;
 
-  const layer=document.createElement('div');layer.className='admin-confirm-layer';layer.setAttribute('role','dialog');layer.setAttribute('aria-modal','true');layer.innerHTML='<div class="admin-confirm-box"><div class="admin-confirm-icon"><i class="fas fa-triangle-exclamation"></i></div><h3>Confirm this action</h3><p></p><div class="admin-confirm-actions"><button type="button" class="secondary-cta" data-cancel>Cancel</button><button type="button" class="danger-btn" data-confirm>Confirm action</button></div></div>';document.body.append(layer);
-  let pending=null;
-  const close=()=>{layer.classList.remove('show');pending=null};
-  layer.querySelector('[data-cancel]').addEventListener('click',close);layer.addEventListener('click',e=>{if(e.target===layer)close()});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&layer.classList.contains('show'))close()});
-  layer.querySelector('[data-confirm]').addEventListener('click',()=>{if(!pending)return;const {form,submitter}=pending;form.dataset.confirmed='1';close();if(form.requestSubmit)form.requestSubmit(submitter||undefined);else form.submit()});
-  document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form=>{form.dataset.confirmMessage=(form.getAttribute('onsubmit').match(/confirm\((.*)\)/)||[])[1]||'';form.removeAttribute('onsubmit')});
-  document.addEventListener('submit',e=>{
-    const form=e.target;if(form.dataset.confirmed==='1'){delete form.dataset.confirmed;return}
-    const submitter=e.submitter;const action=(form.getAttribute('action')||'').toLowerCase();
-    const dangerous=submitter?.classList.contains('danger-btn')||/delete|status/.test(action);
-    if(!dangerous)return;
-    e.preventDefault();
-    let message='This changes stored data and may affect customers.';
-    if(action.includes('/delete'))message='This permanently removes the selected record. This cannot be undone.';
-    else if(action.includes('/status'))message='Review the selected status before applying it. Customers may see this change immediately.';
-    layer.querySelector('p').textContent=message;pending={form,submitter};layer.classList.add('show');layer.querySelector('[data-cancel]').focus();
-  },true);
+    /* All admin sections start closed, including Products. */
+    const sections = [...page.querySelectorAll('.admin-section')];
+    sections.forEach(section => section.classList.add('is-collapsed'));
 
-  const toast=document.createElement('div');toast.className='admin-copy-toast';toast.textContent='Copied to clipboard';document.body.append(toast);let toastTimer;
-  document.querySelectorAll('.copy-field button').forEach(btn=>btn.addEventListener('click',()=>{clearTimeout(toastTimer);toast.classList.add('show');toastTimer=setTimeout(()=>toast.classList.remove('show'),1500)}));
+    /* HTML <details> remembers/restores state in some browsers; explicitly reset product editors. */
+    page.querySelectorAll('#products details').forEach(details => details.open = false);
 
-  const density=localStorage.getItem('moe-admin-density');if(density==='compact')page.classList.add('compact-mode');
-  document.getElementById('adminDensity')?.addEventListener('click',()=>localStorage.setItem('moe-admin-density',page.classList.contains('compact-mode')?'compact':'comfortable'));
+    /* Make navigation predictable: clicking a destination opens only that section. */
+    const openSection = (id, shouldScroll = true) => {
+      const target = document.getElementById(id);
+      if (!target || !target.classList.contains('admin-section')) return;
+      sections.forEach(section => section.classList.toggle('is-collapsed', section !== target));
+      page.querySelectorAll('#products details').forEach(details => details.open = false);
+      if (shouldScroll) requestAnimationFrame(() => target.scrollIntoView({behavior:'smooth', block:'start'}));
+    };
 
-
-  const openNewProduct=document.getElementById('openNewProduct');
-  const newProductPanel=document.getElementById('newProductPanel');
-  openNewProduct?.addEventListener('click',()=>{
-    newProductPanel.open=true;
-    newProductPanel.scrollIntoView({behavior:'smooth',block:'start'});
-    setTimeout(()=>newProductPanel.querySelector('input[name=name]')?.focus(),350);
-  });
-
-  function reindexEditPricing(wrap){
-    const rows=[...wrap.querySelectorAll('.edit-pricing-row')];
-    rows.forEach((row,index)=>{const cb=row.querySelector('input[name="option_auto_enabled"]');if(cb)cb.value=String(index);const del=row.querySelector('.remove-edit-option');if(del)del.disabled=rows.length<=1;});
-  }
-  document.querySelectorAll('.existing-pricing-builder').forEach(builder=>{
-    const wrap=builder.querySelector('.edit-pricing-options');
-    reindexEditPricing(wrap);
-    builder.querySelector('.add-edit-option')?.addEventListener('click',()=>{
-      const index=wrap.querySelectorAll('.edit-pricing-row').length;
-      const row=document.createElement('div');row.className='pricing-row edit-pricing-row';
-      row.innerHTML=`<input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="NEW OPTION" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/..."></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="${index}"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button" aria-label="Remove pricing option"><i class="fas fa-trash"></i></button>`;
-      wrap.appendChild(row);reindexEditPricing(wrap);row.querySelector('input[name="option_name"]')?.focus();
+    page.addEventListener('click', (event) => {
+      const link = event.target.closest('a[href^="#"]');
+      if (!link) return;
+      const id = (link.getAttribute('href') || '').slice(1);
+      const target = document.getElementById(id);
+      if (!target || !target.classList.contains('admin-section')) return;
+      event.preventDefault();
+      history.replaceState(null, '', location.pathname + location.search + '#' + id);
+      openSection(id, true);
     });
-    wrap.addEventListener('click',event=>{const btn=event.target.closest('.remove-edit-option');if(!btn)return;const rows=wrap.querySelectorAll('.edit-pricing-row');if(rows.length>1){btn.closest('.edit-pricing-row')?.remove();reindexEditPricing(wrap);}});
-  });
 
-  document.querySelectorAll('.product-edit-toggle').forEach(btn=>btn.addEventListener('click',event=>{
-    event.stopPropagation();
-    const card=btn.closest('.admin-product'); const body=card?.querySelector('.product-editor-body'); if(!body)return;
-    const opening=body.hidden;
-    if(opening){
-      document.querySelectorAll('.admin-product.is-editing').forEach(other=>{
-        if(other===card)return;
-        const otherBody=other.querySelector('.product-editor-body'); const otherBtn=other.querySelector('.product-edit-toggle');
-        if(otherBody)otherBody.hidden=true; other.classList.remove('is-editing');
-        if(otherBtn){otherBtn.setAttribute('aria-expanded','false');const label=otherBtn.querySelector('span');if(label)label.textContent='Edit';}
+    /* If the user manually expands Products, its inner editors still stay closed. */
+    const products = document.getElementById('products');
+    if (products) {
+      const observer = new MutationObserver(() => {
+        if (!products.classList.contains('is-collapsed')) {
+          products.querySelectorAll('details').forEach(details => {
+            if (!details.dataset.userOpened) details.open = false;
+          });
+        }
+      });
+      observer.observe(products, {attributes:true, attributeFilter:['class']});
+      products.querySelectorAll('details').forEach(details => {
+        details.addEventListener('toggle', () => {
+          if (details.open) details.dataset.userOpened = '1';
+          else delete details.dataset.userOpened;
+        });
       });
     }
-    body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening));
-    const label=btn.querySelector('span'); if(label)label.textContent=opening?'Close':'Edit';
-    if(opening)setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'start'}),30);
-  }));
-  document.querySelectorAll('.guide-edit-toggle').forEach(btn=>btn.addEventListener('click',()=>{
-    const card=btn.closest('.guide-builder-card'); const body=card?.querySelector('.guide-editor-body'); if(!body)return;
-    const opening=body.hidden; body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening)); btn.innerHTML=opening?'<i class="fas fa-xmark"></i> Close':'<i class="fas fa-pen"></i> Edit';
-  }));
 
-  document.querySelectorAll('.admin-section form').forEach(form=>{
-    const required=[...form.querySelectorAll('[required]')];
-    required.forEach(field=>field.addEventListener('invalid',()=>{field.closest('.admin-section')?.classList.remove('is-collapsed');field.scrollIntoView({behavior:'smooth',block:'center'})}));
-  });
-});
-</script>
-
-
-<script>
-document.addEventListener('DOMContentLoaded',()=>{
-  const layout=document.querySelector('.admin-layout');
-  if(!layout)return;
-  const sections=[...layout.querySelectorAll(':scope > .admin-section')];
-  if(!sections.length)return;
-
-  const labels={
-    owner:['Owner site controls','Brand, links, announcements and global switches'],
-    'loader-release':['Loader release','Publish Loader.exe and control update versions'],
-    emails:['Email sender','Compose and send branded customer updates'],
-    discounts:['Discounts & promos','Automatic discounts, codes and account offers'],
-    guides:['Member guides','Create and organize logged-in help content'],
-    applications:['Applications','Forms, questions and recent submissions'],
-    products:['Product management','Order, status, downloads and full product editing'],
-    support:['Support tickets','Review and manage customer support requests'],
-    accounts:['Accounts','Roles, access, balances and account controls'],
-    orders:['Orders & keys','Statuses, delivery history and product keys'],
-    security:['Security setup','Authentication, delivery and production safeguards']
-  };
-
-  function directHeader(section){return [...section.children].find(el=>el.classList?.contains('section-top')||el.classList?.contains('accordion-section-top'));}
-  sections.forEach(section=>{
-    let header=directHeader(section);
-    if(!header){
-      const [title,desc]=labels[section.id]||[section.id,'Open this admin section'];
-      header=document.createElement('div');
-      header.className='accordion-section-top';
-      header.innerHTML=`<div><div class="eyebrow">admin section</div><h2>${title}</h2><p class="muted">${desc}</p><span class="accordion-state"><i class="fas fa-pen-to-square"></i> Click to edit</span></div>`;
-      section.prepend(header);
-    } else if(!header.querySelector('.accordion-state')){
-      const holder=header.querySelector(':scope > div')||header;
-      const state=document.createElement('span');state.className='accordion-state';state.innerHTML='<i class="fas fa-pen-to-square"></i> Click to edit';holder.appendChild(state);
+    /* Remove a stale hash on a fresh admin load so the browser cannot jump to Products. */
+    if (performance.getEntriesByType('navigation')[0]?.type !== 'back_forward' && location.hash) {
+      const id = location.hash.slice(1);
+      if (id === 'products') {
+        history.replaceState(null, '', location.pathname + location.search);
+        window.scrollTo(0, 0);
+      }
     }
-
-    const old=header.querySelector('.section-collapse');
-    const button=old?old.cloneNode(true):document.createElement('button');
-    if(old)old.replaceWith(button);else header.appendChild(button);
-    button.type='button';button.className='section-collapse';button.innerHTML='<i class="fas fa-chevron-down"></i>';
-
-    const setState=(open)=>{
-      section.classList.toggle('is-collapsed',!open);
-      button.setAttribute('aria-expanded',String(open));
-      button.setAttribute('aria-label',open?'Collapse section':'Expand section');
-      const state=header.querySelector('.accordion-state');
-      if(state)state.innerHTML=open?'<i class="fas fa-circle-check"></i> Editing section':'<i class="fas fa-pen-to-square"></i> Click to edit';
-    };
-    section._setAccordionState=setState;
-    setState(false);
-
-    const toggle=(event)=>{
-      if(event.target.closest('a,button,input,select,textarea,label,details,summary')){
-        if(!event.target.closest('.section-collapse'))return;
-      }
-      const opening=section.classList.contains('is-collapsed');
-      if(opening){
-        sections.forEach(other=>{if(other!==section&&!other.classList.contains('is-dirty'))other._setAccordionState?.(false)});
-      }
-      setState(opening);
-      if(opening)setTimeout(()=>section.scrollIntoView({behavior:'smooth',block:'start'}),60);
-    };
-    header.addEventListener('click',toggle);
   });
-
-  const openTarget=(hash,scroll=true)=>{
-    const target=document.querySelector(hash);if(!target)return;
-    const section=target.classList.contains('admin-section')?target:target.closest('.admin-section');if(!section)return;
-    sections.forEach(other=>{if(other!==section&&!other.classList.contains('is-dirty'))other._setAccordionState?.(false)});
-    section._setAccordionState?.(true);
-    if(scroll)setTimeout(()=>target.scrollIntoView({behavior:'smooth',block:'start'}),50);
-  };
-
-  document.querySelectorAll('.admin-tab,.admin-quick-action,.admin-hero-actions a[href^="#"]').forEach(link=>link.addEventListener('click',e=>{
-    const hash=link.getAttribute('href');if(!hash?.startsWith('#'))return;e.preventDefault();
-    try{history.replaceState(history.state,'',location.pathname+location.search)}catch(_e){}
-    openTarget(hash,true);
-  },true));
-  document.getElementById('adminExpandAll')?.addEventListener('click',()=>sections.forEach(s=>s._setAccordionState?.(true)),true);
-  document.getElementById('adminCollapseAll')?.addEventListener('click',()=>sections.forEach(s=>{if(!s.classList.contains('is-dirty'))s._setAccordionState?.(false)}),true);
-
-  document.querySelectorAll('.admin-section form').forEach(form=>form.addEventListener('focusin',()=>form.closest('.admin-section')?._setAccordionState?.(true)));
-  /* Never inherit a previous admin section/scroll position on first render. */
-  requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));
-  window.addEventListener('pageshow',()=>requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'})),{once:true});
-});
-</script>
-
-
-<script>
-(function(){
-  const slugify=(value)=>(value||'').toString().trim().toLowerCase()
-    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/&/g,' and ').replace(/['’]/g,'')
-    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,100);
-
-  function labelText(input){
-    const label=input.closest('label');
-    if(!label) return '';
-    return (label.childNodes[0]&&label.childNodes[0].textContent||'').trim();
-  }
-
-  function addCounter(input){
-    if(!input.maxLength || input.maxLength < 1 || input.dataset.smartCounter) return;
-    input.dataset.smartCounter='1';
-    const meta=document.createElement('div');
-    meta.className='smart-field-meta';
-    const hint=document.createElement('span');
-    hint.textContent=input.required?'Required':'Optional';
-    const count=document.createElement('span');
-    const update=()=>{
-      count.textContent=`${input.value.length}/${input.maxLength}`;
-      count.className=input.value.length>input.maxLength*.9?'warn':'';
-    };
-    meta.append(hint,count);
-    input.insertAdjacentElement('afterend',meta);
-    input.addEventListener('input',update); update();
-  }
-
-  function enhanceSlug(slugInput){
-    if(slugInput.dataset.smartSlug) return;
-    slugInput.dataset.smartSlug='1';
-    const form=slugInput.form || slugInput.closest('form');
-    if(!form) return;
-    const source=form.querySelector('input[name="name"],input[name="title"]');
-    if(!source) return;
-
-    const row=document.createElement('div'); row.className='smart-slug-row';
-    slugInput.parentNode.insertBefore(row,slugInput);
-    row.appendChild(slugInput);
-    const toggle=document.createElement('button');
-    toggle.type='button'; toggle.className='smart-slug-toggle'; toggle.innerHTML='<i class="fas fa-link"></i> Auto';
-    row.appendChild(toggle);
-
-    const preview=document.createElement('span');
-    preview.className='smart-url-preview';
-    row.insertAdjacentElement('afterend',preview);
-
-    let manual=false;
-    const refresh=()=>{
-      const generated=slugify(source.value);
-      if(!manual || !slugInput.value.trim()) slugInput.value=generated;
-      slugInput.value=slugify(slugInput.value);
-      preview.textContent=slugInput.value ? `${location.origin}/${slugInput.name==='slug'?'…/':''}${slugInput.value}` : 'URL preview will appear here';
-      toggle.classList.toggle('is-manual',manual);
-      toggle.innerHTML=manual?'<i class="fas fa-pen"></i> Manual':'<i class="fas fa-wand-magic-sparkles"></i> Auto';
-      checkDuplicates();
-    };
-    source.addEventListener('input',refresh);
-    slugInput.addEventListener('input',()=>{ manual=true; refresh(); });
-    toggle.addEventListener('click',()=>{ manual=!manual; if(!manual) slugInput.value=slugify(source.value); refresh(); });
-    if(!slugInput.value.trim()) manual=false;
-    refresh();
-  }
-
-  function checkDuplicates(){
-    const groups={};
-    document.querySelectorAll('.admin-page input[name="slug"]').forEach(input=>{
-      const key=(input.value||'').trim().toLowerCase();
-      input.classList.remove('is-invalid-smart');
-      const preview=input.closest('label')?.querySelector('.smart-url-preview');
-      if(preview) preview.classList.remove('smart-duplicate');
-      if(!key) return;
-      (groups[key] ||= []).push(input);
-    });
-    Object.values(groups).filter(items=>items.length>1).forEach(items=>items.forEach(input=>{
-      input.classList.add('is-invalid-smart');
-      const preview=input.closest('label')?.querySelector('.smart-url-preview');
-      if(preview){preview.classList.add('smart-duplicate');preview.textContent='Duplicate slug — choose a unique URL';}
-    }));
-  }
-
-  function enhanceForm(form){
-    form.querySelectorAll('input,textarea').forEach(input=>{
-      addCounter(input);
-      if(input.required) input.closest('label')?.classList.add('has-required');
-    });
-    form.querySelectorAll('input[name="slug"]').forEach(enhanceSlug);
-  }
-
-  function init(){
-    document.querySelectorAll('.admin-page form').forEach(enhanceForm);
-    checkDuplicates();
-  }
-  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 })();
 </script>
 
-
-{% include "_admin_growth.html" %}
 {% endblock %}
