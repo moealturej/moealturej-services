@@ -248,8 +248,21 @@ updatePricingButtons();
 </script>
 {% endblock %}
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-1.css', v='20260827-full1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-experience.css', v='20260902-qol1') }}">
+<script>
+/* Admin should always open at the command-center overview, never at a stale section anchor. */
+(()=>{
+  try{ if('scrollRestoration' in history) history.scrollRestoration='manual'; }catch(_e){}
+  if(location.hash){
+    try{ history.replaceState(history.state,'',location.pathname+location.search); }catch(_e){}
+  }
+  window.scrollTo(0,0);
+})();
+</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-1.css', v='20260903-refresh1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-2.css', v='20260903-refresh1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-3.css', v='20260903-refresh1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-experience.css', v='20260903-refresh1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-refresh-20260903.css', v='20260903-refresh1') }}">
 {% endblock %}
 {% block content %}
 <section class="page-section admin-page"><div class="container">
@@ -298,18 +311,21 @@ updatePricingButtons();
 
   <nav class="admin-tabs" aria-label="Admin sections">
     <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
-    <a class="admin-tab" href="#order-webhook"><i class="fab fa-discord"></i> Order webhook</a>
-    <a class="admin-tab" href="#manual-grant"><i class="fas fa-gift"></i> Manual grant</a>
-    <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
-    <a class="admin-tab" href="#emails"><i class="fas fa-envelope-open-text"></i> Email sender</a>
+    <a class="admin-tab" href="#analytics"><i class="fas fa-chart-line"></i> Analytics</a>
     <a class="admin-tab" href="#products"><i class="fas fa-box"></i> Products</a>
+    <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
+    <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
     <a class="admin-tab" href="#orders"><i class="fas fa-key"></i> Orders / Keys</a>
+    <a class="admin-tab" href="#manual-grant"><i class="fas fa-gift"></i> Manual grant</a>
     <a class="admin-tab" href="#support"><i class="fas fa-headset"></i> Support</a>
+    <a class="admin-tab" href="#reviews"><i class="fas fa-star"></i> Reviews</a>
+    <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
+    <a class="admin-tab" href="#emails"><i class="fas fa-envelope-open-text"></i> Email sender</a>
+    <a class="admin-tab" href="#order-webhook"><i class="fab fa-discord"></i> Order webhook</a>
     <a class="admin-tab" href="#applications"><i class="fas fa-clipboard-list"></i> Applications</a>
     <a class="admin-tab" href="#guides"><i class="fas fa-book-open"></i> Guides</a>
-    <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
-    <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
-    <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
+    <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
+    <a class="admin-tab" href="#incidents"><i class="fas fa-triangle-exclamation"></i> Incidents</a>
     <a class="admin-tab" href="#health"><i class="fas fa-heart-pulse"></i> System health</a>
     <a class="admin-tab" href="#audit"><i class="fas fa-clock-rotate-left"></i> Audit log</a>
     <a class="admin-tab" href="#security"><i class="fas fa-shield-halved"></i> Security</a>
@@ -916,6 +932,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   const layout=document.querySelector('.admin-layout');
   if(!page||!tabs||!tools||!layout||tabs.closest('.admin-workspace')) return;
 
+  /* Keep the newer intelligence/operations panels inside the same visual workspace. */
+  ['analytics','reviews','incidents'].forEach(id=>{
+    const section=document.getElementById(id);
+    if(section && section.parentElement!==layout) layout.appendChild(section);
+  });
+
   /* Build a task-focused workspace without changing any form, action, or route. */
   const workspace=document.createElement('div'); workspace.className='admin-workspace';
   const rail=document.createElement('aside'); rail.className='admin-workspace-rail'; rail.setAttribute('aria-label','Admin workspace navigation');
@@ -949,10 +971,12 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   /* Group navigation by workflow so the rail scans quickly. */
   const groups={
-    owner:'Workspace','loader-release':'Workspace','emails':'Workspace',
-    products:'Catalog','uploads':'Catalog','discounts':'Catalog',
-    orders:'Customers','support':'Customers','accounts':'Customers',
-    applications:'Content','guides':'Content',health:'System',audit:'System',security:'System'
+    owner:'Workspace',analytics:'Workspace',
+    products:'Catalog',discounts:'Catalog',uploads:'Catalog',
+    orders:'Customers','manual-grant':'Customers',support:'Customers',reviews:'Customers',accounts:'Customers',
+    emails:'Communication','order-webhook':'Communication',
+    applications:'Content',guides:'Content',
+    'loader-release':'Operations',incidents:'Operations',health:'Operations',audit:'Operations',security:'Operations'
   };
   let last='';
   [...tabs.querySelectorAll('.admin-tab')].forEach(tab=>{
@@ -973,6 +997,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     let initial=new FormData(form); const snapshot=()=>[...initial.entries()].map(([k,v])=>`${k}:${v instanceof File?v.name:v}`).join('|'); let base=snapshot();
     const check=()=>{initial=new FormData(form);section.classList.toggle('is-dirty',snapshot()!==base)};
     form.addEventListener('input',check);form.addEventListener('change',check);form.addEventListener('submit',()=>{section.classList.remove('is-dirty');base=snapshot()});
+  });
+
+  /* Give the overview KPIs a consistent visual key without touching backend values. */
+  const statIcons={
+    'Total items':'fa-box','Store enabled':'fa-store','Downloads':'fa-download','Status tracked':'fa-signal',
+    'Accounts':'fa-users','Uploads':'fa-cloud-arrow-up','Orders':'fa-receipt','Support tickets':'fa-headset',
+    'Applications':'fa-clipboard-list','Member guides':'fa-book-open','Storage':'fa-database'
+  };
+  document.querySelectorAll('.admin-stats > div').forEach(card=>{
+    if(card.querySelector('.admin-stat-icon')) return;
+    const label=card.querySelector('span')?.textContent.trim()||'';
+    const icon=document.createElement('span'); icon.className='admin-stat-icon';
+    icon.innerHTML=`<i class="fas ${statIcons[label]||'fa-chart-simple'}"></i>`;
+    card.prepend(icon);
   });
 
   /* Keep the active workspace label synchronized on scroll. */
@@ -1084,7 +1122,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-2.css', v='20260827-full1') }}">
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
   const layout=document.querySelector('.admin-layout');
@@ -1157,19 +1194,22 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(scroll)setTimeout(()=>target.scrollIntoView({behavior:'smooth',block:'start'}),50);
   };
 
-  document.querySelectorAll('.admin-tab,.admin-quick-action').forEach(link=>link.addEventListener('click',e=>{
-    const hash=link.getAttribute('href');if(!hash?.startsWith('#'))return;e.preventDefault();history.replaceState(null,'',hash);openTarget(hash,true);
+  document.querySelectorAll('.admin-tab,.admin-quick-action,.admin-hero-actions a[href^="#"]').forEach(link=>link.addEventListener('click',e=>{
+    const hash=link.getAttribute('href');if(!hash?.startsWith('#'))return;e.preventDefault();
+    try{history.replaceState(history.state,'',location.pathname+location.search)}catch(_e){}
+    openTarget(hash,true);
   },true));
   document.getElementById('adminExpandAll')?.addEventListener('click',()=>sections.forEach(s=>s._setAccordionState?.(true)),true);
   document.getElementById('adminCollapseAll')?.addEventListener('click',()=>sections.forEach(s=>{if(!s.classList.contains('is-dirty'))s._setAccordionState?.(false)}),true);
 
   document.querySelectorAll('.admin-section form').forEach(form=>form.addEventListener('focusin',()=>form.closest('.admin-section')?._setAccordionState?.(true)));
-  if(location.hash)openTarget(location.hash,false);
+  /* Never inherit a previous admin section/scroll position on first render. */
+  requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));
+  window.addEventListener('pageshow',()=>requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'})),{once:true});
 });
 </script>
 
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-3.css', v='20260827-full1') }}">
 <script>
 (function(){
   const slugify=(value)=>(value||'').toString().trim().toLowerCase()
@@ -1268,6 +1308,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 })();
 </script>
+
 
 {% include "_admin_growth.html" %}
 {% endblock %}

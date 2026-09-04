@@ -22,29 +22,5 @@
       "query": ""
     },
     "created_at": "2026-08-28T03:43:41.968338+00:00"
-  },
-  {
-    "id": "fe5015343c4c4c728f5d4278e5d8e541",
-    "event": "product_view",
-    "product_slug": "mw19-ghost-internal",
-    "value": 0,
-    "user_email": "",
-    "session_id": "05f91ca5acae42c7b9954fc966253e73",
-    "metadata": {
-      "query": ""
-    },
-    "created_at": "2026-09-03T01:30:40.457867+00:00"
-  },
-  {
-    "id": "f503900f87294b09b6a62bdde77bf5dc",
-    "event": "add_to_cart",
-    "product_slug": "mw19-ghost-internal",
-    "value": 2,
-    "user_email": "",
-    "session_id": "05f91ca5acae42c7b9954fc966253e73",
-    "metadata": {
-      "query": ""
-    },
-    "created_at": "2026-09-03T01:31:02.196496+00:00"
   }
 ]
