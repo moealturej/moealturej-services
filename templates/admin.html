@@ -140,9 +140,15 @@ updatePricingButtons();
     if(up || down) move(event.target.closest('.admin-product'), up ? -1 : 1);
   });
   list.querySelectorAll('.admin-product').forEach(card=>{
-    card.draggable=true;
-    card.addEventListener('dragstart',()=>{ dragEl=card; card.classList.add('is-dragging'); });
-    card.addEventListener('dragend',()=>{ card.classList.remove('is-dragging'); dragEl=null; updateInput(); });
+    card.draggable=false;
+    const handle=card.querySelector('.drag-handle');
+    if(!handle) return;
+    handle.draggable=true;
+    handle.addEventListener('dragstart',(event)=>{
+      dragEl=card; card.classList.add('is-dragging');
+      try{ event.dataTransfer.effectAllowed='move'; event.dataTransfer.setData('text/plain',card.dataset.slug||'product'); }catch(_e){}
+    });
+    handle.addEventListener('dragend',()=>{ card.classList.remove('is-dragging'); dragEl=null; updateInput(); });
   });
   list.addEventListener('dragover',(event)=>{
     event.preventDefault();
@@ -262,18 +268,20 @@ updatePricingButtons();
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-2.css', v='20260903-refresh1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin-3.css', v='20260903-refresh1') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-experience.css', v='20260903-refresh1') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-refresh-20260903.css', v='20260903-refresh1') }}">
+{% endblock %}
+{% block page_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-final-20260903.css', v='20260903-fix2') }}">
 {% endblock %}
 {% block content %}
 <section class="page-section admin-page"><div class="container">
   <div class="admin-command">
     <section class="admin-hero">
       <div>
-        <div class="eyebrow">owner control</div>
-        <h1>Site command center</h1>
-        <p>Production controls for products, orders, customers, emails, uploads, status, and account safety.</p>
+        <div class="eyebrow">owner dashboard</div>
+        <h1>Admin dashboard</h1>
+        <p>Manage products, orders, customers, releases, content, and site settings from one clear workspace.</p>
         <div class="admin-hero-actions">
-          <a class="primary-cta" href="#products"><i class="fas fa-box"></i> Manage products</a>
+          <a class="primary-cta" href="#products"><i class="fas fa-box"></i> Products</a>
           <a class="secondary-cta" href="/" target="_blank" rel="noopener noreferrer"><i class="fas fa-arrow-up-right-from-square"></i> View site</a>
           <a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
         </div>
@@ -695,8 +703,21 @@ updatePricingButtons();
       <div class="product-list" id="productOrderList">
         {% for product in products %}
         <article class="admin-product" data-slug="{{ product.slug }}" data-name="{{ product.name|lower }}">
-          <span class="order-number">{{ loop.index }}</span>
-          <div class="admin-product-main"><img src="{{ product.image or url_for('static', filename='logo.png') }}" alt=""><div class="admin-product-summary"><h3>{{ product.name }}</h3><p class="muted">{{ product.slug }} · {{ product.category }}</p><div class="admin-tags"><span>Order: {{ product.displayOrder if product.displayOrder is defined else loop.index0 }}</span><span>Store: {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads: {{ 'on' if product.downloads.enabled else 'off' }}</span><span>Status: {{ product.status.label or product.status.state }}</span></div></div><div class="product-order-control"><span class="drag-handle"><i class="fas fa-grip-vertical"></i> Drag</span><button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button><button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button><button class="product-edit-toggle" type="button" aria-expanded="false"><i class="fas fa-sliders"></i><span>Edit</span></button></div></div>
+          <div class="admin-product-main">
+            <span class="order-number">{{ loop.index }}</span>
+            <img src="{{ product.image or url_for('static', filename='logo.png') }}" alt="">
+            <div class="admin-product-summary">
+              <h3>{{ product.name }}</h3>
+              <p class="muted">{{ product.slug }} · {{ product.category }}</p>
+              <div class="admin-tags"><span>Store {{ 'on' if product.store.enabled else 'off' }}</span><span>Downloads {{ 'on' if product.downloads.enabled else 'off' }}</span><span>{{ product.status.label or product.status.state }}</span></div>
+            </div>
+            <div class="product-order-control">
+              <span class="drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i><span>Drag</span></span>
+              <button class="move-btn" type="button" data-order-up aria-label="Move {{ product.name }} up"><i class="fas fa-chevron-up"></i></button>
+              <button class="move-btn" type="button" data-order-down aria-label="Move {{ product.name }} down"><i class="fas fa-chevron-down"></i></button>
+              <button class="product-edit-toggle" type="button" aria-expanded="false"><i class="fas fa-sliders"></i><span>Edit</span></button>
+            </div>
+          </div>
           <div class="product-editor-body" hidden>
             <form class="full-product-editor" action="{{ url_for('admin_product_update', slug=product.slug) }}" method="post" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -943,7 +964,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   const rail=document.createElement('aside'); rail.className='admin-workspace-rail'; rail.setAttribute('aria-label','Admin workspace navigation');
   const railHead=document.createElement('div'); railHead.className='admin-rail-head';
   railHead.innerHTML='<div class="admin-rail-title"><span><i class="fas fa-command"></i></span><span><strong>Admin workspace</strong><small>moealturej control</small></span></div><button class="admin-rail-close" type="button" aria-label="Close navigation"><i class="fas fa-xmark"></i></button>';
-  rail.append(railHead,tabs,tools);
   const main=document.createElement('main'); main.className='admin-workspace-main';
 
   const mobile=document.createElement('div'); mobile.className='admin-mobile-bar';
@@ -964,6 +984,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const parent=tabs.parentNode;
   parent.insertBefore(workspace,tabs);
   workspace.append(rail,main);
+  rail.append(railHead,tabs,tools);
   main.append(mobile,quick);
   if(empty) main.append(empty);
   main.append(layout);
@@ -1106,8 +1127,20 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   document.querySelectorAll('.product-edit-toggle').forEach(btn=>btn.addEventListener('click',event=>{
-    event.stopPropagation(); const card=btn.closest('.admin-product'); const body=card?.querySelector('.product-editor-body'); if(!body)return;
-    const opening=body.hidden; body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening)); btn.querySelector('span').textContent=opening?'Close':'Edit';
+    event.stopPropagation();
+    const card=btn.closest('.admin-product'); const body=card?.querySelector('.product-editor-body'); if(!body)return;
+    const opening=body.hidden;
+    if(opening){
+      document.querySelectorAll('.admin-product.is-editing').forEach(other=>{
+        if(other===card)return;
+        const otherBody=other.querySelector('.product-editor-body'); const otherBtn=other.querySelector('.product-edit-toggle');
+        if(otherBody)otherBody.hidden=true; other.classList.remove('is-editing');
+        if(otherBtn){otherBtn.setAttribute('aria-expanded','false');const label=otherBtn.querySelector('span');if(label)label.textContent='Edit';}
+      });
+    }
+    body.hidden=!opening; card.classList.toggle('is-editing',opening); btn.setAttribute('aria-expanded',String(opening));
+    const label=btn.querySelector('span'); if(label)label.textContent=opening?'Close':'Edit';
+    if(opening)setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'start'}),30);
   }));
   document.querySelectorAll('.guide-edit-toggle').forEach(btn=>btn.addEventListener('click',()=>{
     const card=btn.closest('.guide-builder-card'); const body=card?.querySelector('.guide-editor-body'); if(!body)return;

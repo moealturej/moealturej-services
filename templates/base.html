@@ -60,6 +60,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base-post.css', v='20260827-full1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/refinements.bundle.css', v='20260827') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site-upgrade.css', v='20260827-full1') }}">
+  {% block page_styles %}{% endblock %}
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
