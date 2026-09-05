@@ -241,6 +241,59 @@ media_fs = None
 def using_mongo() -> bool:
     return products_col is not None and users_col is not None
 
+
+def optimized_static_image_url(value: str | None) -> str:
+    """Prefer a same-name WebP asset for local static PNG/JPEG images.
+
+    This keeps existing MongoDB records and old order/cart image URLs compatible
+    while letting the storefront serve much smaller optimized assets.
+    """
+    raw = str(value or "/static/logo.png").strip() or "/static/logo.png"
+    if not raw.startswith("/static/"):
+        return raw
+    path_part, sep, query = raw.partition("?")
+    relative = path_part[len("/static/"):].lstrip("/")
+    source = STATIC_DIR / relative
+    if source.suffix.lower() not in {".png", ".jpg", ".jpeg"}:
+        return raw
+    candidate = source.with_suffix(".webp")
+    try:
+        if candidate.exists() and candidate.is_file():
+            optimized = "/static/" + candidate.relative_to(STATIC_DIR).as_posix()
+            return optimized + (("?" + query) if sep and query else "")
+    except Exception:
+        pass
+    return raw
+
+
+def optimize_uploaded_image_file(path: Path, *, max_side: int = 1600, quality: int = 84) -> Path:
+    """Convert admin-uploaded PNG/JPEG images to resized WebP when possible.
+
+    GIF/animated media and already-WebP files are preserved. Any conversion
+    failure is non-fatal and falls back to the original upload.
+    """
+    if path.suffix.lower() not in {".png", ".jpg", ".jpeg"}:
+        return path
+    try:
+        from PIL import Image, ImageOps
+        with Image.open(path) as opened:
+            if getattr(opened, "is_animated", False):
+                return path
+            image = ImageOps.exif_transpose(opened)
+            has_alpha = "A" in image.getbands()
+            image = image.convert("RGBA" if has_alpha else "RGB")
+            if max(image.size) > max_side:
+                image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+            target = path.with_suffix(".webp")
+            image.save(target, "WEBP", quality=max(60, min(95, int(quality))), method=6)
+        if target != path and target.exists():
+            path.unlink(missing_ok=True)
+            return target
+    except Exception as exc:
+        logger.warning("Image optimization skipped for %s: %s", path.name, exc)
+    return path
+
+
 def normalize_product(product: dict) -> dict:
     if not isinstance(product, dict):
         product = {}
@@ -250,7 +303,7 @@ def normalize_product(product: dict) -> dict:
     if not product.get("slug"):
         product["slug"] = str(product.get("name", "untitled-product")).lower().replace(" ", "-")
     product.setdefault("name", "Untitled Product")
-    product.setdefault("image", "/static/logo.png")
+    product["image"] = optimized_static_image_url(product.get("image") or "/static/logo.png")
     product.setdefault("category", "general")
     product.setdefault("type", "product")
     try:
@@ -1888,6 +1941,40 @@ def public_json_response(payload, *, cache_seconds: int = 30):
     return response
 
 
+def home_listing_payload(product: dict) -> dict:
+    """Lean storefront fields needed by the home-page product strip."""
+    item = public_product_payload(product)
+    return {
+        "id": item.get("id"), "slug": item.get("slug"), "name": item.get("name"),
+        "image": item.get("image"), "category": item.get("category"),
+        "featured": item.get("featured"), "displayOrder": item.get("displayOrder"),
+        "store": {
+            "enabled": bool((item.get("store") or {}).get("enabled")),
+            "options": (item.get("store") or {}).get("options") or [],
+        },
+        "status": item.get("status") or {},
+    }
+
+
+def store_listing_payload(product: dict) -> dict:
+    """Lean fields needed to search, filter, render, and add store cards to cart."""
+    item = public_product_payload(product)
+    keys = ("id", "slug", "name", "description", "detailedDescription", "image",
+            "category", "featured", "features", "badges", "displayOrder", "store", "status")
+    return {key: item.get(key) for key in keys}
+
+
+def status_listing_payload(product: dict) -> dict:
+    """Lean fields needed by the public status grid."""
+    item = public_product_payload(product)
+    return {
+        "id": item.get("id"), "slug": item.get("slug"), "name": item.get("name"),
+        "image": item.get("image"), "downloads": {"version": (item.get("downloads") or {}).get("version")},
+        "store": {"stockStatus": (item.get("store") or {}).get("stockStatus")},
+        "status": item.get("status") or {},
+    }
+
+
 def money_to_cents(value) -> int:
     try:
         return max(0, int(round(float(value) * 100)))
@@ -3274,7 +3361,7 @@ def build_my_products(orders: list) -> list:
             row = products_by_key.setdefault(key, {
                 "name": item.get("product_name") or item.get("productName") or product.get("name") or "Product",
                 "slug": slug or product.get("slug", ""),
-                "image": item.get("image") or product.get("image") or "/static/logo.png",
+                "image": optimized_static_image_url(item.get("image") or product.get("image") or "/static/logo.png"),
                 "status": product.get("status") or {"state": "Operational", "label": "Online"},
                 "downloads": product.get("downloads") or {},
                 "features": product.get("features") or [],
@@ -3439,14 +3526,31 @@ def apply_security_headers(response):
     public_api = (
         request.method == "GET"
         and (
-            request.path in {"/api/products", "/api/store-products", "/api/downloads", "/api/status"}
+            request.path in {"/api/products", "/api/store-products", "/api/downloads", "/api/status", "/api/store/search-suggestions"}
             or request.path.startswith("/api/store-products/")
         )
     )
     if request.path.startswith("/static/"):
-        response.headers["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
+        # Static URLs are versioned in templates and optimized product images use
+        # stable WebP filenames, so browsers can keep them for a full year.
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.path.startswith("/media/") and request.method == "GET":
+        # Dashboard uploads use UUID-based filenames and are safe to cache long-term.
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.path.startswith("/support/attachments/") and request.method == "GET":
+        # Authenticated support attachments can stay in the viewer's own browser
+        # cache. Never mark these public because ticket files are access-controlled.
+        response.headers["Cache-Control"] = "private, max-age=86400"
+        response.vary.add("Cookie")
     elif public_api:
-        response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
+        # Preserve route-specific max-age values set by public_json_response()
+        # (product feeds use 5 minutes, status uses 1 minute) and add SWR.
+        existing_cache = response.headers.get("Cache-Control", "").strip()
+        if not existing_cache or "max-age=" not in existing_cache.lower():
+            existing_cache = "public, max-age=60"
+        if "stale-while-revalidate" not in existing_cache.lower():
+            existing_cache += ", stale-while-revalidate=300"
+        response.headers["Cache-Control"] = existing_cache
     elif response.mimetype == "text/html":
         # HTML can contain account navigation, CSRF tokens, flash messages, and
         # order state. Never let a shared cache reuse it for another visitor.
@@ -3502,7 +3606,9 @@ def internal_error(error):
 # -----------------------------------------------------------------------------
 @app.route("/")
 def home():
-    return render_template("index.html", active_page="home")
+    settings = load_site_settings()
+    items = [home_listing_payload(p) for p in filter_products("store")] if settings.get("store_enabled", True) else []
+    return render_template("index.html", active_page="home", initial_store_products=items)
 
 
 @app.route("/store")
@@ -3511,7 +3617,8 @@ def store():
     if not load_site_settings().get("store_enabled", True):
         flash("The store is temporarily closed. Please check back shortly.", "warning")
         return redirect(url_for("home"))
-    return render_template("store.html", active_page="products")
+    items = [store_listing_payload(p) for p in filter_products("store")]
+    return render_template("store.html", active_page="products", initial_store_products=items)
 
 @app.route("/cart")
 def cart_page():
@@ -3616,7 +3723,7 @@ def free_downloads():
             "id": product.get("id"),
             "slug": product.get("slug", ""),
             "name": product.get("name", "Standalone download"),
-            "image": product.get("image") or url_for("static", filename="logo.png"),
+            "image": optimized_static_image_url(product.get("image") or url_for("static", filename="logo.png")),
             "version": downloads_data.get("version") or "Latest",
             "file_size": downloads_data.get("fileSize") or downloads_data.get("file_size") or "Size unavailable",
             "download_url": download_url,
@@ -3628,7 +3735,8 @@ def free_downloads():
 
 @app.route("/status")
 def status():
-    return render_template("status.html", active_page="status")
+    items = [status_listing_payload(p) for p in filter_products("status")]
+    return render_template("status.html", active_page="status", initial_status_products=items)
 
 
 @app.route("/support")
@@ -3685,7 +3793,7 @@ def support_ticket_create():
         "item_index": item_index,
         "product_name": item.get("product_name", "Product"),
         "option_name": item.get("option_name", "Option"),
-        "product_image": item.get("image", "/static/logo.png"),
+        "product_image": optimized_static_image_url(item.get("image") or "/static/logo.png"),
         "created_at": utc_now().isoformat(),
         "messages": [],
         "diagnostics": {
@@ -3713,6 +3821,8 @@ def support_ticket_detail(ticket_id):
 
     staff_view = has_support_access(user)
     mark_ticket_read(ticket, staff_view)
+    ticket = dict(ticket)
+    ticket["product_image"] = optimized_static_image_url(ticket.get("product_image") or "/static/logo.png")
     return render_template("ticket_detail.html", active_page="support", ticket=ticket, staff_view=staff_view)
 
 
@@ -3768,7 +3878,7 @@ def support_ticket_live(ticket_id):
         other_seen = datetime.fromisoformat(str(other.get("seen_at") or "").replace("Z", "+00:00"))
         if other_seen.tzinfo is None:
             other_seen = other_seen.replace(tzinfo=timezone.utc)
-        online = (utc_now() - other_seen).total_seconds() < 12
+        online = (utc_now() - other_seen).total_seconds() < 45
     except Exception:
         online = False
     try:
@@ -3778,12 +3888,23 @@ def support_ticket_live(ticket_id):
         typing = bool(other.get("typing")) and (utc_now() - typed_at).total_seconds() < 5
     except Exception:
         typing = False
+    all_messages = ticket.get("messages") or []
+    all_payloads = [ticket_message_payload(m, staff_view) for m in all_messages]
+    after_id = str(request.args.get("after") or "").strip()
+    selected_payloads = all_payloads
+    if after_id:
+        for index, item in enumerate(all_payloads):
+            if item.get("id") == after_id:
+                selected_payloads = all_payloads[index + 1:]
+                break
+    read_ids = [item.get("id") for item in all_payloads if item.get("mine") and item.get("read") and item.get("id")]
     return jsonify({
         "ok": True,
         "ticket_id": ticket_id,
         "status": normalize_ticket_status(ticket.get("status")),
         "updated_at": ticket.get("updated_at"),
-        "messages": [ticket_message_payload(m, staff_view) for m in (ticket.get("messages") or [])],
+        "messages": selected_payloads,
+        "read_ids": read_ids,
         "other_online": online,
         "other_typing": typing,
         "closed": normalize_ticket_status(ticket.get("status")) == "closed",
@@ -3902,7 +4023,7 @@ def support_staff_live():
             "subject": ticket.get("subject") or "Support ticket",
             "user_email": ticket.get("user_email") or "",
             "product_name": ticket.get("product_name") or "Product",
-            "product_image": ticket.get("product_image") or "/static/logo.png",
+            "product_image": optimized_static_image_url(ticket.get("product_image") or "/static/logo.png"),
             "status": normalize_ticket_status(ticket.get("status")),
             "updated_at": ticket.get("updated_at") or ticket.get("created_at") or "",
             "last_message": str(last.get("body") or "No messages yet")[:140],
@@ -4483,7 +4604,9 @@ def admin_guide_image_upload():
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
     local_path = UPLOADS_DIR / filename
     upload.save(local_path)
-    mime_type = mimetypes.guess_type(original)[0] or "application/octet-stream"
+    local_path = optimize_uploaded_image_file(local_path)
+    filename = local_path.name
+    mime_type = "image/webp" if local_path.suffix.lower() == ".webp" else (mimetypes.guess_type(original)[0] or "application/octet-stream")
     gridfs_id = save_upload_to_mongo_storage(local_path, filename, original, "image", mime_type)
     save_media_record({"filename":filename,"original_name":original,"kind":"image","url":url_for("media_file",filename=filename),"mime_type":mime_type,"size_bytes":local_path.stat().st_size,"storage":"mongodb_gridfs" if gridfs_id else "local_disk","gridfs_id":gridfs_id,"created_at":utc_now().isoformat(),"created_by":(current_user() or {}).get("email")})
     return jsonify({"ok": True, "url": url_for("media_file", filename=filename)})
@@ -5533,8 +5656,11 @@ def admin_media_upload():
     target_dir.mkdir(parents=True, exist_ok=True)
     local_path = target_dir / filename
     upload.save(local_path)
+    if upload_kind == "image":
+        local_path = optimize_uploaded_image_file(local_path)
+        filename = local_path.name
     url = url_for("media_file", filename=filename) if upload_kind == "image" else url_for("download_file", filename=filename)
-    mime_type = mimetypes.guess_type(original)[0] or "application/octet-stream"
+    mime_type = "image/webp" if local_path.suffix.lower() == ".webp" else (mimetypes.guess_type(original)[0] or "application/octet-stream")
     gridfs_id = save_upload_to_mongo_storage(local_path, filename, original, upload_kind, mime_type)
     record = {
         "filename": filename,
@@ -6136,15 +6262,15 @@ def dmca_policy():
 @app.route("/api/products")
 @limiter.limit("120 per minute")
 def api_products():
-    return public_json_response([public_product_payload(p) for p in load_products()])
+    return public_json_response([public_product_payload(p) for p in load_products()], cache_seconds=300)
 
 
 @app.route("/api/store-products")
 @limiter.limit("120 per minute")
 def api_store_products():
     if not load_site_settings().get("store_enabled", True):
-        return public_json_response([])
-    return public_json_response([public_product_payload(p) for p in filter_products("store")])
+        return public_json_response([], cache_seconds=300)
+    return public_json_response([public_product_payload(p) for p in filter_products("store")], cache_seconds=300)
 
 
 @app.route("/api/store-products/<slug>")
@@ -6153,19 +6279,19 @@ def api_store_product(slug):
     product = find_store_product(slug)
     if not product:
         abort(404)
-    return public_json_response(public_product_payload(product))
+    return public_json_response(public_product_payload(product), cache_seconds=300)
 
 
 @app.route("/api/downloads")
 @limiter.limit("120 per minute")
 def api_downloads():
-    return public_json_response([public_product_payload(p, include_download_url=True) for p in filter_products("downloads")])
+    return public_json_response([public_product_payload(p, include_download_url=True) for p in filter_products("downloads")], cache_seconds=300)
 
 
 @app.route("/api/status")
 @limiter.limit("120 per minute")
 def api_status():
-    return public_json_response([public_product_payload(p) for p in filter_products("status")])
+    return public_json_response([public_product_payload(p) for p in filter_products("status")], cache_seconds=60)
 
 
 # -----------------------------------------------------------------------------
@@ -6319,6 +6445,7 @@ register_casino(
     save_upload_to_mongo_storage=save_upload_to_mongo_storage,
     save_media_record=save_media_record,
     record_audit=record_audit,
+    optimize_uploaded_image_file=optimize_uploaded_image_file,
 )
 
 # Secure desktop loader API

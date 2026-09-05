@@ -17,6 +17,14 @@
   let products = [];
   let cart = site?.cart?.read?.() || [];
   let loading = false;
+  const initialNode = document.getElementById('initialStoreProducts');
+  let initialProducts = null;
+  if (initialNode) {
+    try {
+      const parsed = JSON.parse(initialNode.textContent || '[]');
+      if (Array.isArray(parsed)) initialProducts = parsed;
+    } catch {}
+  }
   const url = new URL(location.href);
   let currentFilter = (url.searchParams.get('category') || 'all').toLowerCase();
   let currentSearch = (url.searchParams.get('q') || '').trim().toLowerCase();
@@ -193,17 +201,31 @@
   async function loadProducts(force=false) {
     if (loading) return;
     loading = true;
-    const cacheKey='moe_store_products_v2';
+    const cacheKey='moe_store_products_v3';
+
+    // The Flask page already contains a fresh catalog snapshot. Rendering it
+    // directly removes the extra /api/store-products request on every visit.
+    if (!force && Array.isArray(initialProducts)) {
+      products = initialProducts;
+      initialProducts = null;
+      try { sessionStorage.setItem(cacheKey, JSON.stringify({savedAt:Date.now(),items:products})); } catch {}
+      buildFilters(); updateStats(); renderProducts();
+      loading = false;
+      return;
+    }
+
     if (!force) {
       try {
         const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
         if (cached?.items && Date.now()-Number(cached.savedAt||0) < 5*60*1000) {
           products = cached.items; buildFilters(); updateStats(); renderProducts();
+          loading = false;
+          return;
         }
       } catch { try { sessionStorage.removeItem(cacheKey); } catch {} }
     }
     try {
-      const items = site?.fetchJSON ? await site.fetchJSON('/api/store-products', {headers:{Accept:'application/json'}, cache:'no-cache'}, 10000) : await fetch('/api/store-products').then(r => { if(!r.ok) throw new Error(); return r.json(); });
+      const items = site?.fetchJSON ? await site.fetchJSON('/api/store-products', {headers:{Accept:'application/json'}, cache:'default'}, 10000) : await fetch('/api/store-products').then(r => { if(!r.ok) throw new Error(); return r.json(); });
       products = Array.isArray(items) ? items : [];
       try { sessionStorage.setItem(cacheKey, JSON.stringify({savedAt:Date.now(),items:products})); } catch {}
       buildFilters(); updateStats(); renderProducts();
@@ -216,11 +238,15 @@
     } finally { loading=false; }
   }
 
+  let lastTrackedSearch = '';
   const searchChanged = debounce(() => {
     currentSearch = searchInput.value.trim().toLowerCase();
     updateUrl(); renderProducts();
-    if (currentSearch.length >= 2) fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'search',query:currentSearch})}).catch(()=>{});
-  }, 160);
+    if (currentSearch.length >= 2 && currentSearch !== lastTrackedSearch) {
+      lastTrackedSearch = currentSearch;
+      fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'search',query:currentSearch}),keepalive:true}).catch(()=>{});
+    }
+  }, 800);
   searchInput.addEventListener('input', searchChanged);
   sortSelect.addEventListener('change', () => {
     if (!validSorts.has(sortSelect.value)) sortSelect.value='featured';

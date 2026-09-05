@@ -35,15 +35,15 @@
 <meta property="og:title" content="{% block og_title %}moealturej{% endblock %}" />
 <meta property="og:description" content="{% block og_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
 <meta property="og:url" content="{% block og_url %}{{ request.url }}{% endblock %}" />
-<meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='banner.png', _external=True) }}{% endblock %}" />
-<meta property="og:image:secure_url" content="{% block og_image_secure %}{{ url_for('static', filename='banner.png', _external=True) }}{% endblock %}" />
+<meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='banner.webp', _external=True) }}{% endblock %}" />
+<meta property="og:image:secure_url" content="{% block og_image_secure %}{{ url_for('static', filename='banner.webp', _external=True) }}{% endblock %}" />
 <meta property="og:image:alt" content="{% block og_image_alt %}moealturej preview image{% endblock %}" />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="{% block twitter_title %}moealturej{% endblock %}" />
 <meta name="twitter:description" content="{% block twitter_description %}Premium digital products, tools, downloads, and modern solutions from moealturej.{% endblock %}" />
-<meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='banner.png', _external=True) }}{% endblock %}" />
+<meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='banner.webp', _external=True) }}{% endblock %}" />
 
   <!-- Performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,12 +54,9 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/core.bundle.css', v='20260827') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base-pre.css', v='20260827-full1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base-head.bundle.css', v='20260905-perf1') }}">
   {% block extra_head %}{% endblock %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/base-post.css', v='20260827-full1') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/refinements.bundle.css', v='20260827') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/site-upgrade.css', v='20260827-full1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base-tail.bundle.css', v='20260905-perf1') }}">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -109,7 +106,7 @@
     </footer>
   </div>
   <button class="back-to-top" id="backToTop" type="button" aria-label="Back to top"><i class="fas fa-arrow-up"></i></button>
-  <script src="{{ url_for('static', filename='js/site-core.js', v='20260827-full1') }}"></script>
+  <script src="{{ url_for('static', filename='js/site-core.js', v='20260905-perf1') }}"></script>
   <script>
     const mobileMenuBtn=document.getElementById('mobileMenuBtn'), topbar=document.querySelector('.topbar');mobileMenuBtn?.addEventListener('click',()=>{const open=topbar.classList.toggle('menu-open');mobileMenuBtn.setAttribute('aria-expanded',String(open));mobileMenuBtn.setAttribute('aria-label',open?'Close navigation':'Open navigation');mobileMenuBtn.innerHTML=`<i class="fas fa-${open?'xmark':'bars'}"></i>`});document.querySelectorAll('#mainNav a').forEach(a=>a.addEventListener('click',()=>{topbar?.classList.remove('menu-open');mobileMenuBtn?.setAttribute('aria-expanded','false')}));
     const backToTop=document.getElementById('backToTop');window.addEventListener('scroll',()=>backToTop?.classList.toggle('show',scrollY>520),{passive:true});backToTop?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
@@ -212,7 +209,9 @@
     (function liveNotifications(){
       const badge=document.getElementById('navNotificationCount');
       if(!badge)return;
-      let timer=null,inFlight=false,initialized=false,knownIds=new Set(),failures=0;
+      let timer=null,inFlight=false,failures=0,lastSync=Date.now();
+      let knownIds=new Set([...document.querySelectorAll('[data-notification-id]')].map(el=>el.dataset.notificationId).filter(Boolean));
+      let initialized=knownIds.size>0;
       const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
       const formatTime=value=>window.formatLocalDateTime?window.formatLocalDateTime(value):String(value||'');
       function setCount(count){count=Math.max(0,Number(count)||0);badge.textContent=count>99?'99+':String(count);badge.hidden=count<1;document.getElementById('navNotificationBtn')?.classList.toggle('active',count>0);document.querySelectorAll('[data-live-notification-count]').forEach(el=>{el.textContent=String(count);el.hidden=false});}
@@ -229,11 +228,13 @@
           if(r.status===401||r.status===403)return;if(!r.ok)throw new Error('notification sync failed');
           const d=await r.json(),items=Array.isArray(d.notifications)?d.notifications:[];
           if(initialized){const fresh=items.filter(n=>n.id&&!knownIds.has(n.id));if(fresh.length&&window.showSiteToast)window.showSiteToast(fresh[0].title||'New notification','success');}
-          knownIds=new Set(items.map(n=>n.id).filter(Boolean));initialized=true;setCount(d.unread_count);renderAccount(items);failures=0;
+          knownIds=new Set(items.map(n=>n.id).filter(Boolean));initialized=true;lastSync=Date.now();setCount(d.unread_count);renderAccount(items);failures=0;
           window.dispatchEvent(new CustomEvent('moeNotificationsUpdated',{detail:d}));
-        }catch(e){failures++;}finally{inFlight=false;clearTimeout(timer);timer=setTimeout(sync,failures?20000:12000)}
+        }catch(e){failures++;}finally{inFlight=false;clearTimeout(timer);timer=setTimeout(sync,failures?180000:60000)}
       }
-      window.addEventListener('focus',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});sync();
+      const refreshIfStale=()=>{if(!document.hidden&&Date.now()-lastSync>30000)sync()};
+      window.addEventListener('focus',refreshIfStale);document.addEventListener('visibilitychange',refreshIfStale);
+      timer=setTimeout(sync,60000);
     })();
     const loadingOverlay=document.getElementById('globalLoadingOverlay');const loadingTitle=document.getElementById('loadingTitle');const loadingText=document.getElementById('loadingText');
     document.querySelectorAll('form.auth-card, form[data-loading-form="true"]').forEach(form=>{form.addEventListener('submit',()=>{const btn=form.querySelector('button[type="submit"]');form.classList.add('is-loading');if(btn){btn.disabled=true;if(!btn.querySelector('.btn-spinner')){const s=document.createElement('span');s.className='btn-spinner';btn.prepend(s)}const t=btn.dataset.loadingText||'Sending code...';const label=btn.querySelector('.btn-label');if(label)label.textContent=t;else btn.append(document.createTextNode(' '+t));}if(loadingOverlay){loadingTitle.textContent=form.dataset.loadingTitle||'Sending security code';loadingText.textContent=form.dataset.loadingText||'Checking your account and sending the email code. This can take a moment.';loadingOverlay.classList.add('active');loadingOverlay.setAttribute('aria-hidden','false');}})});
@@ -242,7 +243,7 @@
   <script>
     window.MoeWishlist = {
       key: 'moeWishlist', recentKey: 'moeRecentlyViewed',
-      get(){ const value=window.MoeSite?.storage?.readJSON(this.key,[])||[]; return Array.isArray(value)?value.filter(x=>x&&x.slug).slice(0,50):[]; },
+      get(){ const value=window.MoeSite?.storage?.readJSON(this.key,[])||[]; return Array.isArray(value)?value.filter(x=>x&&x.slug).slice(0,50).map(x=>({...x,image:window.MoeSite?.optimizeImageUrl?.(x.image)||x.image})):[]; },
       save(items){ window.MoeSite?.storage?.writeJSON(this.key,(Array.isArray(items)?items:[]).slice(0,50)); this.updateBadge(); window.dispatchEvent(new CustomEvent('moeWishlistUpdated')); },
       has(slug){ return this.get().some(x=>String(x.slug)===String(slug)); },
       toggle(product){ let items=this.get(), slug=String(product.slug||product.id||''); const exists=items.some(x=>String(x.slug)===slug); items=exists?items.filter(x=>String(x.slug)!==slug):[{slug,name:String(product.name||'Product').slice(0,180),image:String(product.image||'/static/logo.png').slice(0,1200),category:String(product.category||'Product').slice(0,100)},...items]; this.save(items); return !exists; },
@@ -253,7 +254,6 @@
     window.addEventListener('storage',e=>{if(e.key==='moeWishlist')window.MoeWishlist.updateBadge()});
     if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));}
   </script>
-  <script src="{{ url_for('static', filename='js/premium-v3.js', v='20260827') }}" defer></script>
   {% block extra_scripts %}{% endblock %}
 <div class="command-palette" id="globalCommandPalette" aria-hidden="true"><div class="command-box" role="dialog" aria-modal="true" aria-label="Quick navigation"><input id="globalCommandInput" placeholder="Search pages or products…" autocomplete="off" aria-label="Search pages or products"><div class="command-results" id="globalCommandResults" role="list"></div></div></div>
 </body>

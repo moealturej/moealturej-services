@@ -12,5 +12,6 @@
 </div></section>
 {% endblock %}
 {% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/pages/status.js', v='20260827-full1-statusfix1') }}"></script>
+<script type="application/json" id="initialStatusProducts">{{ initial_status_products|default([])|tojson }}</script>
+<script src="{{ url_for('static', filename='js/pages/status.js', v='20260905-perf1') }}"></script>
 {% endblock %}

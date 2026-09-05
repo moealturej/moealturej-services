@@ -1240,10 +1240,10 @@
   loadChat();
   window.setInterval(() => {
     if (!document.hidden) loadChat();
-  }, 6000);
+  }, 10000);
   window.setInterval(() => {
     if (!document.hidden) loadState(false);
-  }, 30000);
+  }, 60000);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) { loadState(false); loadChat(); }
   });

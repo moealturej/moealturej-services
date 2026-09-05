@@ -13,6 +13,14 @@
   let loading = false;
   let lastUpdated = 0;
   let timer = null;
+  const initialNode = document.getElementById('initialStatusProducts');
+  let initialItems = null;
+  if (initialNode) {
+    try {
+      const parsed = JSON.parse(initialNode.textContent || '[]');
+      if (Array.isArray(parsed)) initialItems = parsed;
+    } catch {}
+  }
 
   function stateInfo(item) {
     const raw = String(item?.status?.state || item?.status?.label || item?.store?.stockStatus || 'operational').toLowerCase();
@@ -55,7 +63,7 @@
     grid.innerHTML = items.map(item => {
       const info = stateInfo(item);
       return `<article class="st-row">
-        <img class="st-icon" src="${escapeHtml(item.image || fallbackImage)}" alt="${escapeHtml(item.name || 'Service')}">
+        <img class="st-icon" src="${escapeHtml(item.image || fallbackImage)}" alt="${escapeHtml(item.name || 'Service')}" loading="lazy" decoding="async">
         <div><div class="st-name">${escapeHtml(item.name || 'Untitled service')}</div><div class="st-meta"><span><i class="fas fa-code-branch" aria-hidden="true"></i> ${escapeHtml(item?.downloads?.version || 'Latest')}</span><span>•</span><span>${escapeHtml(formatDate(item?.status?.lastUpdated))}</span></div></div>
         <span class="st-state ${info.cls}"><span class="st-dot"></span>${escapeHtml(info.label)}</span>
       </article>`;
@@ -66,6 +74,19 @@
     if (loading || (document.hidden && !force)) return;
     loading = true;
     const cached = storage.readJSON('moe_status_cache', null);
+
+    // Initial status data is embedded in the HTML response, so the first render
+    // needs no separate API call. Network refreshes happen only afterward.
+    if (!force && Array.isArray(initialItems)) {
+      const items = initialItems;
+      initialItems = null;
+      render(items);
+      lastUpdated = Date.now();
+      storage.writeJSON('moe_status_cache', { items, savedAt: lastUpdated });
+      loading = false;
+      return;
+    }
+
     if (!lastUpdated && cached?.items && Date.now() - Number(cached.savedAt || 0) < 5 * 60 * 1000) render(cached.items);
     try {
       const items = await fetchJSON('/api/status', { headers: { Accept: 'application/json' }, cache: force ? 'no-cache' : 'default' }, 10000);
@@ -86,11 +107,11 @@
 
   function schedule() {
     clearInterval(timer);
-    timer = setInterval(() => loadStatus(), 60000);
+    timer = setInterval(() => loadStatus(), 120000);
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && Date.now() - lastUpdated > 45000) loadStatus({ force: true });
+    if (!document.hidden && Date.now() - lastUpdated > 90000) loadStatus({ force: true });
   });
   window.addEventListener('moeNetworkRestored', () => loadStatus({ force: true }));
   loadStatus();

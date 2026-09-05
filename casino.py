@@ -307,6 +307,7 @@ def register_casino(
     save_upload_to_mongo_storage,
     save_media_record,
     record_audit,
+    optimize_uploaded_image_file=None,
 ):
     chat_col = db["casino_chat"] if db is not None else None
     ledger_col = db["casino_ledger"] if db is not None else None
@@ -402,6 +403,15 @@ def register_casino(
         if size_bytes > PROFILE_IMAGE_MAX_BYTES:
             local_path.unlink(missing_ok=True)
             raise ValueError("Profile images must be 4 MB or smaller.")
+
+        # Profile avatars are shown frequently. Convert static PNG/JPEG uploads to
+        # compact WebP before storing them so repeated avatar renders stay cheap.
+        if callable(optimize_uploaded_image_file):
+            local_path = optimize_uploaded_image_file(local_path, max_side=512, quality=82)
+            filename = local_path.name
+            if local_path.suffix.lower() == ".webp":
+                mime_type = "image/webp"
+            size_bytes = local_path.stat().st_size if local_path.exists() else size_bytes
 
         gridfs_id = save_upload_to_mongo_storage(
             local_path, filename, original_name, "profile_image", mime_type

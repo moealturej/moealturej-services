@@ -99,7 +99,13 @@ def register_enhancements(app, *, db, using_mongo, data_dir: Path, current_user,
             score=sum(3 for w in words if w in hay)+(4 if q in hay else 0)
             if score:scored.append((score,p))
         scored.sort(key=lambda x:(-x[0],str(x[1].get('name',''))))
-        return jsonify({'items':[{'name':p.get('name'),'slug':p.get('slug'),'image':p.get('image'),'category':p.get('category')} for _,p in scored[:6]]})
+        response=jsonify({'items':[{'name':p.get('name'),'slug':p.get('slug'),'image':p.get('image'),'category':p.get('category')} for _,p in scored[:6]]})
+        response.cache_control.public=True; response.cache_control.max_age=120
+        try:
+            response.add_etag(); response.make_conditional(request)
+        except Exception:
+            pass
+        return response
 
     @app.post('/product/<slug>/review')
     @login_required

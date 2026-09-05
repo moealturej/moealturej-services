@@ -2,6 +2,13 @@
   'use strict';
 
   const FALLBACK_IMAGE = '/static/logo.png';
+  const OPTIMIZED_STATIC_IMAGES = new Set(['ambani','arc','banner','gray','mw19','mw19ula','mw3','perm','pr','progress','ps','r6s','temp','thunex','val','wallpaper','wzula']);
+  const optimizeImageUrl = value => {
+    const raw = String(value || FALLBACK_IMAGE);
+    const match = raw.match(/^\/static\/([^/?#]+)\.(?:png|jpe?g)([?#].*)?$/i);
+    if (!match || !OPTIMIZED_STATIC_IMAGES.has(match[1].toLowerCase())) return raw;
+    return `/static/${match[1]}.webp${match[2] || ''}`;
+  };
   const isObject = value => value && typeof value === 'object' && !Array.isArray(value);
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0));
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -46,7 +53,7 @@
         optionId: item.optionId ?? item.uniqid ?? '',
         productName: String(item.productName || 'Product').slice(0, 180),
         optionName: String(item.optionName || 'Option').slice(0, 180),
-        image: String(item.image || FALLBACK_IMAGE).slice(0, 1200),
+        image: optimizeImageUrl(item.image || FALLBACK_IMAGE).slice(0, 1200),
         price: Math.max(0, Number(item.price) || 0),
         quantity: Math.round(clamp(item.quantity || 1, 1, 10))
       };
@@ -123,7 +130,7 @@
   }
 
   window.MoeSite = Object.freeze({
-    storage, cart, clamp, escapeHtml, fetchJSON, debounce, setButtonBusy, fallbackImage: FALLBACK_IMAGE
+    storage, cart, clamp, escapeHtml, fetchJSON, debounce, setButtonBusy, optimizeImageUrl, fallbackImage: FALLBACK_IMAGE
   });
 
   function setupNetworkStatus() {
@@ -256,6 +263,7 @@
     ];
     let requestId = 0;
     let activeIndex = -1;
+    const suggestionCache = new Map();
 
     const rows = () => [...results.querySelectorAll('a.command-item')];
     const setActive = index => {
@@ -276,7 +284,13 @@
       if (q.length >= 2) {
         results.innerHTML = html || '<div class="command-empty"><i class="fas fa-circle-notch fa-spin"></i> Searching…</div>';
         try {
-          const data = await fetchJSON(`/api/store/search-suggestions?q=${encodeURIComponent(q)}`, { headers: { Accept: 'application/json' } }, 6000);
+          const cacheKey = q.toLowerCase();
+          let data = suggestionCache.get(cacheKey);
+          if (!data) {
+            data = await fetchJSON(`/api/store/search-suggestions?q=${encodeURIComponent(q)}`, { headers: { Accept: 'application/json' } }, 6000);
+            suggestionCache.set(cacheKey, data);
+            if (suggestionCache.size > 40) suggestionCache.delete(suggestionCache.keys().next().value);
+          }
           if (id !== requestId) return;
           const products = productMarkup(data?.items || []);
           html = html + products;
@@ -315,7 +329,7 @@
       else if (event.key === 'Enter' && activeIndex >= 0) { event.preventDefault(); rows()[activeIndex]?.click(); }
     });
     palette.addEventListener('click', event => { if (event.target === palette) close(); });
-    input.addEventListener('input', debounce(() => draw(input.value), 120));
+    input.addEventListener('input', debounce(() => draw(input.value), 350));
   }
 
   function setup() {
@@ -330,3 +344,17 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup, { once: true });
   else setup();
 })();
+
+
+/* bundled: premium-v3.js */
+(() => {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const selectors = ['.home-hero','.confidence-strip','.home-row','.section-card','.retention-card','.store-hero','.store-panel-clean','.store-toolbar','.product-card','.account-hero','.overview-card','.orders-panel','.admin-hero','.admin-side-panel','.admin-stats','.admin-panel','.commerce-head','.commerce-card','.pay-card','.detail-image-card','.detail-info-card','.detail-section-card','.status-card','.download-card','.legal-card','.support-mini-card'];
+  const nodes=[...document.querySelectorAll(selectors.join(','))];
+  if(!reduced && 'IntersectionObserver' in window){
+    const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-visible');observer.unobserve(e.target)}}),{threshold:.06,rootMargin:'0px 0px -20px'});
+    nodes.forEach((el,i)=>{el.classList.add('v3-reveal');el.style.transitionDelay=`${Math.min((i%4)*35,105)}ms`;observer.observe(el)});
+  }else nodes.forEach(el=>el.classList.add('is-visible'));
+  document.querySelectorAll('img:not([loading])').forEach((img,i)=>{if(i>1)img.loading='lazy';img.decoding='async'});
+})();
+
