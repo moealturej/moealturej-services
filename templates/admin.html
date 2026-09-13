@@ -297,7 +297,8 @@ updatePricingButtons();
   </section>
 
   <nav class="admin-tabs" aria-label="Admin sections">
-    <a class="admin-tab" href="#owner"><i class="fas fa-gauge-high"></i> Overview</a>
+    <a class="admin-tab" href="#overview"><i class="fas fa-gauge-high"></i> Overview</a>
+    <a class="admin-tab" href="#owner"><i class="fas fa-sliders"></i> Site settings</a>
     <a class="admin-tab" href="#order-webhook"><i class="fab fa-discord"></i> Order webhook</a>
     <a class="admin-tab" href="#manual-grant"><i class="fas fa-gift"></i> Manual grant</a>
     <a class="admin-tab" href="#loader-release"><i class="fas fa-rocket"></i> Loader release</a>
@@ -310,6 +311,9 @@ updatePricingButtons();
     <a class="admin-tab" href="#uploads"><i class="fas fa-cloud-arrow-up"></i> Uploads</a>
     <a class="admin-tab" href="#discounts"><i class="fas fa-tags"></i> Discounts</a>
     <a class="admin-tab" href="#accounts"><i class="fas fa-users-gear"></i> Accounts</a>
+    <a class="admin-tab" href="#analytics"><i class="fas fa-chart-line"></i> Analytics</a>
+    <a class="admin-tab" href="#incidents"><i class="fas fa-triangle-exclamation"></i> Incidents</a>
+    <a class="admin-tab" href="#reviews"><i class="fas fa-star"></i> Reviews</a>
     <a class="admin-tab" href="#health"><i class="fas fa-heart-pulse"></i> System health</a>
     <a class="admin-tab" href="#audit"><i class="fas fa-clock-rotate-left"></i> Audit log</a>
     <a class="admin-tab" href="#security"><i class="fas fa-shield-halved"></i> Security</a>
@@ -326,6 +330,36 @@ updatePricingButtons();
   <div class="admin-search-empty" id="adminSearchEmpty"><i class="fas fa-magnifying-glass"></i> No admin section matches that search.</div>
 
   <div class="admin-layout">
+
+    <section class="admin-card admin-section admin-overview-section" id="overview">
+      <div class="modern-overview-head">
+        <div><span class="eyebrow">OWNER OVERVIEW</span><h2>Store at a glance</h2><p class="muted">The important numbers first. Everything else lives one click away in the sidebar.</p></div>
+        <div class="modern-overview-actions"><a class="primary-cta" href="#products"><i class="fas fa-plus"></i> New product</a><a class="secondary-cta" href="/" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> Storefront</a></div>
+      </div>
+      <div class="modern-kpis">
+        <article><span>Revenue</span><strong>${{ overview.revenue }}</strong><small>${{ overview.revenue_30 }} in the last 30 days</small></article>
+        <article><span>Paid orders</span><strong>{{ overview.paid_orders }}</strong><small>{{ overview.orders_30 }} in the last 30 days</small></article>
+        <article><span>Needs attention</span><strong>{{ overview.needs_attention }}</strong><small>Pending or awaiting delivery</small></article>
+        <article><span>Customers</span><strong>{{ overview.customers }}</strong><small>{{ overview.active_tickets }} open support ticket{{ '' if overview.active_tickets == 1 else 's' }}</small></article>
+      </div>
+      <div class="modern-overview-grid">
+        <div class="modern-panel">
+          <div class="modern-panel-head"><div><span class="eyebrow">RECENT</span><h3>Orders</h3></div><a href="#orders">View all →</a></div>
+          <div class="modern-order-table">
+            {% for order in overview.recent_orders %}
+            <a class="modern-order-row" href="#orders" data-order-jump="{{ order.order_id }}"><span><strong>{{ order.order_id }}</strong><small>{{ order.user_email or 'Unknown customer' }}</small></span><span class="modern-status status-{{ order.status|lower }}">{{ order.status|title }}</span><b>{{ order.currency or 'USD' }} {{ '%.2f'|format((order.amount_cents or 0)/100) }}</b></a>
+            {% else %}<div class="modern-empty">No orders yet.</div>{% endfor %}
+          </div>
+        </div>
+        <div class="modern-side-stack">
+          <div class="modern-panel">
+            <div class="modern-panel-head"><div><span class="eyebrow">QUICK ACTIONS</span><h3>Manage</h3></div></div>
+            <div class="modern-manage-links"><a href="#products"><span>Products<small>{{ overview.active_products }}/{{ stats.products }} live</small></span><i class="fas fa-arrow-right"></i></a><a href="#orders"><span>Orders & keys<small>{{ overview.needs_attention }} need attention</small></span><i class="fas fa-arrow-right"></i></a><a href="#loader-release"><span>Windows Loader<small>Version & release file</small></span><i class="fas fa-arrow-right"></i></a><a href="#discounts"><span>Discounts<small>Promotions & codes</small></span><i class="fas fa-arrow-right"></i></a></div>
+          </div>
+          <div class="modern-panel modern-health-card"><span class="eyebrow">STORE HEALTH</span><div><i></i><strong>{{ 'Store online' if site_settings.store_enabled else 'Store disabled' }}</strong></div><p>{{ stats.storage }} · {{ overview.refunds }} refund{{ '' if overview.refunds == 1 else 's' }}</p><a href="#health">Open health checks →</a></div>
+        </div>
+      </div>
+    </section>
 
     <section class="admin-card admin-section" id="owner">
       <div class="section-top"><div><div class="eyebrow">production controls</div><h2>Owner site controls</h2><p class="muted">Manage global brand details, links, contact destinations, feature switches, and announcements from one place. Changes apply everywhere those values are used.</p></div><a class="secondary-cta" href="/admin/api/diagnostics" target="_blank" rel="noopener noreferrer"><i class="fas fa-stethoscope"></i> Diagnostics JSON</a></div>
@@ -1270,4 +1304,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 {% include "_admin_growth.html" %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-modern.css', v='20260913-admin2') }}">
+<script src="{{ url_for('static', filename='js/admin-modern.js', v='20260913-admin2') }}"></script>
 {% endblock %}

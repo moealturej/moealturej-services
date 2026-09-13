@@ -58,7 +58,7 @@
   {% block extra_head %}{% endblock %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base-tail.bundle.css', v='20260905-perf1') }}">
 </head>
-<body>
+<body class="{% if active_page == 'admin' %}admin-modern-body{% endif %}">
   <a class="skip-link" href="#main-content">Skip to content</a>
   <div class="cart-toast-stack" id="cartToastStack" aria-live="polite" aria-atomic="true"></div>
   <div class="loading-overlay" id="globalLoadingOverlay" aria-live="polite" aria-hidden="true"><div class="loading-box"><div class="loading-ring"></div><strong id="loadingTitle">Sending security code</strong><span id="loadingText">Checking your account and sending the email code. This can take a moment.</span></div></div>

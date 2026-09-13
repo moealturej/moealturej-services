@@ -2237,9 +2237,12 @@ def save_order(order: dict):
 
 def load_orders_for_user(email: str | None = None) -> list:
     email = (email or "").strip().lower()
+    # Customers only need their recent history. The owner dashboard needs a deeper
+    # window so revenue, fulfillment and search are useful beyond the last 50 rows.
+    limit = 50 if email else 500
     if using_mongo() and orders_col is not None:
         query = {"user_email": email} if email else {}
-        return list(orders_col.find(query, {"_id": 0}).sort("created_at", -1).limit(50))
+        return list(orders_col.find(query, {"_id": 0}).sort("created_at", -1).limit(limit))
     if ORDERS_FILE.exists():
         try:
             orders = json.loads(ORDERS_FILE.read_text(encoding="utf-8"))
@@ -2247,7 +2250,7 @@ def load_orders_for_user(email: str | None = None) -> list:
             orders = []
         if email:
             orders = [o for o in orders if str(o.get("user_email", "")).lower() == email]
-        return orders[:50]
+        return orders[:limit]
     return []
 
 
@@ -4674,6 +4677,57 @@ def admin_email_preview_document(kind):
     return response
 
 
+def build_admin_overview(orders: list, products: list, users: list, support_tickets: list) -> dict:
+    """Small, server-side owner snapshot used by the refreshed admin UI."""
+    now = utc_now()
+    paid_statuses = {"paid", "completed", "delivered"}
+    paid = [o for o in orders if str(o.get("status") or "").strip().lower() in paid_statuses]
+    revenue_cents = sum(max(0, int(o.get("amount_cents") or ((o.get("cart") or {}).get("total_cents") or 0))) for o in paid)
+    revenue_30_cents = 0
+    orders_30 = 0
+    for order in paid:
+        created = parse_order_datetime(order.get("created_at"))
+        if created and (now - created).total_seconds() <= 30 * 86400:
+            orders_30 += 1
+            revenue_30_cents += max(0, int(order.get("amount_cents") or ((order.get("cart") or {}).get("total_cents") or 0)))
+
+    needs_attention = 0
+    for order in orders:
+        status = str(order.get("status") or "").strip().lower()
+        delivery = str(order.get("delivery_status") or "").strip().lower()
+        if status == "pending" or (status in paid_statuses and delivery not in {"delivered", "complete", "completed"}):
+            needs_attention += 1
+
+    product_sales = {}
+    for order in paid:
+        for item in ((order.get("cart") or {}).get("items") or []):
+            name = str(item.get("product_name") or item.get("productName") or item.get("name") or "Product").strip() or "Product"
+            qty = max(1, int(item.get("quantity") or 1))
+            row = product_sales.setdefault(name, {"name": name, "quantity": 0, "revenue_cents": 0})
+            row["quantity"] += qty
+            line_cents = item.get("line_cents")
+            if line_cents is None:
+                line_cents = int(item.get("unit_cents") or 0) * qty
+            row["revenue_cents"] += max(0, int(line_cents or 0))
+
+    active_tickets = [t for t in support_tickets if str(t.get("status") or "").strip().lower() not in {"closed", "resolved"}]
+    return {
+        "revenue_cents": revenue_cents,
+        "revenue": f"{revenue_cents / 100:.2f}",
+        "revenue_30_cents": revenue_30_cents,
+        "revenue_30": f"{revenue_30_cents / 100:.2f}",
+        "paid_orders": len(paid),
+        "orders_30": orders_30,
+        "needs_attention": needs_attention,
+        "refunds": sum(1 for o in orders if str(o.get("status") or "").lower() == "refunded"),
+        "customers": len(users),
+        "active_products": sum(1 for p in products if is_store_product(p)),
+        "active_tickets": len(active_tickets),
+        "recent_orders": orders[:8],
+        "top_products": sorted(product_sales.values(), key=lambda r: (r["quantity"], r["revenue_cents"]), reverse=True)[:5],
+    }
+
+
 @app.route("/admin")
 @owner_required
 def admin_dashboard():
@@ -4698,8 +4752,12 @@ def admin_dashboard():
         "owner_webhook": "configured" if order_webhook.get("enabled") and order_webhook.get("url") else "missing",
         "auto_delivery": "ready" if (RESELLING_PRO_ENABLED and RESELLING_PRO_API_KEY) else ("disabled" if not RESELLING_PRO_ENABLED else "missing API key"),
     }
+    users = load_admin_users()
+    orders = load_orders_for_user(None)
+    support_tickets = load_support_tickets()
+    overview = build_admin_overview(orders, products, users, support_tickets)
     enh = app.extensions.get("moe_enhancements", {})
-    return render_template("admin.html", products=products, users=load_admin_users(), media_items=load_media(), orders=load_orders_for_user(None), support_tickets=load_support_tickets(), applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, site_settings=site_settings, order_webhook=order_webhook, mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot(),
+    return render_template("admin.html", products=products, users=users, media_items=load_media(), orders=orders, support_tickets=support_tickets, applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, overview=overview, site_settings=site_settings, order_webhook=order_webhook, mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot(),
                            commerce_analytics=(enh.get("analytics") or (lambda: {}))(),
                            all_reviews=(enh.get("all_reviews") or (lambda: []))(),
                            incidents=(enh.get("all_incidents") or (lambda: []))())
