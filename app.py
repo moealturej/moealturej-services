@@ -180,6 +180,19 @@ def utc_now_naive() -> datetime:
 def today_utc_date() -> str:
     return utc_now().strftime("%Y-%m-%d")
 
+
+def normalize_html_date(value) -> str:
+    """Return an HTML date-input-safe YYYY-MM-DD value or an empty string."""
+    raw = str(value or "").strip()
+    match = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})", raw)
+    if not match:
+        return ""
+    try:
+        year, month, day = (int(part) for part in match.groups())
+        return datetime(year, month, day).date().isoformat()
+    except ValueError:
+        return ""
+
 mongo_client = None
 db = None
 mongo_status_reason = "Not initialized yet."
@@ -315,6 +328,15 @@ def normalize_product(product: dict) -> dict:
     product.setdefault("store", {"enabled": True, "stockStatus": "In Stock", "options": []})
     product.setdefault("downloads", {"enabled": False, "version": "Latest", "downloadUrl": "", "fileSize": ""})
     product.setdefault("status", {"enabled": True, "state": "Operational", "label": "Online", "lastUpdated": today_utc_date()})
+    if not isinstance(product.get("status"), dict):
+        product["status"] = {"enabled": True, "state": "Operational", "label": "Online", "lastUpdated": today_utc_date()}
+    else:
+        product["status"].setdefault("enabled", True)
+        product["status"].setdefault("state", "Operational")
+        product["status"].setdefault("label", product["status"].get("state") or "Online")
+        product["status"]["lastUpdated"] = normalize_html_date(
+            product["status"].get("lastUpdated") or product["status"].get("last_updated")
+        )
     return product
 
 def seed_products_if_needed():
@@ -1916,7 +1938,7 @@ def public_product_payload(product: dict, *, include_download_url: bool = False)
             "enabled": bool(status.get("enabled", True)),
             "state": str(status.get("state") or "Operational")[:80],
             "label": str(status.get("label") or status.get("state") or "Online")[:80],
-            "lastUpdated": str(status.get("lastUpdated") or status.get("last_updated") or "")[:80],
+            "lastUpdated": normalize_html_date(status.get("lastUpdated") or status.get("last_updated")),
         },
     }
     is_free = not bool(store.get("enabled")) or str(store.get("stockStatus") or "").strip().lower() == "free"
@@ -5471,7 +5493,7 @@ def admin_product_update(slug):
         "type": product_type, "displayOrder": display_order,
         "featured": bool(request.form.get("featured")), "features": features,
         "store": store, "downloads": downloads,
-        "status": {"enabled": bool(request.form.get("status_enabled")), "state": status_state, "label": (request.form.get("status_label") or status_state).strip()[:50], "lastUpdated": (request.form.get("status_last_updated") or today_utc_date()).strip()},
+        "status": {"enabled": bool(request.form.get("status_enabled")), "state": status_state, "label": (request.form.get("status_label") or status_state).strip()[:50], "lastUpdated": normalize_html_date(request.form.get("status_last_updated")) or today_utc_date()},
     })
 
     if using_mongo():

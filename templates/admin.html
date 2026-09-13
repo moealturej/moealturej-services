@@ -951,11 +951,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!page||!tabs||!tools||!layout||tabs.closest('.admin-workspace')) return;
 
   /* Build a task-focused workspace without changing any form, action, or route. */
+  // Capture the original parent before moving the existing tabs/tools into the new rail.
+  // The old code read tabs.parentNode after rail.append(...), which made `parent`
+  // point at `rail`; appending that rail into `workspace` then created a DOM cycle.
+  const parent=tabs.parentNode;
   const workspace=document.createElement('div'); workspace.className='admin-workspace';
   const rail=document.createElement('aside'); rail.className='admin-workspace-rail'; rail.setAttribute('aria-label','Admin workspace navigation');
   const railHead=document.createElement('div'); railHead.className='admin-rail-head';
   railHead.innerHTML='<div class="admin-rail-title"><span><i class="fas fa-command"></i></span><span><strong>Admin workspace</strong><small>moealturej control</small></span></div><button class="admin-rail-close" type="button" aria-label="Close navigation"><i class="fas fa-xmark"></i></button>';
-  rail.append(railHead,tabs,tools);
   const main=document.createElement('main'); main.className='admin-workspace-main';
 
   const mobile=document.createElement('div'); mobile.className='admin-mobile-bar';
@@ -973,9 +976,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     a.innerHTML=`<i class="fas ${icon}"></i><span><strong>${title}</strong><small>${desc}</small></span>`; quick.appendChild(a);
   });
 
-  const parent=tabs.parentNode;
   parent.insertBefore(workspace,tabs);
   workspace.append(rail,main);
+  rail.append(railHead,tabs,tools);
   main.append(mobile,quick);
   if(empty) main.append(empty);
   main.append(layout);
