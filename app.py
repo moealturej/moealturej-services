@@ -163,13 +163,16 @@ DEFAULT_ORDER_WEBHOOK_TEMPLATE = (
 )
 ORDER_WEBHOOK_TEMPLATE_MAX_LENGTH = 1900
 
-# Reselling.pro auto key delivery. Keep the API key in .env only. Product/option
-# JSON stores the provider base URL WITHOUT the key, for example:
-# https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day
+# Auto key delivery providers.
+# Product/option JSON stores the provider delivery URL. RelayKeys URLs contain
+# their own secret token, so treat configured product data as sensitive.
 RESELLING_PRO_API_KEY = env_first("RESELLING_PRO_API_KEY", "RESELLING_PRO_TOKEN")
 RESELLING_PRO_ENABLED = os.getenv("RESELLING_PRO_ENABLED", "true").lower() == "true"
 RESELLING_PRO_TIMEOUT_SECONDS = max(3, min(30, int(os.getenv("RESELLING_PRO_TIMEOUT_SECONDS", "15"))))
 RESELLING_PRO_ALLOWED_HOST = os.getenv("RESELLING_PRO_ALLOWED_HOST", "api.reselling.pro").strip().lower()
+RELAYKEYS_ENABLED = os.getenv("RELAYKEYS_ENABLED", "true").lower() == "true"
+RELAYKEYS_ALLOWED_HOST = os.getenv("RELAYKEYS_ALLOWED_HOST", "rft.relaykeys.com").strip().lower()
+AUTO_DELIVERY_TIMEOUT_SECONDS = max(3, min(30, int(os.getenv("AUTO_DELIVERY_TIMEOUT_SECONDS", "15"))))
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -356,6 +359,54 @@ def seed_products_if_needed():
         products_col.insert_many(products)
         logger.info("Seeded %d products into MongoDB", len(products))
 
+def migrate_relaykeys_delivery_from_json():
+    """Upgrade legacy Reselling.pro delivery config in an existing Mongo catalog.
+
+    This is intentionally one-way: it only changes an existing legacy
+    Reselling.pro DAY KEY when products.json contains a RelayKeys config.
+    Once the option is RelayKeys, later restarts won't overwrite admin changes.
+    """
+    if not using_mongo() or not PRODUCTS_FILE.exists():
+        return
+    try:
+        source = json.loads(PRODUCTS_FILE.read_text("utf-8"))
+    except Exception:
+        logger.exception("Could not read products.json for RelayKeys migration")
+        return
+    for product in source if isinstance(source, list) else []:
+        if str(product.get("slug") or "") != "mw19-ghost-internal":
+            continue
+        source_options = ((product.get("store") or {}).get("options") or [])
+        target = next(
+            (o for o in source_options
+             if str(o.get("name") or "").strip().upper() == "DAY KEY"
+             and str((o.get("autoDelivery") or {}).get("provider") or "").lower() == "relaykeys"),
+            None,
+        )
+        if not target:
+            return
+        relay_cfg = target.get("autoDelivery") or {}
+        current = products_col.find_one({"slug": "mw19-ghost-internal"}, {"_id": 0})
+        if not current:
+            return
+        options = ((current.get("store") or {}).get("options") or [])
+        changed = False
+        for option in options:
+            if str(option.get("name") or "").strip().upper() != "DAY KEY":
+                continue
+            current_provider = str((option.get("autoDelivery") or {}).get("provider") or "").lower()
+            if current_provider == "reselling_pro":
+                option["autoDelivery"] = dict(relay_cfg)
+                changed = True
+        if changed:
+            products_col.update_one(
+                {"slug": "mw19-ghost-internal"},
+                {"$set": {"store.options": options}},
+            )
+            logger.info("Migrated MW19 Ghost Internal DAY KEY auto-delivery to RelayKeys.")
+        return
+
+
 def ensure_owner_account():
     if not using_mongo():
         return
@@ -470,6 +521,7 @@ logger = logging.getLogger(__name__)
 
 init_mongo()
 seed_products_if_needed()
+migrate_relaykeys_delivery_from_json()
 ensure_owner_account()
 
 # -----------------------------------------------------------------------------
@@ -1228,14 +1280,27 @@ def is_no_key_fallback(product_key: str | None) -> bool:
     return normalized in NO_KEY_FALLBACK_MESSAGES
 
 
+def detect_auto_delivery_provider(base_url: str) -> str:
+    parsed = urlparse(str(base_url or "").strip())
+    host = parsed.netloc.lower()
+    if host == RELAYKEYS_ALLOWED_HOST:
+        return "relaykeys"
+    if host == RESELLING_PRO_ALLOWED_HOST:
+        return "reselling_pro"
+    return ""
+
+
 def normalize_auto_delivery_config(config: dict | None) -> dict:
-    """Return a safe, non-secret auto-delivery config for storing on order items."""
+    """Return a safe auto-delivery config stored on an order item."""
     if not isinstance(config, dict):
         return {"enabled": False}
-    provider = str(config.get("provider") or "reselling_pro").strip().lower()
     base_url = str(config.get("base_url") or config.get("baseUrl") or config.get("url") or "").strip()
-    enabled = bool(config.get("enabled")) and provider == "reselling_pro" and bool(base_url)
-    return {"enabled": enabled, "provider": "reselling_pro", "base_url": base_url}
+    provider = str(config.get("provider") or "").strip().lower()
+    detected = detect_auto_delivery_provider(base_url)
+    if detected:
+        provider = detected
+    enabled = bool(config.get("enabled")) and provider in {"reselling_pro", "relaykeys"} and bool(base_url)
+    return {"enabled": enabled, "provider": provider, "base_url": base_url}
 
 
 def item_auto_delivery_config(product: dict, option: dict) -> dict:
@@ -1245,6 +1310,54 @@ def item_auto_delivery_config(product: dict, option: dict) -> dict:
     if option_config.get("enabled"):
         return option_config
     return normalize_auto_delivery_config(product_store.get("autoDelivery") or product_store.get("auto_delivery"))
+
+
+def safe_auto_delivery_url(value: str) -> tuple[str, str]:
+    """Validate a supported delivery URL and return (provider, normalized_url)."""
+    base_url = str(value or "").strip()
+    if not base_url:
+        return "", ""
+
+    parsed = urlparse(base_url)
+    if parsed.scheme != "https":
+        raise ValueError("Auto-delivery URL must use HTTPS.")
+
+    host = parsed.netloc.lower()
+    if host == RELAYKEYS_ALLOWED_HOST:
+        if not RELAYKEYS_ENABLED:
+            raise ValueError("RelayKeys auto-delivery is disabled.")
+        if not parsed.path.startswith("/api/v1/dispense/"):
+            raise ValueError("RelayKeys URL must use /api/v1/dispense/...")
+        # Keep the full RelayKeys path/token. Query parameters such as ?test=1
+        # are intentionally preserved for testing, but production delivery will
+        # replace/add its own ref parameter.
+        return "relaykeys", parsed.geturl().rstrip("/")
+
+    if host == RESELLING_PRO_ALLOWED_HOST:
+        if not parsed.path.startswith("/rft/api/seller/keys/"):
+            raise ValueError("Auto-delivery URL must use /rft/api/seller/keys/...")
+        # Existing Reselling.pro config expects the base path without the seller
+        # API key. Keep backwards compatibility with that behavior.
+        parts = [part for part in parsed.path.split("/") if part]
+        if len(parts) > 6:
+            clean_path = "/" + "/".join(parts[:6])
+            parsed = parsed._replace(path=clean_path, query="", fragment="")
+        return "reselling_pro", parsed.geturl().rstrip("/")
+
+    raise ValueError("Auto-delivery URL must be a supported RelayKeys or Reselling.pro HTTPS URL.")
+
+
+def safe_reselling_base_url(value: str) -> str:
+    """Backward-compatible validator for existing Reselling.pro admin forms."""
+    provider, base_url = safe_auto_delivery_url(value)
+    if provider != "reselling_pro":
+        raise ValueError("This field requires a Reselling.pro URL.")
+    return base_url
+
+
+def auto_delivery_dict_from_base_url(base_url: str, enabled: bool = True) -> dict:
+    provider, normalized_url = safe_auto_delivery_url(base_url)
+    return {"enabled": bool(enabled and normalized_url), "provider": provider, "base_url": normalized_url}
 
 
 def build_reselling_pro_delivery_url(base_url: str) -> str:
@@ -1264,22 +1377,35 @@ def build_reselling_pro_delivery_url(base_url: str) -> str:
 
 
 def extract_product_key_from_response(resp: requests.Response) -> str:
+    """Return one or more keys as newline-separated text."""
     text = (resp.text or "").strip()
     try:
         data = resp.json()
     except Exception:
         data = None
     if isinstance(data, dict):
-        for key_name in ("key", "license", "license_key", "code", "data", "result"):
+        for key_name in ("keys", "key", "license", "license_key", "code", "data", "result"):
             value = data.get(key_name)
+            if isinstance(value, list):
+                values = [str(x).strip() for x in value if str(x).strip()]
+                if values:
+                    return "\n".join(values)
             if isinstance(value, str) and value.strip():
                 return value.strip()
         nested = data.get("data")
         if isinstance(nested, dict):
-            for key_name in ("key", "license", "license_key", "code"):
+            for key_name in ("keys", "key", "license", "license_key", "code"):
                 value = nested.get(key_name)
+                if isinstance(value, list):
+                    values = [str(x).strip() for x in value if str(x).strip()]
+                    if values:
+                        return "\n".join(values)
                 if isinstance(value, str) and value.strip():
                     return value.strip()
+    if isinstance(data, list):
+        values = [str(x).strip() for x in data if str(x).strip()]
+        if values:
+            return "\n".join(values)
     if isinstance(data, str) and data.strip():
         return data.strip()
     if text:
@@ -1287,8 +1413,17 @@ def extract_product_key_from_response(resp: requests.Response) -> str:
     raise AutoDeliveryError("Provider returned an empty key response.")
 
 
+def _delivery_url_with_ref(base_url: str, ref: str) -> str:
+    """Add/update ?ref=... without destroying existing provider parameters."""
+    parsed = urlparse(str(base_url or "").strip())
+    from urllib.parse import parse_qsl, urlencode
+    query = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k.lower() != "ref"]
+    query.append(("ref", ref))
+    return parsed._replace(query=urlencode(query)).geturl()
+
+
 def fetch_reselling_pro_key(base_url: str) -> str:
-    """Fetch exactly one product key. Never logs or exposes the secret API URL."""
+    """Fetch exactly one product key from the legacy Reselling.pro provider."""
     delivery_url = build_reselling_pro_delivery_url(base_url)
     try:
         resp = requests.get(delivery_url, timeout=RESELLING_PRO_TIMEOUT_SECONDS)
@@ -1302,6 +1437,45 @@ def fetch_reselling_pro_key(base_url: str) -> str:
         raise AutoDeliveryError("Provider returned an invalid key.")
     return product_key.strip()
 
+
+def fetch_relaykeys_keys(base_url: str, ref: str) -> str:
+    """Dispense RelayKeys keys once for an order/item using an idempotent ref."""
+    if not RELAYKEYS_ENABLED:
+        raise AutoDeliveryError("RelayKeys auto-delivery is disabled.")
+    provider, delivery_url = safe_auto_delivery_url(base_url)
+    if provider != "relaykeys":
+        raise AutoDeliveryError("Configured delivery URL is not a RelayKeys URL.")
+    delivery_url = _delivery_url_with_ref(delivery_url, ref)
+    headers = {
+        "Accept": "text/plain, application/json",
+        # RelayKeys supports Idempotency-Key-style retries; ref is also included
+        # for shops/providers that don't use the header.
+        "Idempotency-Key": ref,
+    }
+    try:
+        resp = requests.get(delivery_url, headers=headers, timeout=AUTO_DELIVERY_TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise AutoDeliveryError(f"Could not contact RelayKeys: {exc.__class__.__name__}") from exc
+    if resp.status_code >= 400:
+        body = (resp.text or "").strip()[:300].replace("\n", " ")
+        raise AutoDeliveryError(f"RelayKeys returned HTTP {resp.status_code}: {body}")
+    product_key = extract_product_key_from_response(resp)
+    if not product_key or len(product_key.strip()) < 3:
+        raise AutoDeliveryError("RelayKeys returned an empty or invalid key response.")
+    return product_key.strip()
+
+
+def fetch_auto_delivery_keys(config: dict, order_id: str, item_index: int, quantity: int = 1) -> str:
+    provider = str(config.get("provider") or detect_auto_delivery_provider(config.get("base_url"))).lower()
+    base_url = str(config.get("base_url") or "").strip()
+    if provider == "relaykeys":
+        # One RelayKeys request represents the sale. Its response may contain
+        # multiple keys, one per line, so don't call the endpoint once per quantity.
+        return fetch_relaykeys_keys(base_url, f"{order_id}-{item_index}")
+    if provider == "reselling_pro":
+        keys = [fetch_reselling_pro_key(base_url) for _ in range(max(1, quantity))]
+        return "\n".join(keys)
+    raise AutoDeliveryError("Unsupported auto-delivery provider.")
 
 def save_delivery_to_order(order: dict, item: dict, item_index: int, product_key: str, note: str = "", source: str = "manual") -> dict:
     deliveries = order.get("deliveries") or {}
@@ -1341,38 +1515,31 @@ def notify_buyer_delivery(order: dict, item: dict, delivery: dict) -> dict:
 
 
 def process_auto_delivery(order: dict) -> dict:
-    """Run auto-delivery once when an order first becomes paid."""
+    """Run auto-delivery when an order is paid, with safe retry behavior."""
     if str(order.get("status", "")).lower() != "paid":
         return order
-    # Payment providers may repeat paid webhooks. This persisted marker prevents
-    # duplicate provider requests while keeping the original result intact.
-    if order.get("auto_delivery_processed_at"):
-        return order
 
-    processed_at = utc_now().isoformat()
-    order["auto_delivery_processed_at"] = processed_at
     cart_items = (order.get("cart") or {}).get("items") or []
     deliveries = order.get("deliveries") or {}
     attempts = order.get("auto_delivery_attempts") or {}
     failures = []
     no_key_items = []
     delivered_count = 0
+    auto_item_indexes = []
 
     for index, item in enumerate(cart_items):
         delivery_id = str(index)
-        if deliveries.get(delivery_id):
-            continue
         config = item.get("auto_delivery") or {}
         if not config.get("enabled"):
             continue
-        quantity = min(max(int(item.get("quantity") or 1), 1), 10)
-        base_url = str(config.get("base_url") or "").strip()
-        keys = []
-        try:
-            for _ in range(quantity):
-                keys.append(fetch_reselling_pro_key(base_url))
+        auto_item_indexes.append(delivery_id)
+        if deliveries.get(delivery_id):
+            continue
 
-            fallback_codes = [key for key in keys if is_no_key_fallback(key)]
+        quantity = min(max(int(item.get("quantity") or 1), 1), 10)
+        try:
+            product_key = fetch_auto_delivery_keys(config, str(order.get("order_id") or ""), index, quantity)
+            fallback_codes = [key for key in product_key.splitlines() if is_no_key_fallback(key)]
             if fallback_codes:
                 no_key_items.append({
                     "item_index": index,
@@ -1381,22 +1548,35 @@ def process_auto_delivery(order: dict) -> dict:
                 })
 
             note = "Auto-delivered by moealturej. Keep this key private."
-            delivery = save_delivery_to_order(order, item, index, "\n".join(keys), note, "reselling_pro_auto")
+            delivery = save_delivery_to_order(order, item, index, product_key, note, f"{config.get('provider')}_auto")
             notify_buyer_delivery(order, item, delivery)
             delivered_count += 1
             attempts[delivery_id] = {
                 "status": "delivered",
-                "at": processed_at,
+                "at": utc_now().isoformat(),
                 "quantity": quantity,
+                "provider": config.get("provider"),
                 "no_key_fallback": bool(fallback_codes),
             }
         except Exception as exc:
             message = str(exc)[:500]
-            failures.append({"item_index": index, "product_name": item.get("product_name"), "option_name": item.get("option_name"), "error": message, "at": processed_at})
-            attempts[delivery_id] = {"status": "failed", "at": processed_at, "error": message}
+            failures.append({
+                "item_index": index,
+                "product_name": item.get("product_name"),
+                "option_name": item.get("option_name"),
+                "error": message,
+                "at": utc_now().isoformat(),
+            })
+            attempts[delivery_id] = {
+                "status": "failed",
+                "at": utc_now().isoformat(),
+                "provider": config.get("provider"),
+                "error": message,
+            }
             logger.warning("Auto-delivery failed for order %s item %s: %s", order.get("order_id"), index, message)
 
     order["auto_delivery_attempts"] = attempts
+
     if no_key_items:
         order["auto_delivery_no_key_items"] = no_key_items
         order["auto_delivery_no_key"] = True
@@ -1406,17 +1586,29 @@ def process_auto_delivery(order: dict) -> dict:
 
     if failures:
         order["auto_delivery_failures"] = failures
-    elif order.get("auto_delivery_failures"):
+    else:
         order.pop("auto_delivery_failures", None)
+
+    all_auto_delivered = bool(auto_item_indexes) and all(
+        str(index) in (order.get("deliveries") or {}) for index in auto_item_indexes
+    )
+    if all_auto_delivered:
+        order["auto_delivery_processed_at"] = order.get("auto_delivery_processed_at") or utc_now().isoformat()
+    else:
+        # Do not permanently mark a failed provider request as processed.
+        # A repeated paid webhook/status update can safely retry the failed item.
+        order.pop("auto_delivery_processed_at", None)
+
     if cart_items and len((order.get("deliveries") or {})) >= len(cart_items):
         order["delivery_status"] = "delivered"
     elif delivered_count:
         order["delivery_status"] = "partial"
-    elif any((item.get("auto_delivery") or {}).get("enabled") for item in cart_items):
+    elif auto_item_indexes:
         order["delivery_status"] = "auto_failed" if failures else order.get("delivery_status", "pending")
     else:
         order.setdefault("delivery_status", "manual_required")
-    order["updated_at"] = processed_at
+
+    order["updated_at"] = utc_now().isoformat()
     return order
 
 def get_order_webhook_config(settings: dict | None = None) -> dict:

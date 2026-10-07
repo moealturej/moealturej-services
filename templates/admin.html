@@ -41,7 +41,7 @@ function addPricingOption(){
   const count=wrap.querySelectorAll('.pricing-row').length+1;
   const row=document.createElement('div');
   row.className='pricing-row';
-  row.innerHTML=`<label>Option name<input name="option_name" placeholder="WEEK KEY" value="Option ${count}" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/duration"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="${count-1}"> Auto deliver</label><button class="danger-btn" type="button" onclick="removePricingOption(this)"><i class="fas fa-trash"></i></button>`;
+  row.innerHTML=`<label>Option name<input name="option_name" placeholder="WEEK KEY" value="Option ${count}" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery API URL<input name="option_auto_base_url" placeholder="https://rft.relaykeys.com/api/v1/dispense/..."></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="${count-1}"> Auto deliver</label><button class="danger-btn" type="button" onclick="removePricingOption(this)"><i class="fas fa-trash"></i></button>`;
   wrap.appendChild(row);
   updatePricingButtons();
 }
@@ -669,8 +669,8 @@ updatePricingButtons();
           </fieldset>
 
           <fieldset class="product-form-step"><legend><span>3</span> Pricing & automatic delivery</legend>
-            <div class="pricing-builder"><div class="product-step-head"><div><strong>Pricing options</strong><small>Add each duration or package customers can purchase.</small></div><button class="small-btn" type="button" onclick="addPricingOption()"><i class="fas fa-plus"></i> Add option</button></div>
-              <div id="pricingOptions"><div class="pricing-row"><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/product/1day"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled aria-label="Remove pricing option"><i class="fas fa-trash"></i></button></div></div>
+            <div class="pricing-builder"><div class="product-step-head"><div><strong>Pricing options</strong><small>Add each duration or package customers can purchase. RelayKeys and Reselling.pro API URLs are supported.</small></div><button class="small-btn" type="button" onclick="addPricingOption()"><i class="fas fa-plus"></i> Add option</button></div>
+              <div id="pricingOptions"><div class="pricing-row"><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery API URL<input name="option_auto_base_url" placeholder="https://rft.relaykeys.com/api/v1/dispense/..."></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn" type="button" onclick="removePricingOption(this)" disabled aria-label="Remove pricing option"><i class="fas fa-trash"></i></button></div></div>
             </div>
           </fieldset>
 
@@ -747,17 +747,17 @@ updatePricingButtons();
                         <input type="hidden" name="option_id" value="{{ opt.id or opt.uniqid or '' }}">
                         <label>Option name<input name="option_name" value="{{ opt.name }}" required></label>
                         <label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="{{ '%.2f'|format(opt.price|float) }}" required></label>
-                        <label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" value="{{ oa.base_url if oa else '' }}" placeholder="https://api.reselling.pro/rft/api/seller/keys/..."></label>
+                        <label class="auto-url-field">Auto-delivery API URL<input name="option_auto_base_url" value="{{ oa.base_url if oa else '' }}" placeholder="https://rft.relaykeys.com/api/v1/dispense/..."></label>
                         <label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="{{ loop.index0 }}" {% if oa and oa.enabled %}checked{% endif %}> Auto deliver</label>
                         <button class="danger-btn remove-edit-option" type="button" aria-label="Remove pricing option"><i class="fas fa-trash"></i></button>
                       </div>
                       {% else %}
-                      <div class="pricing-row edit-pricing-row"><input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button"><i class="fas fa-trash"></i></button></div>
+                      <div class="pricing-row edit-pricing-row"><input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="DAY KEY" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery API URL<input name="option_auto_base_url"></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="0"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button"><i class="fas fa-trash"></i></button></div>
                       {% endfor %}
                     </div>
                   </div>
                   {% set product_auto = product.store.autoDelivery if product.store.autoDelivery is defined else {} %}
-                  <label class="wide">Product fallback auto-delivery URL<input name="product_auto_base_url" value="{{ product_auto.base_url if product_auto else '' }}" placeholder="Used when an option has no URL"></label>
+                  <label class="wide">Product fallback auto-delivery URL<input name="product_auto_base_url" value="{{ product_auto.base_url if product_auto else '' }}" placeholder="Used when an option has no API URL"></label>
                   <label class="inline-check wide"><input type="checkbox" name="product_auto_enabled" {% if product_auto and product_auto.enabled %}checked{% endif %}> Enable fallback auto-delivery</label>
                 </div>
               </details>
@@ -1098,7 +1098,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     builder.querySelector('.add-edit-option')?.addEventListener('click',()=>{
       const index=wrap.querySelectorAll('.edit-pricing-row').length;
       const row=document.createElement('div');row.className='pricing-row edit-pricing-row';
-      row.innerHTML=`<input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="NEW OPTION" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery base URL<input name="option_auto_base_url" placeholder="https://api.reselling.pro/rft/api/seller/keys/..."></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="${index}"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button" aria-label="Remove pricing option"><i class="fas fa-trash"></i></button>`;
+      row.innerHTML=`<input type="hidden" name="option_id" value=""><label>Option name<input name="option_name" value="NEW OPTION" required></label><label>Price USD<input name="option_price" type="number" min="0.50" step="0.01" value="1.00" required></label><label class="auto-url-field">Auto-delivery API URL<input name="option_auto_base_url" placeholder="https://rft.relaykeys.com/api/v1/dispense/..."></label><label class="auto-toggle"><input type="checkbox" name="option_auto_enabled" value="${index}"> Auto deliver</label><button class="danger-btn remove-edit-option" type="button" aria-label="Remove pricing option"><i class="fas fa-trash"></i></button>`;
       wrap.appendChild(row);reindexEditPricing(wrap);row.querySelector('input[name="option_name"]')?.focus();
     });
     wrap.addEventListener('click',event=>{const btn=event.target.closest('.remove-edit-option');if(!btn)return;const rows=wrap.querySelectorAll('.edit-pricing-row');if(rows.length>1){btn.closest('.edit-pricing-row')?.remove();reindexEditPricing(wrap);}});

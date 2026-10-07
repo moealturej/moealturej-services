@@ -78,8 +78,8 @@
           "price": 2.0,
           "autoDelivery": {
             "enabled": true,
-            "provider": "reselling_pro",
-            "base_url": "https://api.reselling.pro/rft/api/seller/keys/mw19ghostinternal/1day"
+            "provider": "relaykeys",
+            "base_url": "https://rft.relaykeys.com/api/v1/dispense/dl_bJyggJSEuXBUGCV7OfHJYQAxO3cZamygRhgB_pC3FbM"
           }
         },
         {
