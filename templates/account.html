@@ -21,8 +21,8 @@
   </aside>
   <main class="account-main">
     <section class="account-hero" id="overview">
-      <div class="hero-row"><div><div class="eyebrow">customer control center</div><h1 class="account-title">Everything you own.</h1><p class="account-copy">Launch products, view keys, follow service status, read updates, and open support from one clean dashboard.</p></div><div class="hero-actions">{% if current_user.is_owner %}<a class="primary-cta" href="/admin"><i class="fas fa-crown"></i> Admin</a>{% endif %}<a class="secondary-cta" href="{{ site_settings.store_url or '/store' }}"><i class="fas fa-store"></i> Browse store</a><a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a></div></div>
-      <div class="account-stats"><div class="account-stat"><span>Owned products</span><strong>{{ my_products|length }}</strong></div><div class="account-stat"><span>Paid orders</span><strong>{{ ns.paid }}</strong></div><div class="account-stat"><span>Open tickets</span><strong>{{ tickets|rejectattr('status','equalto','closed')|list|length }}</strong></div><div class="account-stat"><span>Unread updates</span><strong data-live-notification-count>{{ notifications|selectattr('read','equalto',false)|list|length }}</strong></div></div>
+      <div class="hero-row"><div><div class="eyebrow">customer control center</div><h1 class="account-title">Everything you own.</h1><p class="account-copy">Launch products, view keys, follow service status, read updates, and open support from one clean dashboard.</p></div><div class="hero-actions">{% if current_user.is_owner %}<a class="primary-cta" href="/admin"><i class="fas fa-crown"></i> Admin</a>{% endif %}<a class="secondary-cta" href="{{ site_settings.store_url or '/store' }}"><i class="fas fa-store"></i> Browse store</a><a class="secondary-cta" href="/casino"><i class="fas fa-dice"></i> Casino</a><a class="secondary-cta" href="/logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a></div></div>
+      <div class="account-stats"><div class="account-stat"><span>Owned products</span><strong>{{ my_products|length }}</strong></div><div class="account-stat"><span>Paid orders</span><strong>{{ ns.paid }}</strong></div><div class="account-stat"><span>Open tickets</span><strong>{{ tickets|rejectattr('status','equalto','closed')|list|length }}</strong></div><div class="account-stat"><span>Casino credits</span><strong>{{ current_user.casino_credits|default(5000) }}</strong></div><div class="account-stat"><span>Unread updates</span><strong data-live-notification-count>{{ notifications|selectattr('read','equalto',false)|list|length }}</strong></div></div>
     </section>
 
     <section class="account-panel" id="products"><div class="panel-head"><div><div class="eyebrow">unified product hub</div><h2>My products</h2><p>Your status, version, delivery, support, and launch shortcuts in one place.</p></div><a class="secondary-cta" href="/downloads"><i class="fas fa-download"></i> Get loader</a></div>
@@ -37,7 +37,8 @@
 
     <section class="account-panel" id="profile">
       <div class="panel-head">
-        <div><div class="eyebrow">account profile</div><h2>Profile</h2><p>Manage your display name, profile image, and short bio.</p></div>
+        <div><div class="eyebrow">public casino identity</div><h2>Profile</h2><p>Your display name, image, and bio appear beside your messages in the casino lounge.</p></div>
+        <a class="secondary-cta" href="/casino"><i class="fas fa-dice"></i> Open casino</a>
       </div>
       <form id="profileForm" action="/account/profile" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -52,6 +53,9 @@
           <div class="profile-fields">
             <label class="profile-field"><span>Display name</span><input name="username" value="{{ current_user.username }}" minlength="3" maxlength="24" required></label>
             <label class="profile-field"><span>Short bio</span><textarea id="profileBio" name="bio" maxlength="240" placeholder="Tell the lounge a little about yourself…">{{ current_user.bio or '' }}</textarea><small class="field-counter" id="profileBioCount">0 / 240</small></label>
+            <label class="age-confirm-box"><input type="checkbox" name="age_18_confirmed" {% if current_user.age_18_confirmed %}checked disabled{% endif %}><span><strong>{% if current_user.age_18_confirmed %}18+ confirmed on this account{% else %}I confirm that I am 18 or older{% endif %}</strong><span>This is required before entering the virtual casino. Real gambling can cause serious financial and personal harm.</span></span></label>
+            {% if current_user.age_18_confirmed %}<input type="hidden" name="age_18_confirmed" value="on">{% endif %}
+            <div class="casino-account-callout"><div><strong>Virtual credits have no cash value.</strong><p>They cannot be purchased, transferred, sold, or withdrawn.</p></div><span class="tiny-pill"><i class="fas fa-coins"></i> {{ current_user.casino_credits|default(5000) }} credits</span></div>
             <button class="primary-cta" type="submit"><i class="fas fa-floppy-disk"></i> Save name &amp; bio</button>
           </div>
         </div>

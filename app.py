@@ -462,6 +462,7 @@ def sanitize_user_for_session(user: dict | None) -> dict | None:
         "avatar_url": str(user.get("avatar_url") or user.get("google_avatar") or user.get("discord_avatar") or "/static/default.jpg"),
         "bio": str(user.get("bio") or "")[:240],
         "age_18_confirmed": bool(user.get("age_18_confirmed")),
+        "casino_credits": int(user.get("casino_credits", 5000) or 0),
     }
 
 
@@ -3662,6 +3663,7 @@ _pending_cleanup_last_run = 0.0
 def cleanup_stale_pending_orders_before_request():
     # This used to scan up to 500 pending orders on nearly every page/API hit.
     # A once-per-minute in-process sweep is enough for a 10-minute expiry and
+    # removes a large amount of avoidable Mongo work during chat/casino traffic.
     global _pending_cleanup_last_run
     if request.path.startswith(("/static/", "/media/", "/webhooks/", "/health", "/service-worker.js")):
         return None
@@ -3680,13 +3682,14 @@ def cleanup_stale_pending_orders_before_request():
 def set_session_timeout():
     g.current_account = None
     # Static/media/health traffic should never trigger an authenticated Mongo
+    # refresh. On the casino API, api_guard already loads the fresh account, so
     # doing it here as well doubled the account reads for every poll/action.
     if request.path.startswith(("/static/", "/media/", "/webhooks/", "/health", "/service-worker.js")):
         return None
 
     session.permanent = bool(session.get("remember_login", False))
     user = current_user()
-    if user and using_mongo():
+    if user and using_mongo() and not request.path.startswith("/api/casino/"):
         fresh = get_user_by_email(user.get("email"))
         g.current_account = fresh
         if not fresh or fresh.get("status") == "suspended":
@@ -3770,7 +3773,7 @@ def apply_security_headers(response):
         # order state. Never let a shared cache reuse it for another visitor.
         response.headers["Cache-Control"] = "no-store, private"
         response.vary.add("Cookie")
-    elif request.path.startswith(("/api/", "/admin", "/account", "/checkout", "/support")):
+    elif request.path.startswith(("/api/", "/admin", "/account", "/checkout", "/support", "/casino")):
         response.headers["Cache-Control"] = "no-store, private"
 
     if IS_PRODUCTION and request.is_secure:
@@ -3950,7 +3953,7 @@ def free_downloads():
 @app.route("/status")
 def status():
     items = [status_listing_payload(p) for p in filter_products("status")]
-    return render_template("status.html", active_page="status", initial_status_products=items, status_events=load_status_events(10))
+    return render_template("status.html", active_page="status", initial_status_products=items)
 
 
 @app.route("/support")
@@ -6557,60 +6560,6 @@ def api_downloads():
     return public_json_response([public_product_payload(p, include_download_url=True) for p in filter_products("downloads")], cache_seconds=300)
 
 
-STATUS_EVENTS_FILE = DATA_DIR / "status_events.json"
-STATUS_WEBHOOK_TOKEN = os.getenv("STATUS_WEBHOOK_TOKEN", "").strip()
-
-def load_status_events(limit: int = 30) -> list:
-    return _read_json_list(STATUS_EVENTS_FILE)[:max(1, min(100, limit))]
-
-@app.route("/api/webhooks/product-status", methods=["POST"])
-@limiter.limit("60 per minute")
-def product_status_webhook():
-    """Receive signed-by-secret product status events from an external monitor."""
-    if not STATUS_WEBHOOK_TOKEN:
-        return jsonify({"ok": False, "error": "Webhook is not configured. Set STATUS_WEBHOOK_TOKEN."}), 503
-    supplied = request.headers.get("X-Status-Token", "")
-    authorization = request.headers.get("Authorization", "")
-    if authorization.lower().startswith("bearer "):
-        supplied = authorization[7:].strip()
-    if not secrets.compare_digest(supplied, STATUS_WEBHOOK_TOKEN):
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-    payload = request.get_json(silent=True)
-    if not isinstance(payload, dict):
-        return jsonify({"ok": False, "error": "Expected a JSON object"}), 400
-    identifier = str(payload.get("slug") or payload.get("product_id") or payload.get("product") or payload.get("name") or "").strip()[:180]
-    if not identifier:
-        return jsonify({"ok": False, "error": "Provide slug, product_id, product, or name"}), 400
-    raw_state = str(payload.get("state") or payload.get("status") or "").strip()
-    aliases = {"online":"Operational", "operational":"Operational", "healthy":"Operational", "up":"Operational", "degraded":"Degraded", "limited":"Degraded", "partial":"Degraded", "offline":"Offline", "down":"Offline", "outage":"Offline", "updating":"Updating", "maintenance":"Updating", "under maintenance":"Updating"}
-    state = aliases.get(raw_state.lower())
-    if not state:
-        return jsonify({"ok": False, "error": "state/status must be Operational, Degraded, Offline, or Updating"}), 400
-    products = load_products()
-    product = next((p for p in products if identifier.lower() in {str(p.get("slug") or "").lower(), str(p.get("id") or "").lower(), str(p.get("name") or "").lower()}), None)
-    if not product:
-        return jsonify({"ok": False, "error": "Product not found", "received_identifier": identifier}), 404
-    previous = str((product.get("status") or {}).get("state") or "Operational")
-    message = str(payload.get("message") or payload.get("description") or "").strip()[:500]
-    label = str(payload.get("label") or (state if not message else state)).strip()[:80] or state
-    product.setdefault("status", {})
-    product["status"].update({"enabled": True, "state": state, "label": label, "lastUpdated": today_utc_date()})
-    if using_mongo():
-        products_col.update_one({"id": product.get("id")}, {"$set": {"status": product["status"]}})
-    else:
-        save_products_file(products)
-    event = {"id": uuid.uuid4().hex, "product_id": str(product.get("id") or ""), "slug": str(product.get("slug") or ""), "product": str(product.get("name") or identifier), "previous_state": previous, "state": state, "label": label, "message": message, "source": str(payload.get("source") or "External status webhook")[:100], "created_at": utc_now().isoformat()}
-    events = _read_json_list(STATUS_EVENTS_FILE)
-    events.insert(0, event)
-    _write_json_list(STATUS_EVENTS_FILE, events[:200])
-    # Public status page and account notification feed can consume this event.
-    return jsonify({"ok": True, "product": product.get("name"), "previous_state": previous, "state": state, "event_id": event["id"]}), 200
-
-@app.route("/api/status/events")
-@limiter.limit("120 per minute")
-def api_status_events():
-    return public_json_response(load_status_events(30), cache_seconds=10)
-
 @app.route("/api/status")
 @limiter.limit("120 per minute")
 def api_status():
@@ -6751,8 +6700,78 @@ register_enhancements(
 )
 
 
-# Allow Render's current `python app.py` start command to keep the web process alive.
-# For production, prefer the Gunicorn command in Procfile: `gunicorn wsgi:app`.
+# Virtual-credit casino, profiles, and casino chat
+from casino import register_casino
+register_casino(
+    app,
+    db=db,
+    users_col=users_col,
+    using_mongo=using_mongo,
+    current_user=current_user,
+    login_required=login_required,
+    limiter=limiter,
+    csrf_token=csrf_token,
+    verify_csrf=verify_csrf,
+    sanitize_user_for_session=sanitize_user_for_session,
+    uploads_dir=UPLOADS_DIR,
+    save_upload_to_mongo_storage=save_upload_to_mongo_storage,
+    save_media_record=save_media_record,
+    record_audit=record_audit,
+    optimize_uploaded_image_file=optimize_uploaded_image_file,
+)
+
+# Secure desktop loader API
+def authenticate_loader_password(email: str, password: str):
+    email = (email or "").strip().lower()
+    if using_mongo():
+        user = users_col.find_one({"email": email})
+        if not user or not check_password_hash(user.get("password_hash", ""), password):
+            return None
+        if str(user.get("status") or "active").lower() == "suspended":
+            return None
+        return user
+    if email == OWNER_EMAIL and password == OWNER_PASSWORD:
+        return {"email": OWNER_EMAIL, "username": OWNER_USERNAME, "is_owner": True, "role": "owner", "status": "active"}
+    return None
+
+from loader_api import register_loader_api
+register_loader_api(
+    app,
+    current_user=current_user,
+    load_products=load_products,
+    load_orders_for_user=load_orders_for_user,
+    get_user_by_email=get_user_by_email,
+    authenticate_password=authenticate_loader_password,
+    files_dir=FILES_DIR,
+    using_mongo=using_mongo,
+    db=db,
+    load_support_tickets_for_user=load_support_tickets_for_user,
+    find_support_ticket=find_support_ticket,
+    save_support_ticket=save_support_ticket,
+    append_ticket_message=append_ticket_message,
+    ticket_public_id=ticket_public_id,
+    send_security_email=send_security_email,
+    require_email_codes=REQUIRE_EMAIL_CODES,
+    limiter=limiter,
+)
+
+
+# -----------------------------------------------------------------------------
+# App start
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    port = int(os.getenv("PORT", 10000))
+    debug = not IS_PRODUCTION
+
+    logger.info("Starting application on port %d (debug=%s)", port, debug)
+
+    if IS_PRODUCTION:
+        from waitress import serve
+        serve(app, host="0.0.0.0", port=port, threads=8)
+    else:
+        app.run(
+            host="0.0.0.0",
+            port=port,
+            debug=debug,
+            use_reloader=debug,
+        )
