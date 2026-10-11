@@ -105,9 +105,28 @@
     }
   }
 
+  async function loadStatusEvents() {
+    const container = document.getElementById('status-events');
+    if (!container || document.hidden) return;
+    try {
+      const events = await fetchJSON('/api/status/events', { headers: { Accept: 'application/json' }, cache: 'no-cache' }, 10000);
+      if (!Array.isArray(events) || !events.length) {
+        container.innerHTML = '<p class="st-note">No webhook status changes received yet. Updates will appear here as soon as your monitor posts them.</p>';
+        return;
+      }
+      container.innerHTML = events.slice(0, 10).map(event => {
+        const state = String(event.state || 'Operational');
+        const cls = state === 'Offline' ? 'down' : (state === 'Degraded' || state === 'Updating' ? 'warn' : '');
+        const message = event.message || `Status changed from ${event.previous_state || 'Unknown'} to ${state}.`;
+        const date = event.created_at ? new Date(event.created_at).toLocaleString() : 'Updated recently';
+        return `<article class="st-row"><div><div class="st-name">${escapeHtml(event.product || 'Product')} — ${escapeHtml(state)}</div><div class="st-meta">${escapeHtml(message)} · ${escapeHtml(date)}</div></div><span class="st-state ${cls}"><span class="st-dot"></span>${escapeHtml(event.label || state)}</span></article>`;
+      }).join('');
+    } catch {}
+  }
+
   function schedule() {
     clearInterval(timer);
-    timer = setInterval(() => loadStatus(), 120000);
+    timer = setInterval(() => { loadStatus(); loadStatusEvents(); }, 20000);
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -115,5 +134,6 @@
   });
   window.addEventListener('moeNetworkRestored', () => loadStatus({ force: true }));
   loadStatus();
+  loadStatusEvents();
   schedule();
 })();
