@@ -6749,3 +6749,10 @@ register_enhancements(
     create_notification=create_notification, send_html_email=send_html_email, money_to_cents=money_to_cents,
     parse_order_datetime=parse_order_datetime, load_support_tickets=load_support_tickets,
 )
+
+
+# Allow Render's current `python app.py` start command to keep the web process alive.
+# For production, prefer the Gunicorn command in Procfile: `gunicorn wsgi:app`.
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=False)
