@@ -57,12 +57,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base-head.bundle.css', v='20260905-perf1') }}">
   {% block extra_head %}{% endblock %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base-tail.bundle.css', v='20260905-perf1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site-polish.css', v='1') }}">
 </head>
 <body class="{% if active_page == 'admin' %}admin-modern-body{% endif %}">
   <a class="skip-link" href="#main-content">Skip to content</a>
   <div class="cart-toast-stack" id="cartToastStack" aria-live="polite" aria-atomic="true"></div>
   <div class="loading-overlay" id="globalLoadingOverlay" aria-live="polite" aria-hidden="true"><div class="loading-box"><div class="loading-ring"></div><strong id="loadingTitle">Sending security code</strong><span id="loadingText">Checking your account and sending the email code. This can take a moment.</span></div></div>
-  <canvas id="particle-canvas" aria-hidden="true"></canvas>
   <i class="shooting-star s1" aria-hidden="true"></i><i class="shooting-star s2" aria-hidden="true"></i><i class="shooting-star s3" aria-hidden="true"></i>
   <div class="site-shell">
     <div class="topbar-wrap" id="topbarWrap"><div class="container"><header class="topbar">
@@ -71,7 +71,7 @@
       <nav class="nav-links" id="mainNav" aria-label="Main navigation">
         <a href="/" class="{% if active_page == 'home' %}active{% endif %}">Home</a>
         <a href="/products" class="{% if active_page == 'products' %}active{% endif %}">Store</a>
-        <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a><a href="/free-downloads" class="{% if active_page == 'free_downloads' %}active{% endif %}">Free</a><a href="/guides" class="{% if active_page == 'guides' %}active{% endif %}">Guides</a><a href="/casino" class="{% if active_page == 'casino' %}active{% endif %}">Casino</a>
+        <a href="/downloads" class="{% if active_page == 'downloads' %}active{% endif %}">Downloads</a><a href="/free-downloads" class="{% if active_page == 'free_downloads' %}active{% endif %}">Free</a><a href="/guides" class="{% if active_page == 'guides' %}active{% endif %}">Guides</a><a href="/forum" class="{% if active_page == 'forum' %}active{% endif %}">Community</a>
         <a href="/status" class="{% if active_page == 'status' %}active{% endif %}">Status</a>
         <div class="nav-more">
           <button type="button" aria-haspopup="true">More <i class="fas fa-chevron-down"></i></button>
@@ -95,7 +95,7 @@
             <a class="footer-smart-status" href="/status"><i></i> View live system status</a>
           </div>
           <nav class="footer-smart-grid" aria-label="Footer navigation">
-            <div class="footer-smart-col"><h4>Shop</h4><a href="/products"><i class="fas fa-store"></i>All products</a><a href="/downloads"><i class="fas fa-download"></i>Loader download</a><a href="/free-downloads"><i class="fas fa-gift"></i>Free downloads</a><a href="/cart"><i class="fas fa-bag-shopping"></i>Cart</a><a href="/casino"><i class="fas fa-dice"></i>Virtual casino</a><a href="/status"><i class="fas fa-signal"></i>Live status</a></div>
+            <div class="footer-smart-col"><h4>Shop</h4><a href="/products"><i class="fas fa-store"></i>All products</a><a href="/downloads"><i class="fas fa-download"></i>Loader download</a><a href="/free-downloads"><i class="fas fa-gift"></i>Free downloads</a><a href="/cart"><i class="fas fa-bag-shopping"></i>Cart</a><a href="/forum"><i class="fas fa-comments"></i>Community</a><a href="/status"><i class="fas fa-signal"></i>Live status</a></div>
             <div class="footer-smart-col"><h4>Account</h4>{% if current_user %}<a href="/account"><i class="fas fa-user"></i>Dashboard</a><a href="/account#profile"><i class="fas fa-user-pen"></i>Profile</a><a href="/account#orders"><i class="fas fa-receipt"></i>Orders</a><a href="/guides"><i class="fas fa-book-open"></i>Guides</a>{% else %}<a href="/login"><i class="fas fa-right-to-bracket"></i>Sign in</a><a href="/signup"><i class="fas fa-user-plus"></i>Create account</a>{% endif %}<a href="/applications"><i class="fas fa-clipboard-list"></i>Applications</a></div>
             <div class="footer-smart-col"><h4>Help</h4><a href="/support"><i class="fas fa-headset"></i>Support</a><a href="/discord"><i class="fab fa-discord"></i>Discord</a><a href="/guides"><i class="fas fa-book-open"></i>Setup guides</a><a href="/legal"><i class="fas fa-circle-info"></i>Legal center</a></div>
             <div class="footer-smart-col"><h4>Policies</h4><a href="/terms"><i class="fas fa-file-contract"></i>Terms</a><a href="/privacy"><i class="fas fa-user-shield"></i>Privacy</a><a href="/refund-policy"><i class="fas fa-rotate-left"></i>Refunds</a><a href="/acceptable-use"><i class="fas fa-shield-halved"></i>Acceptable use</a></div>
@@ -106,44 +106,12 @@
     </footer>
   </div>
   <button class="back-to-top" id="backToTop" type="button" aria-label="Back to top"><i class="fas fa-arrow-up"></i></button>
-  <script src="{{ url_for('static', filename='js/site-core.js', v='20260905-perf1') }}"></script>
+  <script src="{{ url_for('static', filename='js/site-core.js', v='20261126-community1') }}"></script>
   <script>
     const mobileMenuBtn=document.getElementById('mobileMenuBtn'), topbar=document.querySelector('.topbar');mobileMenuBtn?.addEventListener('click',()=>{const open=topbar.classList.toggle('menu-open');mobileMenuBtn.setAttribute('aria-expanded',String(open));mobileMenuBtn.setAttribute('aria-label',open?'Close navigation':'Open navigation');mobileMenuBtn.innerHTML=`<i class="fas fa-${open?'xmark':'bars'}"></i>`});document.querySelectorAll('#mainNav a').forEach(a=>a.addEventListener('click',()=>{topbar?.classList.remove('menu-open');mobileMenuBtn?.setAttribute('aria-expanded','false')}));
     const backToTop=document.getElementById('backToTop');window.addEventListener('scroll',()=>backToTop?.classList.toggle('show',scrollY>520),{passive:true});backToTop?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
     document.addEventListener('error',e=>{const img=e.target;if(img?.tagName==='IMG'&&!img.dataset.fallback){img.dataset.fallback='1';const isAvatar=img.matches?.('[data-profile-avatar],.avatar,.chat-avatar,.message-avatar,.profile-avatar,.user-avatar');img.src=isAvatar?'/static/default.jpg':'/static/logo.png';img.classList.add('image-fallback')}},true);
     const topbarWrap=document.getElementById('topbarWrap');function updateHeaderState(){topbarWrap&&topbarWrap.classList.toggle('scrolled',(window.pageYOffset||document.documentElement.scrollTop||0)>12)}updateHeaderState();window.addEventListener('scroll',updateHeaderState,{passive:true});
-    const canvas=document.getElementById('particle-canvas');
-    const ctx=canvas?canvas.getContext('2d',{alpha:true,desynchronized:true}):null;
-    const reduceMotion=document.documentElement.classList.contains('user-reduced-motion')||window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let particles=[],particleFrame=0,lastParticleTick=0,resizeTimer=0,mouse={x:-9999,y:-9999};
-    function resizeCanvas(){
-      if(!ctx)return;
-      const ratio=Math.min(window.devicePixelRatio||1,1.1);
-      canvas.width=Math.floor(innerWidth*ratio);canvas.height=Math.floor(innerHeight*ratio);
-      canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(ratio,0,0,ratio,0,0);
-      const count=reduceMotion?0:(innerWidth<700?22:42);
-      particles=Array.from({length:count},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.24,vy:(Math.random()-.5)*.24,r:Math.random()*1.45+.55,a:Math.random()*.34+.18}));
-    }
-    function drawParticles(now=0){
-      if(!ctx||document.hidden){particleFrame=requestAnimationFrame(drawParticles);return}
-      if(now-lastParticleTick<33){particleFrame=requestAnimationFrame(drawParticles);return}
-      lastParticleTick=now;ctx.clearRect(0,0,innerWidth,innerHeight);
-      for(let i=0;i<particles.length;i++){
-        const p=particles[i];p.x+=p.vx;p.y+=p.vy;
-        if(p.x<-10)p.x=innerWidth+10;else if(p.x>innerWidth+10)p.x=-10;
-        if(p.y<-10)p.y=innerHeight+10;else if(p.y>innerHeight+10)p.y=-10;
-        const dx=mouse.x-p.x,dy=mouse.y-p.y,md2=dx*dx+dy*dy;if(md2<14400){p.x-=dx*.0018;p.y-=dy*.0018}
-        ctx.beginPath();ctx.fillStyle=`rgba(184,79,255,${p.a})`;ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
-        const limit=Math.min(particles.length,i+7);
-        for(let j=i+1;j<limit;j++){const q=particles[j],x=p.x-q.x,y=p.y-q.y,d2=x*x+y*y;if(d2<8100){ctx.beginPath();ctx.strokeStyle=`rgba(184,79,255,${(1-Math.sqrt(d2)/90)*.11})`;ctx.lineWidth=.7;ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}}
-      }
-      particleFrame=requestAnimationFrame(drawParticles);
-    }
-    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(resizeCanvas,180)},{passive:true});
-    window.addEventListener('pointermove',e=>{mouse.x=e.clientX;mouse.y=e.clientY},{passive:true});
-    window.addEventListener('pointerleave',()=>{mouse.x=-9999;mouse.y=-9999},{passive:true});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!particleFrame)particleFrame=requestAnimationFrame(drawParticles)});
-    if(location.pathname!=='/'){resizeCanvas();if(!reduceMotion)particleFrame=requestAnimationFrame(drawParticles);}else if(canvas){canvas.remove();}
     document.querySelectorAll('img:not([loading])').forEach((img,i)=>{if(i>1)img.loading='lazy';img.decoding='async'});
     (function siteLocalTime(){
       function parseTimestamp(value){

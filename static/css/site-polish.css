@@ -1,0 +1,12 @@
+/* Final shared visual layer. Keep page-specific layout and commerce behavior intact. */
+:root{--site-focus:#b9a9ff;--site-radius:16px;--site-border:rgba(166,156,218,.17)}
+html{scroll-padding-top:110px;scrollbar-color:#49435d #11111b}
+body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+#main-content :is(a,button,input,select,textarea):focus-visible,.topbar :is(a,button):focus-visible,.site-footer a:focus-visible{outline:2px solid var(--site-focus)!important;outline-offset:3px}
+#main-content :is(.product-card,.download-card,.status-card,.home-card,.account-panel,.account-hero,.account-side,.auth-card,.admin-card){border-radius:var(--site-radius);border-color:var(--site-border);box-shadow:0 8px 24px rgba(0,0,0,.19)}
+#main-content :is(.primary-cta,.secondary-cta,.mini-action){border-radius:10px}
+#main-content :is(.account-title,.page-title,.section-title){letter-spacing:-.035em}
+#main-content img{max-width:100%}
+.account-page .account-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:700px){.account-page .account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}html{scroll-padding-top:82px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}

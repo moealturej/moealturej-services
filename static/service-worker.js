@@ -1,4 +1,4 @@
-const CACHE = 'moealturej-static-v5';
+const CACHE = 'moealturej-static-v6';
 
 // Do not prefetch the whole site during installation. The previous worker
 // forced a network reload of every core asset on first visit, duplicating

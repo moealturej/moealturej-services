@@ -461,8 +461,6 @@ def sanitize_user_for_session(user: dict | None) -> dict | None:
         "status": str(user.get("status") or "active"),
         "avatar_url": str(user.get("avatar_url") or user.get("google_avatar") or user.get("discord_avatar") or "/static/default.jpg"),
         "bio": str(user.get("bio") or "")[:240],
-        "age_18_confirmed": bool(user.get("age_18_confirmed")),
-        "casino_credits": int(user.get("casino_credits", 5000) or 0),
     }
 
 
@@ -3663,7 +3661,7 @@ _pending_cleanup_last_run = 0.0
 def cleanup_stale_pending_orders_before_request():
     # This used to scan up to 500 pending orders on nearly every page/API hit.
     # A once-per-minute in-process sweep is enough for a 10-minute expiry and
-    # removes a large amount of avoidable Mongo work during chat/casino traffic.
+    # removes a large amount of avoidable Mongo work during community traffic.
     global _pending_cleanup_last_run
     if request.path.startswith(("/static/", "/media/", "/webhooks/", "/health", "/service-worker.js")):
         return None
@@ -3682,14 +3680,13 @@ def cleanup_stale_pending_orders_before_request():
 def set_session_timeout():
     g.current_account = None
     # Static/media/health traffic should never trigger an authenticated Mongo
-    # refresh. On the casino API, api_guard already loads the fresh account, so
-    # doing it here as well doubled the account reads for every poll/action.
+    # refresh.
     if request.path.startswith(("/static/", "/media/", "/webhooks/", "/health", "/service-worker.js")):
         return None
 
     session.permanent = bool(session.get("remember_login", False))
     user = current_user()
-    if user and using_mongo() and not request.path.startswith("/api/casino/"):
+    if user and using_mongo():
         fresh = get_user_by_email(user.get("email"))
         g.current_account = fresh
         if not fresh or fresh.get("status") == "suspended":
@@ -3773,7 +3770,7 @@ def apply_security_headers(response):
         # order state. Never let a shared cache reuse it for another visitor.
         response.headers["Cache-Control"] = "no-store, private"
         response.vary.add("Cookie")
-    elif request.path.startswith(("/api/", "/admin", "/account", "/checkout", "/support", "/casino")):
+    elif request.path.startswith(("/api/", "/admin", "/account", "/checkout", "/support", "/forum")):
         response.headers["Cache-Control"] = "no-store, private"
 
     if IS_PRODUCTION and request.is_secure:
@@ -6700,9 +6697,9 @@ register_enhancements(
 )
 
 
-# Virtual-credit casino, profiles, and casino chat
-from casino import register_casino
-register_casino(
+# Account profiles
+from profiles import register_profiles
+register_profiles(
     app,
     db=db,
     users_col=users_col,
@@ -6719,6 +6716,11 @@ register_casino(
     record_audit=record_audit,
     optimize_uploaded_image_file=optimize_uploaded_image_file,
 )
+
+from community import register_community
+register_community(app, db=db, using_mongo=using_mongo, current_user=current_user,
+    owner_required=owner_required, limiter=limiter, verify_csrf=verify_csrf,
+    has_admin_access=has_admin_access, record_audit=record_audit)
 
 # Secure desktop loader API
 def authenticate_loader_password(email: str, password: str):

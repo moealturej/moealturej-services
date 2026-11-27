@@ -258,7 +258,7 @@
       ['Free downloads', '/free-downloads', 'fa-gift'],
       ['Guides', '/guides', 'fa-book-open'],
       ['System status', '/status', 'fa-signal'],
-      ['Casino', '/casino', 'fa-dice'],
+      ['Community', '/forum', 'fa-comments'],
       ['Legal center', '/legal', 'fa-scale-balanced']
     ];
     let requestId = 0;
