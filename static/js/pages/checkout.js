@@ -118,7 +118,7 @@
         const panel = document.getElementById('embedded-payment');
         panel.hidden = false;
         try { embedded.mount('#stripe-embedded'); } catch (err) { panel.hidden = true; embedded.destroy(); throw err; }
-        setMessage('Enter your payment details below. Your order total is locked.', false, 'success');
+        setMessage(json.reused ? 'Your pending order has been restored. Continue your payment below.' : 'Enter your payment details below. Your order total is locked.', false, 'success');
         panel.scrollIntoView({behavior: 'smooth', block: 'start'});
         return;
       }

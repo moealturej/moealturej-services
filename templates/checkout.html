@@ -3,7 +3,7 @@
 {% block meta_description %}Complete your secure moealturej purchase using Stripe or PayPal.{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/checkout-1.css', v='20261128-stripe3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/checkout-1.css', v='20261128-stripe3-reuse1') }}">
 {% endblock %}
 
 {% block content %}
@@ -162,5 +162,5 @@
 {% block extra_scripts %}
 <script type="application/json" id="checkoutConfig">{{ {'csrf': csrf_token(), 'stripePublicKey': stripe_public_key}|tojson }}</script>
 {% if stripe_public_key %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
-<script src="{{ url_for('static', filename='js/pages/checkout.js', v='20261128-stripe3') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/checkout.js', v='20261128-stripe3-reuse1') }}"></script>
 {% endblock %}

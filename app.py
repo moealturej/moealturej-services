@@ -242,6 +242,8 @@ def init_mongo():
         orders_col.create_index([("order_id", ASCENDING)], unique=True)
         db["email_rate_limits"].create_index("expires_at", expireAfterSeconds=0)
         orders_col.create_index([("user_email", ASCENDING)])
+        orders_col.create_index([("user_email", ASCENDING), ("provider", ASCENDING), ("status", ASCENDING), ("created_at", -1)])
+        db["checkout_locks"].create_index("expires_at", expireAfterSeconds=0)
         support_tickets_col.create_index([("ticket_id", ASCENDING)], unique=True)
         support_tickets_col.create_index([("user_email", ASCENDING)])
         support_tickets_col.create_index([("status", ASCENDING), ("updated_at", ASCENDING)])
@@ -6030,8 +6032,12 @@ def checkout_stripe():
         return jsonify({"ok": False, "error": "Checkout is temporarily closed."}), 400
     if not STRIPE_SECRET_KEY:
         return jsonify({"ok": False, "error": "Stripe is not configured."}), 400
+    lock_token = None
+    lock_email = None
     try:
         import stripe
+        from pymongo.errors import DuplicateKeyError
+        from order_reuse import matching_order, cart_signature
         stripe.api_key = STRIPE_SECRET_KEY
         if db is None or not STRIPE_WEBHOOK_SECRET:
             return jsonify({"ok": False, "error": "Secure checkout is temporarily unavailable."}), 503
@@ -6039,6 +6045,47 @@ def checkout_stripe():
         embedded = bool(STRIPE_PUBLISHABLE_KEY)
         cart = build_checkout_cart(payload.get("items") or [], payload.get("discount_code") or payload.get("code") or "", current_user())
         user = current_user() or {}
+        lock_email = str(user.get("email") or "").strip().lower()
+        if not lock_email:
+            return jsonify({"ok": False, "error": "Sign in again to continue."}), 401
+        token = secrets.token_hex(16)
+        try:
+            db["checkout_locks"].update_one(
+                {"_id": lock_email, "expires_at": {"$lte": utc_now()}},
+                {"$set": {"token": token, "expires_at": utc_now() + timedelta(minutes=10)}},
+                upsert=True,
+            )
+        except DuplicateKeyError:
+            return jsonify({"ok": False, "error": "Checkout is already opening. Try again shortly."}), 409
+        lock_token = token
+        previous = orders_col.find_one(
+            {"user_email": lock_email, "provider": "stripe", "status": "pending"},
+            sort=[("created_at", -1)],
+        )
+        if previous and previous.get("stripe_fulfillment_claim") and cart_signature(previous.get("cart") or {}) == cart_signature(cart):
+            return jsonify({"ok": False, "error": "Your previous payment is being confirmed. Check your orders before paying again."}), 409
+        if matching_order(previous, cart):
+            existing = stripe.checkout.Session.retrieve(previous["provider_session_id"])
+            remote_status = object_get(existing, "status")
+            payment_status = object_get(existing, "payment_status")
+            if remote_status == "complete" or payment_status == "paid":
+                return jsonify({"ok": False, "error": "Your previous payment is being confirmed. Check your orders before paying again."}), 409
+            if remote_status == "open" and payment_status == "unpaid":
+                metadata = object_get(existing, "metadata", {})
+                if (object_get(metadata, "order_id") != previous["order_id"]
+                        or not order_amount_matches(previous, object_get(existing, "amount_total"), object_get(existing, "currency"))):
+                    raise RuntimeError("Existing Stripe session verification failed")
+                mode = object_get(existing, "ui_mode")
+                if embedded and mode in ("embedded", "embedded_page") and object_get(existing, "client_secret"):
+                    response = jsonify({"ok": True, "client_secret": object_get(existing, "client_secret"), "order_id": previous["order_id"], "reused": True})
+                elif not embedded and mode in ("hosted", "hosted_page", None) and object_get(existing, "url"):
+                    response = jsonify({"ok": True, "url": object_get(existing, "url"), "order_id": previous["order_id"], "reused": True})
+                else:
+                    return jsonify({"ok": False, "error": "Previous checkout uses a different payment configuration. Contact support or wait for it to expire."}), 409
+                response.headers["Cache-Control"] = "no-store"
+                return response
+            if remote_status != "expired":
+                return jsonify({"ok": False, "error": "Previous payment status is uncertain. Please check your orders before retrying."}), 409
         order_id = f"ord_{secrets.token_hex(10)}"
         stripe_lines = []
         if cart.get("discount_cents", 0) > 0:
@@ -6098,20 +6145,13 @@ def checkout_stripe():
             line_items=stripe_lines,
             customer_email=user.get("email"),
             metadata={"order_id": order_id, "user_email": user.get("email", "")},
+            idempotency_key=order_id,
             **checkout_options,
         )
-        save_order({
-            "order_id": order_id,
-            "user_email": user.get("email"),
-            "username": user.get("username"),
-            "provider": "stripe",
+        orders_col.update_one({"order_id": order_id, "status": "pending"}, {"$set": {
             "provider_session_id": object_get(session_obj, "id"),
-            "status": "pending",
-            "expires_at": (utc_now() + timedelta(minutes=PENDING_ORDER_MAX_AGE_MINUTES)).isoformat(),
-            "cart": cart,
-            "amount_cents": cart["total_cents"],
-            "currency": cart["currency"],
-        })
+            "updated_at": utc_now().isoformat(),
+        }})
         if embedded:
             response = jsonify({"ok": True, "client_secret": object_get(session_obj, "client_secret"), "order_id": order_id})
             response.headers["Cache-Control"] = "no-store"
@@ -6126,6 +6166,12 @@ def checkout_stripe():
         if message == "get":
             message = "Stripe checkout session was created, but the app could not read the Stripe response. This has been patched; redeploy the updated code."
         return jsonify({"ok": False, "error": "Unable to start secure checkout. Try again later."}), 400
+    finally:
+        if lock_token:
+            try:
+                db["checkout_locks"].delete_one({"_id": lock_email, "token": lock_token})
+            except Exception:
+                logger.exception("Could not release checkout lock")
 
 
 @app.route("/checkout/paypal/create", methods=["POST"])
