@@ -3,7 +3,7 @@
 {% block meta_description %}Complete your secure moealturej purchase using Stripe or PayPal.{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/checkout-1.css', v='20260827-full1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/checkout-1.css', v='20261127-security2') }}">
 {% endblock %}
 
 {% block content %}
@@ -30,9 +30,10 @@
 
           <div id="checkout-list" class="checkout-items"></div>
 
-          <div id="pay-message" class="checkout-message">
+          <div id="pay-message" class="checkout-message" role="status" aria-live="polite">
             Loading checkout details...
           </div>
+          <section id="embedded-payment" hidden aria-label="Secure card payment"><div class="embedded-heading"><h2>Secure card payment</h2><span>Powered by Stripe</span></div><div id="stripe-embedded"></div><p class="embedded-note">Card details are handled directly by Stripe. To change your order, return to the cart.</p></section>
         </div>
       </main>
 
@@ -102,8 +103,8 @@
               </span>
 
               <span class="payment-method-copy">
-                <strong>Pay with Stripe</strong>
-                <small>Card, Apple Pay or Google Pay</small>
+                <strong>Pay by card</strong>
+                <small>{% if stripe_public_key %}Secure payment on this website{% else %}Secure hosted checkout{% endif %}</small>
               </span>
 
               <i class="fas fa-chevron-right payment-method-arrow"></i>
@@ -159,6 +160,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script type="application/json" id="checkoutConfig">{{ {'csrf': csrf_token()}|tojson }}</script>
-<script src="{{ url_for('static', filename='js/pages/checkout.js', v='20260827-full1') }}"></script>
+<script type="application/json" id="checkoutConfig">{{ {'csrf': csrf_token(), 'stripePublicKey': stripe_public_key}|tojson }}</script>
+{% if stripe_public_key %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
+<script src="{{ url_for('static', filename='js/pages/checkout.js', v='20261127-security2') }}"></script>
 {% endblock %}

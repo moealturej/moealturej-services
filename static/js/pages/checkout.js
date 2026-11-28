@@ -9,6 +9,7 @@
   let cart = cartStore.read();
   let discountCode = storage.readText('moeDiscountCode', '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32);
   let previewRequest = 0;
+  let paymentActive = false;
 
   const message = document.getElementById('pay-message');
   const list = document.getElementById('checkout-list');
@@ -66,6 +67,7 @@
   }
 
   async function loadPreview() {
+    if (paymentActive) return;
     cart = cartStore.read();
     if (!cart.length) { renderEmpty(); return; }
     const request = ++previewRequest;
@@ -98,17 +100,33 @@
   }
 
   async function beginPayment(button, url, pendingKey = '') {
+    if (paymentActive) return;
     cart = cartStore.read();
     if (!cart.length) { renderEmpty(); return; }
+    paymentActive = true;
+    discountInput.disabled = applyButton.disabled = true;
     setPaymentButtonsDisabled(true);
     setMessage(`Opening secure ${button === stripeButton ? 'Stripe' : 'PayPal'} checkout…`, true);
     try {
       const json = await postJson(url, payload());
+      if (json.client_secret) {
+        if (!window.Stripe || !config.stripePublicKey) throw new Error('Secure card form could not load. Refresh and try again.');
+        const stripe = window.Stripe(config.stripePublicKey);
+        const embedded = await stripe.initEmbeddedCheckout({fetchClientSecret: async () => json.client_secret});
+        const panel = document.getElementById('embedded-payment');
+        panel.hidden = false;
+        try { embedded.mount('#stripe-embedded'); } catch (err) { panel.hidden = true; embedded.destroy(); throw err; }
+        setMessage('Enter your payment details below. Your order total is locked.', false, 'success');
+        panel.scrollIntoView({behavior: 'smooth', block: 'start'});
+        return;
+      }
       const target = json.url || json.approve_url;
       if (!target) throw new Error('The payment provider did not return a checkout link.');
       if (pendingKey) storage.writeText(pendingKey, json.order_id || '');
       window.location.assign(target);
     } catch (error) {
+      paymentActive = false;
+      discountInput.disabled = applyButton.disabled = false;
       setPaymentButtonsDisabled(false);
       setMessage(error?.name === 'AbortError' ? 'The payment provider took too long to respond. Please try again.' : (error.message || 'Payment could not be started.'), false, 'error');
     }

@@ -136,6 +136,8 @@ GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
+from email_guard import reserve_attempt, setting as email_limit
+STRIPE_PUBLISHABLE_KEY = env_first("STRIPE_PUBLISHABLE_KEY", "STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = env_first("STRIPE_SECRET_KEY", "STRIPE_API_KEY")
 STRIPE_WEBHOOK_SECRET = env_first("STRIPE_WEBHOOK_SECRET", "STRIPE_ENDPOINT_SECRET")
 STRIPE_CURRENCY = os.getenv("STRIPE_CURRENCY", "usd").strip().lower() or "usd"
@@ -238,6 +240,7 @@ def init_mongo():
         media_col.create_index([("filename", ASCENDING)], unique=True)
         audit_col.create_index([("created_at", ASCENDING)])
         orders_col.create_index([("order_id", ASCENDING)], unique=True)
+        db["email_rate_limits"].create_index("expires_at", expireAfterSeconds=0)
         orders_col.create_index([("user_email", ASCENDING)])
         support_tickets_col.create_index([("ticket_id", ASCENDING)], unique=True)
         support_tickets_col.create_index([("user_email", ASCENDING)])
@@ -608,6 +611,8 @@ def _rate_limit_key() -> str:
     token. Browser and unauthenticated traffic continues to use the resolved
     client IP from ProxyFix/get_remote_address.
     """
+    if request.path in {"/api/loader/login", "/api/loader/login/2fa"}:
+        return "ip:" + str(get_remote_address())
     if request.path.startswith("/api/loader/"):
         auth = (request.headers.get("Authorization") or "").strip()
         if auth.lower().startswith("bearer ") and len(auth) > 20:
@@ -637,7 +642,7 @@ CSP_POLICY = (
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
     "img-src 'self' data: https:; "
     "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
-    "connect-src 'self' https://cdn.jsdelivr.net https://api.stripe.com https://checkout.stripe.com https://www.paypal.com https://www.paypalobjects.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://formspree.io; "
+    "connect-src 'self' https://cdn.jsdelivr.net https://api.stripe.com https://checkout.stripe.com https://*.stripe.com https://*.stripe.network https://www.paypal.com https://www.paypalobjects.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://formspree.io; "
     "frame-src https://js.stripe.com https://checkout.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.paypalobjects.com; "
     "worker-src 'self' blob:; "
     "object-src 'none'; "
@@ -839,6 +844,20 @@ def send_email_message(to_email: str, subject: str, text: str, html_body: str, s
         return False
 
     sender = email_from(sender_label)
+    if not email_delivery_ready():
+        return False
+    if EMAIL_PROVIDER != "smtp" and not sender_is_resend_safe(sender):
+        return False
+    category = {"security": "security", "delivery": "delivery", "orders": "order", "order": "order", "support": "support", "broadcast": "broadcast"}.get(sender_label.lower(), "notification")
+    try:
+        from flask import has_request_context
+        ip = get_remote_address() if has_request_context() else None
+        if not reserve_attempt(db["email_rate_limits"] if db is not None else None, to_email, category, ip):
+            logger.warning("Outbound email blocked by quota (%s)", category)
+            return False
+    except Exception:
+        logger.exception("Outbound email quota unavailable; refusing delivery")
+        return False
 
     if EMAIL_PROVIDER == "smtp":
         if not SMTP_EMAIL or not SMTP_PASSWORD:
@@ -1003,14 +1022,17 @@ def send_security_email(to_email: str, code: str, purpose: str) -> bool:
 
 def start_email_code_flow(kind: str, payload: dict, email: str, purpose: str) -> bool:
     code = f"{secrets.randbelow(1000000):06d}"
-    session[f"pending_{kind}"] = {
+    pending = {
         "payload": payload,
         "email": email,
         "code_hash": generate_password_hash(code),
         "expires_at": (utc_now_naive() + timedelta(minutes=10)).isoformat(),
         "attempts": 0,
     }
-    return send_security_email(email, code, purpose)
+    if not send_security_email(email, code, purpose):
+        return False
+    session[f"pending_{kind}"] = pending
+    return True
 
 
 def consume_email_code_flow(kind: str, code: str) -> dict | None:
@@ -2599,15 +2621,18 @@ def cleanup_expired_pending_orders() -> int:
     """Delete pending orders that were not paid within the configured window."""
     now = utc_now()
     if using_mongo() and orders_col is not None:
-        candidates = list(orders_col.find({"status": "pending"}, {"_id": 0}).limit(500))
+        candidates = list(orders_col.find({"status": "pending", "provider": {"$ne": "stripe"}}, {"_id": 0}).limit(500))
     else:
         try:
             candidates = json.loads(ORDERS_FILE.read_text(encoding="utf-8")) if ORDERS_FILE.exists() else []
         except Exception:
             candidates = []
-    stale = [o for o in candidates if order_is_expired_pending(o, now)]
+    stale = [o for o in candidates if o.get("provider") != "stripe" and order_is_expired_pending(o, now)]
     deleted = 0
     for order in stale:
+        if order.get("provider") == "stripe":
+            # Keep payment records for late webhooks and reconciliation.
+            continue
         expire_provider_checkout(order)
         if delete_order(order.get("order_id", "")):
             deleted += 1
@@ -2929,8 +2954,7 @@ def update_order_status(order_id: str, status: str, details: dict | None = None)
     if not order_id or not status:
         logger.warning("Ignoring invalid order status update: order=%s status=%s", order_id, status)
         return None
-    orders = load_orders_for_user(None)
-    existing = next((o for o in orders if o.get("order_id") == order_id), None)
+    existing = find_order_by_id(order_id)
     if not existing:
         logger.warning("Ignoring status update for missing/deleted order %s -> %s", order_id, status)
         return None
@@ -3844,7 +3868,7 @@ def checkout():
     if not load_site_settings().get("store_enabled", True):
         flash("Checkout is temporarily closed.", "warning")
         return redirect(url_for("cart"))
-    return render_template("checkout.html", active_page="products")
+    return render_template("checkout.html", active_page="products", stripe_public_key=STRIPE_PUBLISHABLE_KEY if STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET and db is not None else "")
 
 @app.route("/checkout/success")
 @login_required
@@ -3867,13 +3891,14 @@ def checkout_success():
                 paid_currency = str(object_get(checkout_session, "currency", "")).upper()
                 if (
                     order
+                    and order.get("provider") == "stripe"
                     and str(order.get("provider_session_id", "")) == stripe_session_id
                     and str(order.get("user_email", "")).lower() == str(user.get("email", "")).lower()
                     and order_amount_matches(order, paid_cents, paid_currency)
                 ):
                     order_id = str(resolved_order_id or order_id)
-                    update_order_status(order_id, "paid", {"provider_payment_id": stripe_session_id})
-                    flash("Payment confirmed. Your order is ready in your account.", "success")
+                    confirm_stripe_order(order_id, stripe_session_id)
+                    # The confirmation page reads the persisted status below.
                 else:
                     logger.warning("Rejected Stripe success verification for order=%s session=%s", resolved_order_id, stripe_session_id)
         except Exception as exc:
@@ -4315,7 +4340,7 @@ def application_detail(slug):
 # Auth / Owner dashboard
 # -----------------------------------------------------------------------------
 @app.route("/signup", methods=["GET", "POST"])
-@limiter.limit("12 per minute")
+@limiter.limit("5 per minute; 15 per hour")
 def signup():
     if not load_site_settings().get("registration_enabled", True):
         flash("New account registration is temporarily disabled.", "warning")
@@ -4365,7 +4390,7 @@ def signup():
         payload = {"email": email, "username": username, "password_hash": generate_password_hash(password)}
         if REQUIRE_EMAIL_CODES:
             if not start_email_code_flow("signup", payload, email, "signup"):
-                flash("Email verification is not configured. Add RESEND_API_KEY in .env. Emails will send from @moealturej.com with Gmail as reply-to.", "danger")
+                flash("Email delivery is temporarily unavailable or rate limited. Wait before trying again.", "danger")
                 return render_template("signup.html", active_page="signup")
             flash("Check your email for the 6-digit signup code.", "success")
             return render_template("verify_email.html", flow="signup", email=email, active_page="signup")
@@ -4376,7 +4401,7 @@ def signup():
     return render_template("signup.html", active_page="signup")
 
 @app.route("/login", methods=["GET", "POST"])
-@limiter.limit("12 per minute")
+@limiter.limit("8 per minute; 30 per hour")
 def login():
     if request.method == "POST":
         code = request.form.get("code", "").strip()
@@ -4411,7 +4436,7 @@ def login():
         payload = {"email": user.get("email"), "username": user.get("username") or email.split("@")[0], "is_owner": bool(user.get("is_owner") or user.get("role") == "owner"), "role": user.get("role", "user"), "_remember_login": remember}
         if REQUIRE_EMAIL_CODES:
             if not start_email_code_flow("login", payload, email, "login"):
-                flash("Email 2FA is not configured. Add RESEND_API_KEY in .env. Emails will send from @moealturej.com with Gmail as reply-to.", "danger")
+                flash("Email delivery is temporarily unavailable or rate limited. Wait before trying again.", "danger")
                 return render_template("login.html", active_page="login")
             flash("Check your email for the 6-digit login code.", "success")
             return render_template("verify_email.html", flow="login", email=email, active_page="login")
@@ -4592,7 +4617,7 @@ def google_callback():
 
 
 @app.route("/forgot-password", methods=["GET", "POST"])
-@limiter.limit("8 per minute")
+@limiter.limit("3 per minute; 8 per hour")
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
@@ -4606,15 +4631,15 @@ def forgot_password():
         user = users_col.find_one({"email": email})
         if user and user.get("password_hash") is not None:
             token = secrets.token_urlsafe(38)
+            reset_url = url_for("reset_password", token=token, _external=True)
+            if not send_password_reset_email(email, reset_url):
+                flash(generic, "success")
+                return render_template("forgot_password.html", active_page="login")
             users_col.update_one({"_id": user["_id"]}, {"$set": {
                 "password_reset_hash": generate_password_hash(token),
                 "password_reset_expires": utc_now_naive() + timedelta(minutes=20),
                 "updated_at": utc_now_naive(),
             }})
-            reset_url = url_for("reset_password", token=token, _external=True)
-            if not send_password_reset_email(email, reset_url):
-                flash("Password reset email is not configured. Add RESEND_API_KEY in .env for password reset emails.", "danger")
-                return render_template("forgot_password.html", active_page="login")
             record_audit("password_reset_requested", email)
         flash(generic, "success")
         return redirect(url_for("login"))
@@ -4968,7 +4993,13 @@ def admin_dashboard():
     support_tickets = load_support_tickets()
     overview = build_admin_overview(orders, products, users, support_tickets)
     enh = app.extensions.get("moe_enhancements", {})
-    return render_template("admin.html", products=products, users=users, media_items=load_media(), orders=orders, support_tickets=support_tickets, applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, overview=overview, site_settings=site_settings, order_webhook=order_webhook, mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot(),
+    quota = {"limit": email_limit("EMAIL_DAILY_LIMIT", 80), "used": None, "batch": email_limit("EMAIL_BROADCAST_BATCH", 10), "broadcast": email_limit("EMAIL_BROADCAST_DAILY", 10)}
+    try:
+        if db is not None:
+            quota["used"] = (db["email_rate_limits"].find_one({"_id": "global:" + utc_now().strftime("%Y%m%d")}) or {}).get("count", 0)
+    except Exception:
+        logger.warning("Email quota display unavailable")
+    return render_template("admin.html", email_quota=quota, products=products, users=users, media_items=load_media(), orders=orders, support_tickets=support_tickets, applications_settings=get_applications_settings(), guides_settings=get_guides_settings(), stats=stats, overview=overview, site_settings=site_settings, order_webhook=order_webhook, mongo_status_reason=mongo_status_reason, active_page="admin", audit_logs=load_audit_logs(), health_checks=system_health_snapshot(),
                            commerce_analytics=(enh.get("analytics") or (lambda: {}))(),
                            all_reviews=(enh.get("all_reviews") or (lambda: []))(),
                            incidents=(enh.get("all_incidents") or (lambda: []))())
@@ -5211,6 +5242,7 @@ def api_loader_version():
 
 @app.route("/admin/email/send", methods=["POST"])
 @owner_required
+@limiter.limit("2 per minute; 5 per hour")
 def admin_custom_email_send():
     if not verify_csrf():
         abort(400)
@@ -5235,9 +5267,9 @@ def admin_custom_email_send():
         sent = 0
         failed = 0
         # Use the same verified sender group as OTP/security emails to avoid no-reply sender issues on Resend.
-        for email in recipients[:500]:
+        for email in recipients[:email_limit("EMAIL_BROADCAST_BATCH", 10)]:
             try:
-                ok = send_html_email(email, built_subject, text, html_body, "Security")
+                ok = send_html_email(email, built_subject, text, html_body, "Broadcast")
             except Exception:
                 logger.exception("Admin email send crashed for recipient %s", email)
                 ok = False
@@ -5246,6 +5278,8 @@ def admin_custom_email_send():
             else:
                 failed += 1
         record_audit("email.broadcast", "admin", {"subject": built_subject, "sent": sent, "failed": failed, "requested": len(recipients)})
+        if len(recipients) > sent + failed:
+            flash(f"Batch cap: {len(recipients) - sent - failed} recipients were not attempted.", "warning")
         if failed:
             flash(f"Custom email sent to {sent} recipient(s). {failed} failed. Check Render logs or Resend if delivery failed.", "warning")
         else:
@@ -5990,7 +6024,7 @@ def api_checkout_preview():
 
 @app.route("/checkout/stripe", methods=["POST"])
 @login_required
-@limiter.limit("20 per minute")
+@limiter.limit("4 per minute; 15 per hour")
 def checkout_stripe():
     if not load_site_settings().get("store_enabled", True):
         return jsonify({"ok": False, "error": "Checkout is temporarily closed."}), 400
@@ -5999,7 +6033,10 @@ def checkout_stripe():
     try:
         import stripe
         stripe.api_key = STRIPE_SECRET_KEY
+        if db is None or not STRIPE_WEBHOOK_SECRET:
+            return jsonify({"ok": False, "error": "Secure checkout is temporarily unavailable."}), 503
         payload = request.get_json(silent=True) or {}
+        embedded = bool(STRIPE_PUBLISHABLE_KEY)
         cart = build_checkout_cart(payload.get("items") or [], payload.get("discount_code") or payload.get("code") or "", current_user())
         user = current_user() or {}
         order_id = f"ord_{secrets.token_hex(10)}"
@@ -6046,13 +6083,14 @@ def checkout_stripe():
             "amount_cents": cart["total_cents"],
             "currency": cart["currency"],
         })
+        return_url = APP_URL.rstrip("/") + url_for("checkout_success", order_id=order_id) + "&session_id={CHECKOUT_SESSION_ID}"
+        checkout_options = {"ui_mode": "embedded", "return_url": return_url, "redirect_on_completion": "always", "payment_method_types": ["card"]} if embedded else {"success_url": return_url, "cancel_url": APP_URL.rstrip("/") + url_for("checkout")}
         session_obj = stripe.checkout.Session.create(
             mode="payment",
             line_items=stripe_lines,
             customer_email=user.get("email"),
             metadata={"order_id": order_id, "user_email": user.get("email", "")},
-            success_url=url_for("checkout_success", order_id=order_id, _external=True) + "&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=url_for("checkout", _external=True),
+            **checkout_options,
         )
         save_order({
             "order_id": order_id,
@@ -6066,6 +6104,10 @@ def checkout_stripe():
             "amount_cents": cart["total_cents"],
             "currency": cart["currency"],
         })
+        if embedded:
+            response = jsonify({"ok": True, "client_secret": object_get(session_obj, "client_secret"), "order_id": order_id})
+            response.headers["Cache-Control"] = "no-store"
+            return response
         checkout_url = object_get(session_obj, "url")
         if not checkout_url:
             raise RuntimeError("Stripe did not return a checkout URL.")
@@ -6075,7 +6117,7 @@ def checkout_stripe():
         message = str(exc) or exc.__class__.__name__
         if message == "get":
             message = "Stripe checkout session was created, but the app could not read the Stripe response. This has been patched; redeploy the updated code."
-        return jsonify({"ok": False, "error": message}), 400
+        return jsonify({"ok": False, "error": "Unable to start secure checkout. Try again later."}), 400
 
 
 @app.route("/checkout/paypal/create", methods=["POST"])
@@ -6226,6 +6268,21 @@ def checkout_paypal_capture():
         return jsonify({"ok": False, "error": "PayPal capture failed. Check server logs."}), 400
 
 
+def confirm_stripe_order(order_id, session_id):
+    if orders_col is None:
+        raise RuntimeError("Persistent order storage unavailable")
+    claimed = orders_col.update_one({"order_id": order_id, "provider": "stripe", "provider_session_id": session_id,
+        "status": "pending", "stripe_fulfillment_claim": {"$exists": False}},
+        {"$set": {"stripe_fulfillment_claim": utc_now().isoformat()}})
+    if not claimed.modified_count:
+        return
+    try:
+        update_order_status(order_id, "paid", {"provider_payment_id": session_id, "stripe_fulfillment_claim": "completed"})
+    except Exception:
+        logger.exception("Stripe fulfillment requires reconciliation for %s", order_id)
+        raise
+
+
 @app.route("/webhooks/stripe", methods=["POST"])
 @limiter.limit("120 per minute")
 def stripe_webhook():
@@ -6237,12 +6294,9 @@ def stripe_webhook():
         sig_header = request.headers.get("Stripe-Signature")
         if STRIPE_WEBHOOK_SECRET:
             event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-        elif IS_PRODUCTION:
-            logger.warning("Stripe webhook rejected because STRIPE_WEBHOOK_SECRET is missing in production.")
-            return jsonify({"ok": False}), 400
         else:
-            event = request.get_json(force=True)
-        if object_get(event, "type") == "checkout.session.completed":
+            return jsonify({"ok": False}), 400
+        if object_get(event, "type") in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
             event_data = object_get(event, "data", {}) or {}
             session_obj = object_get(event_data, "object", {}) or {}
             metadata = object_get(session_obj, "metadata", {}) or {}
@@ -6251,8 +6305,8 @@ def stripe_webhook():
                 order = find_order_by_id(order_id)
                 paid_cents = object_get(session_obj, "amount_total")
                 paid_currency = str(object_get(session_obj, "currency", "")).upper()
-                if order and str(order.get("provider_session_id", "")) == str(object_get(session_obj, "id")) and order_amount_matches(order, paid_cents, paid_currency):
-                    update_order_status(order_id, "paid", {"provider_payment_id": object_get(session_obj, "id")})
+                if order and order.get("provider") == "stripe" and object_get(session_obj, "payment_status") == "paid" and str(order.get("provider_session_id", "")) == str(object_get(session_obj, "id")) and order_amount_matches(order, paid_cents, paid_currency):
+                    confirm_stripe_order(order_id, object_get(session_obj, "id"))
                 else:
                     logger.warning("Rejected Stripe webhook amount/session mismatch for order=%s", order_id)
         return jsonify({"received": True})

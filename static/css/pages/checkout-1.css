@@ -590,3 +590,5 @@
       padding: 0 12px;
     }
   }
+
+#embedded-payment{margin-top:1.25rem;padding:clamp(12px,2vw,22px);border:1px solid rgba(160,140,220,.22);border-radius:16px;background:#fff;color:#171923;scroll-margin-top:100px}#embedded-payment[hidden]{display:none}.embedded-heading{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}.embedded-heading h2{font-size:1.1rem;color:#171923;margin:0}.embedded-heading span,.embedded-note{font-size:.8rem;color:#505767}.embedded-note{margin:12px 0 0}#stripe-embedded{min-width:0}

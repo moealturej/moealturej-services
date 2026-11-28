@@ -455,7 +455,8 @@ updatePricingButtons();
     </section>
 
     <section class="admin-card admin-section" id="emails">
-      <div class="section-top"><div><div class="eyebrow">customer communication</div><h2>Custom email sender</h2><p class="muted">Send a clean branded email to one person, selected customers, or every active account. Uses the same layout as your transactional emails.</p></div><a class="secondary-cta" href="{{ url_for('admin_email_previews') }}"><i class="fas fa-eye"></i> Test email previews</a></div>
+      <div class="email-budget" role="status"><strong>Daily email budget (UTC)</strong><span>{% if email_quota.used is not none %}{{ email_quota.used }} / {{ email_quota.limit }} attempts reserved{% else %}Quota unavailable — sending blocked{% endif %}</span><small>Broadcast: {{ email_quota.batch }} per batch · {{ email_quota.broadcast }} per day. Counts include attempted sends, not just deliveries.</small></div>
+      <div class="section-top"><div><div class="eyebrow">customer communication</div><h2>Custom email sender</h2><p class="muted">Send branded email in limited batches to protect transactional delivery.</p></div><a class="secondary-cta" href="{{ url_for('admin_email_previews') }}"><i class="fas fa-eye"></i> Test email previews</a></div>
       <div class="email-compose">
         <form class="admin-form-grid" action="/admin/email/send" method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

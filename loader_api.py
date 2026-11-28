@@ -408,6 +408,7 @@ def register_loader_api(
         return result
 
     @bp.post("/api/loader/login")
+    @_limit("8 per minute; 30 per hour")
     def native_login():
         payload = request.get_json(silent=True) or {}
         email = str(payload.get("email") or "").strip().lower()[:254]
@@ -452,6 +453,7 @@ def register_loader_api(
         return jsonify({"ok": True, "status": "approved", **tokens})
 
     @bp.post("/api/loader/login/2fa")
+    @_limit("10 per minute; 40 per hour")
     def native_login_two_factor():
         payload = request.get_json(silent=True) or {}
         challenge = str(payload.get("challenge_token") or "")

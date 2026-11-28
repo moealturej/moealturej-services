@@ -10,3 +10,6 @@ body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",san
 .account-page .account-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:700px){.account-page .account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}html{scroll-padding-top:82px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Shared interaction and layout refinement */
+.email-budget{display:grid;gap:6px;padding:16px;margin-bottom:18px;border:1px solid var(--site-border);border-radius:var(--site-radius);background:rgba(139,92,246,.07)}.email-budget span{font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums}.email-budget small{opacity:.8}#main-content :is(input,select,textarea){max-width:100%;min-width:0}#main-content :is(button,.primary-cta,.secondary-cta):disabled{opacity:.55;cursor:not-allowed}#main-content :is(.product-card,.download-card,.account-panel,.admin-card){min-width:0;overflow-wrap:break-word}@media(max-width:600px){.checkout-page .checkout-card{min-width:0}.email-budget{padding:12px}}
