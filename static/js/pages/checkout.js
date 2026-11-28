@@ -112,7 +112,9 @@
       if (json.client_secret) {
         if (!window.Stripe || !config.stripePublicKey) throw new Error('Secure card form could not load. Refresh and try again.');
         const stripe = window.Stripe(config.stripePublicKey);
-        const embedded = await stripe.initEmbeddedCheckout({fetchClientSecret: async () => json.client_secret});
+        const initialize = stripe.createEmbeddedCheckoutPage || stripe.initEmbeddedCheckout;
+        if (typeof initialize !== 'function') throw new Error('Secure card form is unavailable. Refresh and try again.');
+        const embedded = await initialize.call(stripe, {fetchClientSecret: async () => json.client_secret});
         const panel = document.getElementById('embedded-payment');
         panel.hidden = false;
         try { embedded.mount('#stripe-embedded'); } catch (err) { panel.hidden = true; embedded.destroy(); throw err; }
