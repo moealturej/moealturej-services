@@ -6084,7 +6084,7 @@ def checkout_stripe():
             "currency": cart["currency"],
         })
         return_url = APP_URL.rstrip("/") + url_for("checkout_success", order_id=order_id) + "&session_id={CHECKOUT_SESSION_ID}"
-        checkout_options = {"ui_mode": "embedded", "return_url": return_url, "redirect_on_completion": "always", "payment_method_types": ["card"]} if embedded else {"success_url": return_url, "cancel_url": APP_URL.rstrip("/") + url_for("checkout")}
+        checkout_options = {"ui_mode": "embedded", "return_url": return_url, "redirect_on_completion": "always", "allowed_payment_method_types": ["card"]} if embedded else {"success_url": return_url, "cancel_url": APP_URL.rstrip("/") + url_for("checkout")}
         session_obj = stripe.checkout.Session.create(
             mode="payment",
             line_items=stripe_lines,
